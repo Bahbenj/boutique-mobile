@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Les 4 couleurs de marque sont surchargées au runtime par
+ * config/site.ts (voir app/layout.tsx) : changer la charte = changer site.ts.
+ */
+:root {
+  --cream: #f4f1ea;
+  --ink: #141414;
+  --accent: #ff7a1a;
+  --accent-ink: #141414;
+
+  /* Dérivées : calculées depuis les couleurs de marque */
+  --cream-deep: color-mix(in oklab, var(--cream), var(--ink) 6%);
+  --line: color-mix(in oklab, var(--cream), var(--ink) 12%);
+  --muted: color-mix(in oklab, var(--ink), var(--cream) 42%);
+  --ink-soft: color-mix(in oklab, var(--ink), white 12%);
+  --accent-hover: color-mix(in oklab, var(--accent), var(--ink) 12%);
+  --accent-soft: color-mix(in oklab, var(--accent), var(--cream) 82%);
+
+  --nav-h: 4rem;
+}
+
+@theme inline {
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-whatsapp: #25d366;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.75rem; /* 28px */
+  --radius-card-lg: 2rem; /* 32px */
+
+  --shadow-soft: 0 1px 2px rgb(20 20 20 / 0.04), 0 8px 24px -8px rgb(20 20 20 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(20 20 20 / 0.04), 0 24px 48px -16px rgb(20 20 20 / 0.18);
+  --shadow-pill: 0 1px 1px rgb(20 20 20 / 0.04), 0 10px 30px -10px rgb(20 20 20 / 0.25);
+
+  --tracking-tightest: -0.045em;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-padding-top: 6rem;
+  }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  /* Focus visible homogène sur tout le site */
+  :focus-visible {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-weight: 800;
+    letter-spacing: var(--tracking-tightest);
+    line-height: 0.92;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
