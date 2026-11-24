@@ -96,6 +96,11 @@ export function HeroScroll() {
           onToggle: (self) => setHeroActive(self.isActive),
         });
 
+        // Arrivée directe sur /#ancre : le navigateur a défilé avant l'ajout de
+        // l'espace d'épinglage, on recale donc sur la cible une fois le pin créé.
+        const target = window.location.hash && document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target) requestAnimationFrame(() => target.scrollIntoView());
+
         return () => {
           triggerRef.current = null;
           setHeroActive(false);

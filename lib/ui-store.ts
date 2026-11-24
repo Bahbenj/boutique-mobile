@@ -2,18 +2,26 @@
 
 import { create } from "zustand";
 
-/** État d'interface global (non persisté) : modales et tiroirs. */
+export type Toast = { id: number; title: string; text?: string; image?: string };
+
+/** État d'interface global (non persisté) : modales, tiroirs, notifications. */
 type UIState = {
   authOpen: boolean;
   authMode: "login" | "signup";
   cartOpen: boolean;
-  heroActive: boolean; // hero épinglé à l'écran (masque le bouton WhatsApp flottant)
+  heroActive: boolean; // hero épinglé à l'écran (masque les actions flottantes)
+  /** Incrémenté à chaque ajout : sert de `key` pour rejouer l'animation du compteur. */
+  cartBump: number;
+  toast: Toast | null;
   setHeroActive: (v: boolean) => void;
   openAuth: (mode?: "login" | "signup") => void;
   closeAuth: () => void;
   setAuthMode: (mode: "login" | "signup") => void;
   openCart: () => void;
   closeCart: () => void;
+  bumpCart: () => void;
+  showToast: (toast: Omit<Toast, "id">) => void;
+  dismissToast: () => void;
 };
 
 export const useUI = create<UIState>((set) => ({
@@ -21,10 +29,15 @@ export const useUI = create<UIState>((set) => ({
   authMode: "login",
   cartOpen: false,
   heroActive: false,
+  cartBump: 0,
+  toast: null,
   setHeroActive: (heroActive) => set({ heroActive }),
   openAuth: (mode = "login") => set({ authOpen: true, authMode: mode }),
   closeAuth: () => set({ authOpen: false }),
   setAuthMode: (authMode) => set({ authMode }),
   openCart: () => set({ cartOpen: true }),
   closeCart: () => set({ cartOpen: false }),
+  bumpCart: () => set((s) => ({ cartBump: s.cartBump + 1 })),
+  showToast: (toast) => set({ toast: { ...toast, id: Date.now() } }),
+  dismissToast: () => set({ toast: null }),
 }));

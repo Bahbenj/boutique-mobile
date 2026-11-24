@@ -27,7 +27,7 @@ const linkClass = "text-[0.9375rem] text-ink/70 transition-colors hover:text-ink
 export function Footer() {
   const { address } = siteConfig;
   return (
-    <footer className="mt-auto border-t border-line bg-cream pt-16 pb-28 sm:pb-10">
+    <footer className="mt-auto border-t border-line bg-cream pt-16 pb-28 md:pb-10">
       <Container>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div className="max-w-xs">

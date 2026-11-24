@@ -5,11 +5,10 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { t } from "@/i18n";
-import { cartCount, useCart } from "@/lib/cart-store";
 import { useUI } from "@/lib/ui-store";
-import { useMounted } from "@/lib/use-mounted";
 import { cn } from "@/lib/utils";
 import { buttonClasses } from "@/components/ui/Button";
+import { CartBadge, useCartLabel } from "@/components/cart/CartBadge";
 import { IconBag, IconClose, IconMenu, IconUser } from "@/components/ui/icons";
 import { Logo } from "./Logo";
 import { navLinks } from "./nav-links";
@@ -21,8 +20,7 @@ export function Navbar() {
   const [lastPath, setLastPath] = useState(pathname);
   const openAuth = useUI((s) => s.openAuth);
   const openCart = useUI((s) => s.openCart);
-  const count = cartCount(useCart((s) => s.items));
-  const mounted = useMounted();
+  const cartLabel = useCartLabel(t.nav.cart);
 
   // Ferme le menu mobile à chaque navigation
   if (pathname !== lastPath) {
@@ -83,14 +81,10 @@ export function Navbar() {
               type="button"
               onClick={openCart}
               className="relative grid size-10 place-items-center rounded-full text-ink transition-colors hover:bg-ink/5"
-              aria-label={`${t.nav.cart}${mounted && count ? `, ${count} article${count > 1 ? "s" : ""}` : ""}`}
+              aria-label={cartLabel}
             >
               <IconBag size={20} />
-              {mounted && count > 0 && (
-                <span className="absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.65rem] font-bold tabular-nums text-accent-ink ring-2 ring-white">
-                  {count}
-                </span>
-              )}
+              <CartBadge className="absolute -end-0.5 -top-0.5 ring-2 ring-white" />
             </button>
 
             <div className="hidden sm:block">

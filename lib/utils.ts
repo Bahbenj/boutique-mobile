@@ -12,7 +12,10 @@ const priceFormatter = new Intl.NumberFormat(siteConfig.locale, {
   maximumFractionDigits: 3,
 });
 
-/** 1299 → « 1 299 DT » */
+/**
+ * 1299 → « 1 299 DT ». L'espace fine insécable (U+202F) d'Intl n'existe pas
+ * dans Plus Jakarta Sans : remplacée par une espace insécable classique.
+ */
 export function formatPrice(value: number) {
-  return priceFormatter.format(value).replace("TND", "DT");
+  return priceFormatter.format(value).replace("TND", "DT").replace(/ /g, " ");
 }

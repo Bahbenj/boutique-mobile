@@ -4,8 +4,11 @@ import type { CSSProperties } from "react";
 import { siteConfig } from "@/config/site";
 import { dir, htmlLang } from "@/i18n";
 import { AuthModal } from "@/components/layout/AuthModal";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/layout/Footer";
+import { MobileActionBar } from "@/components/layout/MobileActionBar";
 import { Navbar } from "@/components/layout/Navbar";
+import { Toaster } from "@/components/layout/Toaster";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
 import "./globals.css";
 
@@ -62,7 +65,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </main>
         <Footer />
         <WhatsAppFab />
+        <MobileActionBar />
+        <CartDrawer />
         <AuthModal />
+        <Toaster />
       </body>
     </html>
   );
