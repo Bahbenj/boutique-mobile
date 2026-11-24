@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { AccountMenu } from "@/components/admin/AccountMenu";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminPageSkeleton } from "@/components/admin/AdminPage";
+import { Toaster } from "@/components/layout/Toaster";
 
 /**
  * Coque de l'admin. Le contenu n'est rendu qu'après requireAdmin() (sous
@@ -11,7 +12,7 @@ import { AdminPageSkeleton } from "@/components/admin/AdminPage";
  */
 export default function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="flex min-h-svh flex-1">
+    <div data-admin-shell className="flex min-h-svh flex-1">
       <AdminNav
         account={
           <Suspense fallback={null}>
@@ -36,6 +37,7 @@ export default function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
           </Suspense>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

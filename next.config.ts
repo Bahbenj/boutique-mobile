@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Domaine du projet Supabase (photos de l'admin), y compris un domaine personnalisé
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : null;
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -12,6 +15,16 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
       // Photos envoyées depuis l'admin (Supabase Storage, bucket public « catalog »)
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      ...(supabase && !supabase.hostname.endsWith(".supabase.co")
+        ? [
+            {
+              protocol: supabase.protocol.replace(":", "") as "http" | "https",
+              hostname: supabase.hostname,
+              port: supabase.port,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
     ],
   },
   turbopack: {

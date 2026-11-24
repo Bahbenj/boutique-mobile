@@ -16,6 +16,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 2. `20261124000200_security.sql`
 3. `20261124000300_orders.sql`
 4. `20261124000400_storage_settings.sql`
+5. `20261124000500_storage_admin_select.sql` (permet de supprimer et remplacer des photos depuis l'admin)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { IconExternal } from "@/components/ui/icons";
@@ -15,8 +15,20 @@ const isActive = (pathname: string, href: string) => (href === "/admin" ? pathna
  * Mobile : barre d'onglets en bas, pouces à portée, 5 sections.
  */
 export function AdminNav({ account }: { account: ReactNode }) {
-  const pathname = usePathname();
+  // usePathname lit l'URL de la requête : sous <Suspense> (Cache Components) ;
+  // le repli est le même menu, sans onglet surligné.
+  return (
+    <Suspense fallback={<NavView pathname="" account={account} />}>
+      <CurrentNav account={account} />
+    </Suspense>
+  );
+}
 
+function CurrentNav({ account }: { account: ReactNode }) {
+  return <NavView pathname={usePathname()} account={account} />;
+}
+
+function NavView({ pathname, account }: { pathname: string; account: ReactNode }) {
   return (
     <>
       {/* Desktop */}

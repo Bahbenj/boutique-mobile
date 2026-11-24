@@ -52,6 +52,13 @@
     -webkit-tap-highlight-color: transparent;
     scroll-padding-top: 6rem;
   }
+  /* Admin mobile : la barre d'onglets fixe (4 rem) ne doit jamais masquer
+     l'élément ciblé (focus clavier, ancre, défilement automatique) */
+  @media (width < 64rem) {
+    html:has([data-admin-shell]) {
+      scroll-padding-bottom: 9rem; /* onglets + barre d'enregistrement */
+    }
+  }
   body {
     background: var(--cream);
     color: var(--ink);

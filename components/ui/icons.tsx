@@ -197,3 +197,37 @@ export const IconLock = (p: IconProps) => (
     <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
   </Svg>
 );
+export const IconPencil = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+    <path d="m13.5 6.5 4 4" />
+  </Svg>
+);
+export const IconCopy = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="8.5" y="8.5" width="12" height="12" rx="2" />
+    <path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3" />
+  </Svg>
+);
+export const IconTrash = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7h16M9.5 7V4.5h5V7M6 7l1 13h10l1-13M10 11v5M14 11v5" />
+  </Svg>
+);
+export const IconChevron = ({ dir = "down", ...p }: IconProps & { dir?: "up" | "down" | "left" | "right" }) => (
+  <Svg {...p} style={{ transform: { up: "rotate(180deg)", down: "", left: "rotate(90deg)", right: "rotate(-90deg)" }[dir] }}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+);
+export const IconImage = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+    <circle cx="9" cy="10" r="1.75" />
+    <path d="m20.5 16-4.5-4.5-8.5 8" />
+  </Svg>
+);
+export const IconSpinner = (p: IconProps) => (
+  <Svg {...p} className={`animate-spin ${p.className ?? ""}`}>
+    <path d="M12 3a9 9 0 1 0 9 9" />
+  </Svg>
+);
