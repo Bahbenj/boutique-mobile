@@ -4,9 +4,23 @@
 
 -- --- Types -------------------------------------------------------------------
 
-create type public.product_condition as enum ('neuf', 'occasion', 'reconditionne');
+do $$
+begin
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+                 where n.nspname = 'public' and t.typname = 'product_condition') then
+    create type public.product_condition as enum ('neuf', 'occasion', 'reconditionne');
+  end if;
+end
+$$;
 
-create type public.order_status as enum ('nouvelle', 'confirmee', 'expediee', 'livree', 'annulee');
+do $$
+begin
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+                 where n.nspname = 'public' and t.typname = 'order_status') then
+    create type public.order_status as enum ('nouvelle', 'confirmee', 'expediee', 'livree', 'annulee');
+  end if;
+end
+$$;
 
 -- --- Horodatage automatique -------------------------------------------------
 
@@ -25,14 +39,14 @@ $$;
 -- Un utilisateur Supabase Auth est administrateur s'il figure dans cette table.
 -- Ajout uniquement depuis le tableau de bord Supabase (SQL), jamais depuis le site.
 
-create table public.admins (
+create table if not exists public.admins (
   user_id uuid primary key references auth.users (id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
 -- --- Catégories ---------------------------------------------------------------
 
-create table public.categories (
+create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 80),
   slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
@@ -43,9 +57,9 @@ create table public.categories (
   updated_at timestamptz not null default now()
 );
 
-create index categories_position_idx on public.categories (position);
+create index if not exists categories_position_idx on public.categories (position);
 
-create trigger categories_updated_at
+create or replace trigger categories_updated_at
   before update on public.categories
   for each row execute function public.set_updated_at();
 
@@ -54,7 +68,7 @@ create trigger categories_updated_at
 -- specs    : [["Écran", "6,1″ OLED"], ...]
 -- Prix en dinars (3 décimales = millimes).
 
-create table public.products (
+create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 120),
   slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
@@ -78,11 +92,11 @@ create table public.products (
   updated_at timestamptz not null default now()
 );
 
-create index products_category_idx on public.products (category_id);
-create index products_active_featured_idx on public.products (is_active, is_featured);
-create index products_stock_idx on public.products (stock) where is_active;
+create index if not exists products_category_idx on public.products (category_id);
+create index if not exists products_active_featured_idx on public.products (is_active, is_featured);
+create index if not exists products_stock_idx on public.products (stock) where is_active;
 
-create trigger products_updated_at
+create or replace trigger products_updated_at
   before update on public.products
   for each row execute function public.set_updated_at();
 
@@ -90,9 +104,9 @@ create trigger products_updated_at
 -- items : snapshot des lignes au moment de la commande (nom, variante, prix
 -- recalculé côté serveur, quantité), indépendant des modifications futures.
 
-create sequence public.order_number_seq start with 1001;
+create sequence if not exists public.order_number_seq start with 1001;
 
-create table public.orders (
+create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   number text not null unique default ('CMD-' || nextval('public.order_number_seq')),
   customer_name text not null check (char_length(customer_name) between 2 and 120),
@@ -111,22 +125,22 @@ create table public.orders (
   updated_at timestamptz not null default now()
 );
 
-create index orders_created_idx on public.orders (created_at desc);
-create index orders_status_created_idx on public.orders (status, created_at desc);
+create index if not exists orders_created_idx on public.orders (created_at desc);
+create index if not exists orders_status_created_idx on public.orders (status, created_at desc);
 
-create trigger orders_updated_at
+create or replace trigger orders_updated_at
   before update on public.orders
   for each row execute function public.set_updated_at();
 
 -- --- Paramètres (clé / valeur) --------------------------------------------------
 -- Clés utilisées : store, delivery, announcement (voir la migration 4).
 
-create table public.settings (
+create table if not exists public.settings (
   key text primary key check (key ~ '^[a-z_]+$'),
   value jsonb not null,
   updated_at timestamptz not null default now()
 );
 
-create trigger settings_updated_at
+create or replace trigger settings_updated_at
   before update on public.settings
   for each row execute function public.set_updated_at();

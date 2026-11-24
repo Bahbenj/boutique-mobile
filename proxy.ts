@@ -28,7 +28,11 @@ export async function proxy(request: NextRequest) {
         },
       },
     });
-    const { data } = await supabase.auth.getClaims();
+    const { data, error } = await supabase.auth.getClaims();
+    // « Pas de session » est normal (visiteur non connecté) ; le reste est un vrai problème
+    if (error && error.name !== "AuthSessionMissingError") {
+      console.error("[supabase] proxy : session illisible", { name: error.name, status: error.status, code: error.code, message: error.message });
+    }
     if (data?.claims?.sub) {
       const { data: admin } = await supabase.rpc("is_admin");
       isAdmin = admin === true;

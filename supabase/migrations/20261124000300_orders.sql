@@ -187,6 +187,6 @@ begin
 end;
 $$;
 
-create trigger orders_restock
+create or replace trigger orders_restock
   after update of status on public.orders
   for each row execute function public.orders_restock_on_cancel();

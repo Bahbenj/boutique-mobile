@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { supabaseAnonKey, supabaseUrl } from "./env";
 
 /**
@@ -9,6 +10,9 @@ import { supabaseAnonKey, supabaseUrl } from "./env";
  * Lit les cookies : à appeler sous une <Suspense> (Cache Components).
  */
 export async function createClient() {
+  // La session est vérifiée avec l'heure courante (expiration du jeton) :
+  // jamais pendant un prérendu, même celui des liens préchargés.
+  await connection();
   const cookieStore = await cookies();
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {

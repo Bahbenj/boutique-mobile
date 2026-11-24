@@ -10,15 +10,18 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('catalog', 'catalog', true, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/avif'])
 on conflict (id) do nothing;
 
+drop policy if exists "catalog_insert_admin" on storage.objects;
 create policy "catalog_insert_admin" on storage.objects
   for insert to authenticated
   with check (bucket_id = 'catalog' and (select public.is_admin()));
 
+drop policy if exists "catalog_update_admin" on storage.objects;
 create policy "catalog_update_admin" on storage.objects
   for update to authenticated
   using (bucket_id = 'catalog' and (select public.is_admin()))
   with check (bucket_id = 'catalog' and (select public.is_admin()));
 
+drop policy if exists "catalog_delete_admin" on storage.objects;
 create policy "catalog_delete_admin" on storage.objects
   for delete to authenticated
   using (bucket_id = 'catalog' and (select public.is_admin()));

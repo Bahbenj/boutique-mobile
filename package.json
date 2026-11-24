@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:generate": "tsx scripts/generate-seed.ts"
+    "seed:generate": "tsx scripts/generate-seed.ts",
+    "db:all-in-one": "node scripts/build-all-in-one.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

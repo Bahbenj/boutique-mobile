@@ -10,6 +10,10 @@
 
 ## 2. Exécuter les migrations
 
+**Le plus simple :** ouvrez `supabase/all-in-one.sql`, copiez tout son contenu, collez-le dans **SQL Editor** et cliquez sur **Run**. Ce fichier contient toutes les migrations, puis les produits d'exemple, dans une seule transaction : en cas d'erreur, rien n'est appliqué. Vous pouvez le relancer sans risque, même sur une base déjà installée. Après toute modification d'un fichier SQL, régénérez-le avec `npm run db:all-in-one`.
+
+**Ou bien, fichier par fichier :**
+
 Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supabase/migrations/`, **dans l'ordre** :
 
 1. `20261124000100_schema.sql`
@@ -17,6 +21,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 3. `20261124000300_orders.sql`
 4. `20261124000400_storage_settings.sql`
 5. `20261124000500_storage_admin_select.sql` (permet de supprimer et remplacer des photos depuis l'admin)
+6. `20261124000600_grants.sql` (droits d'accès des rôles de l'API). Indispensable sur les projets Supabase récents, qui n'en accordent plus automatiquement : sans elle, l'admin affiche « permission denied for table … ».
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -44,7 +49,7 @@ Le résultat doit indiquer « 1 row ». Pour retirer l'accès : `delete from pub
 **Project Settings** → **API Keys** (ou **API**).
 
 1. À la racine du projet, copiez `.env.example` en `.env.local`.
-2. Remplissez les trois valeurs :
+2. Remplissez les trois valeurs. **Copiez chaque clé avec le bouton « Copier » du tableau de bord**, en cliquant d'abord sur « Reveal » pour la clé secrète. Ne la sélectionnez pas à la main : l'affichage est raccourci, et une clé tronquée provoque l'erreur « Invalid API key ».
    - `NEXT_PUBLIC_SUPABASE_URL` : Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` : clé `anon` / `publishable`
    - `SUPABASE_SERVICE_ROLE_KEY` : clé `service_role` / `secret`. **Elle est secrète** : ne l'envoyez à personne et ne la mettez jamais dans le code.
