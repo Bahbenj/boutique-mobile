@@ -132,6 +132,18 @@
   }
 }
 
+/* Impression (bon de livraison) : A4, fond blanc, sans ombres */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: white !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

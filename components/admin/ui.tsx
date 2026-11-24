@@ -71,6 +71,8 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
+  cancelLabel = "Annuler",
+  pendingLabel = "Suppression…",
   pending,
   onConfirm,
   onClose,
@@ -79,6 +81,8 @@ export function ConfirmDialog({
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  cancelLabel?: string;
+  pendingLabel?: string;
   pending?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -88,10 +92,10 @@ export function ConfirmDialog({
       <div className="text-[0.9375rem] leading-relaxed text-muted">{children}</div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="light" className="ring-1 ring-line" onClick={onClose}>
-          Annuler
+          {cancelLabel}
         </Button>
         <Button className="bg-red-700 text-white hover:bg-red-800" onClick={onConfirm} disabled={pending}>
-          {pending ? "Suppression…" : confirmLabel}
+          {pending ? pendingLabel : confirmLabel}
         </Button>
       </div>
     </Modal>
