@@ -2,6 +2,7 @@ import "server-only";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LOW_STOCK_ADMIN } from "./catalog";
+import type { DbRepair } from "./repairs-shared";
 import { orderStatuses, periodStart, type DbOrder, type OrderHistoryEntry, type OrderStatus, type Period, type Sort } from "./orders-shared";
 
 /** Lectures des commandes pour l'admin (session admin, soumises à la RLS). */
@@ -92,9 +93,20 @@ export type DashboardStats = {
   week: { orders: number; revenue: number };
   month: { orders: number; revenue: number; collected: number; cancelled: number };
   pending: { nouvelle: number; confirmee: number; expediee: number };
+  repairs: {
+    pending: { nouvelle: number; devis_envoye: number; en_cours: number; prete: number };
+    received: { today: number; week: number; month: number };
+  };
 };
 
-export async function getDashboard() {
+export type DashboardData = {
+  stats: DashboardStats;
+  latest: DbOrder[];
+  latestRepairs: DbRepair[];
+  lowStock: { items: { id: string; name: string; stock: number; images: string[] }[]; count: number };
+};
+
+export async function getDashboard(): Promise<DashboardData | { error: { message: string } }> {
   await requireAdmin();
   const supabase = await createClient();
   const [stats, latest, lowStock, repairs] = await Promise.all([
@@ -108,10 +120,9 @@ export async function getDashboard() {
       .order("stock")
       .order("name")
       .limit(8),
-    // Demandes de réparation non traitées (migration 13) : facultatif, ne bloque pas le tableau de bord
-    supabase.from("repair_requests").select("id", { count: "exact", head: true }).eq("status", "nouvelle"),
+    supabase.from("repair_requests").select("*").order("created_at", { ascending: false }).limit(5),
   ]);
-  const error = stats.error ?? latest.error ?? lowStock.error;
+  const error = stats.error ?? latest.error ?? lowStock.error ?? repairs.error;
   if (error) return { error };
 
   const raw = stats.data as DashboardStats;
@@ -122,10 +133,18 @@ export async function getDashboard() {
       week: { orders: num(raw.week.orders), revenue: num(raw.week.revenue) },
       month: { orders: num(raw.month.orders), revenue: num(raw.month.revenue), collected: num(raw.month.collected), cancelled: num(raw.month.cancelled) },
       pending: { nouvelle: num(raw.pending.nouvelle), confirmee: num(raw.pending.confirmee), expediee: num(raw.pending.expediee) },
+      repairs: {
+        pending: {
+          nouvelle: num(raw.repairs?.pending.nouvelle),
+          devis_envoye: num(raw.repairs?.pending.devis_envoye),
+          en_cours: num(raw.repairs?.pending.en_cours),
+          prete: num(raw.repairs?.pending.prete),
+        },
+        received: { today: num(raw.repairs?.received.today), week: num(raw.repairs?.received.week), month: num(raw.repairs?.received.month) },
+      },
     } satisfies DashboardStats,
     latest: (latest.data ?? []).map(toOrder),
     lowStock: { items: (lowStock.data ?? []) as { id: string; name: string; stock: number; images: string[] }[], count: lowStock.count ?? 0 },
-    /** null : table absente (migration 13 non exécutée) */
-    pendingRepairs: repairs.error ? null : (repairs.count ?? 0),
+    latestRepairs: (repairs.data ?? []).map((r) => ({ ...r, quote_amount: r.quote_amount == null ? null : Number(r.quote_amount) }) as DbRepair),
   };
 }

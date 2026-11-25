@@ -29,6 +29,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 11. `20261125001100_storefront.sql` (pastille, livraison offerte et fond des photos par produit ; `place_order` applique la livraison offerte)
 12. `20261125001200_order_history.sql` (historique des statuts de commande : qui et quand, lecture admin uniquement)
 13. `20261125001300_repair_requests.sql` (demandes de réparation du formulaire de /reparation : création par le serveur seul, 3 demandes par heure et par numéro au plus ; l'admin ne modifie que le statut, le devis et les notes)
+14. `20261125001400_dashboard_repairs.sql` (tableau de bord : statistiques des commandes et des demandes de réparation)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -66,7 +67,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 13) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 13, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 14) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 14, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -117,3 +118,67 @@ NEXT_PUBLIC_META_PIXEL_ID=123456789012345
 ```
 
 Redéployez (l'identifiant est intégré au moment de la compilation). Laissé vide, le pixel est désactivé et aucun script Facebook n'est chargé. Pour vérifier : extension **Meta Pixel Helper** de Chrome, ou **Events Manager** → **Tester les événements**. Événements envoyés : PageView, ViewContent (fiche produit), AddToCart, InitiateCheckout (page Commande) et Purchase + Lead (commande validée).
+
+## 7. Recette de bout en bout (à faire après chaque grande mise à jour)
+
+Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une capture d'écran.
+
+### A. Base de données
+
+1. **SQL Editor → New query** : collez tout `supabase/all-in-one.sql` → **Run**. Attendu : « Success. No rows returned ». En cas d'erreur, rien n'est appliqué : envoyez le message d'erreur complet.
+2. Vérifiez que tout est en place (chaque ligne doit afficher `true`) :
+   ```sql
+   select 'zones de livraison' as quoi, to_regclass('public.delivery_zones') is not null as ok
+   union all select 'avis', to_regclass('public.reviews') is not null
+   union all select 'historique des commandes', to_regclass('public.order_status_history') is not null
+   union all select 'demandes de réparation', to_regclass('public.repair_requests') is not null
+   union all select 'colonne promo', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'free_delivery')
+   union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
+   ```
+3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
+   ```sql
+   select u.email from public.admins a join auth.users u on u.id = a.user_id;
+   ```
+   Sinon, refaites l'étape 3 ci-dessus.
+
+### B. Application
+
+4. Dans `.env.local`, les trois clés Supabase sont remplies (dont `SUPABASE_SERVICE_ROLE_KEY` : sans elle, commandes et demandes ne sont pas enregistrées). Arrêtez puis relancez `npm run dev` : le site relit alors la base au lieu du catalogue de secours.
+5. Ouvrez `/boutique` : 11 produits. Dans **Admin → Produits**, changez le prix de la loupe d'écran (7 000 → 7 500), enregistrez, rechargez la fiche produit sur le site : le nouveau prix s'affiche. Remettez 7 000.
+
+### C. Commande
+
+6. Sur le site (de préférence sur un téléphone) : ajoutez le **Casque Bluetooth Super Bass** et la **Montre connectée Yesido IO22** au panier → **Commander** → zone **Région de Kayes**, votre propre numéro → **Valider la commande**. Attendu : écran « Commande CMD-… enregistrée », livraison **offerte** (grâce au casque), total 35 000 FCFA, message WhatsApp contenant le numéro CMD-….
+7. Dans **Admin → Commandes** : la commande est en tête, statut « Nouvelle ». Ouvrez-la et vérifiez articles, totaux, zone, adresse.
+8. Cliquez **Confirmer la commande** : l'historique affiche « Nouvelle → Confirmée » avec **votre e-mail**. Cliquez **WhatsApp** : le message parle de confirmation.
+9. Cliquez **Bon de livraison** : logo bleu sur fond blanc, impression A4 lisible. Revenez à la liste, **Export CSV** : le fichier s'ouvre dans Excel avec la commande.
+10. Notez le stock de la montre dans **Admin → Produits**, puis **Annulez** la commande : le stock de la montre remonte de 1, l'historique affiche « → Annulée ».
+
+### D. Demande de réparation
+
+11. Sur `/reparation`, formulaire **Demander un devis** : votre nom, votre numéro, « Tecno Spark 20 », « Écran cassé ». Attendez quelques secondes avant d'envoyer. Attendu : « Demande REP-… enregistrée » et message WhatsApp avec ce numéro.
+12. Envoyez trois autres demandes avec le **même numéro** : la quatrième de l'heure doit être refusée (« Vous avez déjà envoyé plusieurs demandes… »).
+13. **Admin → Réparations** : ouvrez la première demande, saisissez un devis de 25 000, une note interne, **Enregistrer**, puis **Devis envoyé**. Le bouton **WhatsApp** propose un message avec « 25 000 FCFA » ; la note interne n'y figure pas.
+
+### E. Tableau de bord
+
+14. **Admin → Tableau de bord** : « Réparations à traiter » compte les demandes encore « Nouvelle », « Dernières commandes » et « Dernières demandes » affichent vos essais, la commande annulée n'est pas comptée dans le chiffre d'affaires du jour.
+
+### F. Sécurité (depuis un ordinateur, PowerShell)
+
+15. Remplacez `<URL>` par `NEXT_PUBLIC_SUPABASE_URL` et `<CLE_PUBLIQUE>` par `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jamais la clé secrète) :
+    ```powershell
+    curl.exe -s "<URL>/rest/v1/orders?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/repair_requests?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
+    ```
+    Attendu pour les trois : une erreur « permission denied » (code 42501), **jamais** de données.
+
+### G. Nettoyage des essais
+
+16. Une fois la recette terminée, supprimez les essais (commandes **annulées d'abord** dans l'admin, pour remettre le stock) :
+    ```sql
+    delete from public.orders where status = 'annulee' and phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';
+    delete from public.repair_requests where phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';
+    ```
+    Les numéros CMD-… et REP-… continuent ensuite à partir du dernier utilisé : c'est normal.
