@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Product } from "@/data/products";
 import { t } from "@/i18n";
-import { stockState } from "@/lib/catalog";
+import { stockState } from "@/lib/product-helpers";
 import { priceFor, useAddToCart } from "@/lib/use-add-to-cart";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";

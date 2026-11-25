@@ -4,12 +4,13 @@ import { refresh, updateTag } from "next/cache";
 import { isAllowedImage, storagePath } from "@/lib/admin/catalog";
 import { categorySchema, fieldErrors, type ActionResult, type CategoryInput } from "@/lib/admin/schema";
 import { requireAdmin } from "@/lib/auth";
+import { CATALOG_TAG } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/server";
 
 /** Actions catégories : création, modification, suppression, ordre d'affichage. */
 
 function done() {
-  updateTag("catalog");
+  updateTag(CATALOG_TAG); // site public : rayons et grille de l'accueil
   refresh();
 }
 

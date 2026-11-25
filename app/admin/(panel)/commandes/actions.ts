@@ -5,6 +5,7 @@ import { z } from "zod";
 import { orderStatuses } from "@/lib/admin/orders-shared";
 import type { ActionResult } from "@/lib/admin/schema";
 import { requireAdmin } from "@/lib/auth";
+import { CATALOG_TAG } from "@/lib/catalog";
 import { logSupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,7 +41,7 @@ export async function updateOrderStatus(input: { id: string; status: string }): 
   }
   if (!data) return { ok: false, error: "Commande introuvable." };
 
-  updateTag("catalog"); // le stock a pu changer (annulation)
+  updateTag(CATALOG_TAG); // le stock a pu changer (annulation)
   refresh();
   return { ok: true };
 }

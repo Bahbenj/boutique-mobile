@@ -135,9 +135,12 @@ export const fr = {
     total: "Total",
     free: "Offerte",
     submit: "Valider la commande",
+    submitting: "Enregistrement…",
+    placedTitle: (n: string) => `Commande ${n} enregistrée`,
+    placedText: (total: string) => `Total : ${total}. Envoyez-nous le récapitulatif sur WhatsApp : un conseiller vous rappelle pour confirmer la livraison.`,
+    sendWhatsapp: "Envoyer sur WhatsApp",
     sentTitle: "Commande envoyée",
     sentText: "Votre récapitulatif s'est ouvert dans WhatsApp : envoyez le message, nous vous rappelons pour confirmer.",
-    reopenWhatsapp: "Rouvrir WhatsApp",
     errors: {
       required: "Champ obligatoire.",
       name: "Indiquez votre nom complet.",

@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { imageBg, imageFit, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
 import { t } from "@/i18n";
-import { hasPriceRange } from "@/lib/catalog";
+import { hasPriceRange, imageBg, imageFit } from "@/lib/product-helpers";
 import { cn } from "@/lib/utils";
 import { Price } from "./Price";
 import { LowStockBadge, ProductBadges, productBadges } from "./ProductBadges";
@@ -27,9 +27,9 @@ export function ProductCard({ product: p, sizes, className }: { product: Product
           fill
           sizes={sizes ?? "(min-width: 1024px) 24vw, (min-width: 640px) 45vw, 80vw"}
           quality={75}
-          style={imageBg(p.images[0])}
+          style={imageBg(p)}
           className={cn(
-            imageFit(p.images[0]),
+            imageFit(p),
             "transition-transform duration-700 ease-out-expo group-hover:scale-[1.04]",
             soldOut && "opacity-50 grayscale",
           )}

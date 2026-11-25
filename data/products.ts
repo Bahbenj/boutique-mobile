@@ -11,7 +11,8 @@
  *    jamais d'image chargée depuis Facebook) ; sinon visuel provisoire du rayon.
  */
 
-export type CategorySlug = "smartphones" | "ecouteurs-casques" | "montres" | "accessoires" | "protections" | "gadgets";
+/** Lien d'un rayon (les rayons se gèrent dans l'admin : n'importe quel slug). */
+export type CategorySlug = string;
 
 export type Category = {
   slug: CategorySlug;
@@ -77,18 +78,8 @@ export const categories: Category[] = [
   },
 ];
 
-export type ProductImage = {
-  src: string;
-  alt: string;
-  /** "contain" : photo entière, sans recadrage, posée sur `bg` (fond de la photo, blanc par défaut). */
-  fit?: "contain";
-  bg?: string;
-};
+export type ProductImage = { src: string; alt: string };
 
-/** Classes d'affichage d'une photo produit selon son cadrage. */
-export const imageFit = (img: ProductImage) => (img.fit === "contain" ? "object-contain p-[6%]" : "object-cover");
-/** Fond assorti à la photo quand elle n'est pas recadrée. */
-export const imageBg = (img: ProductImage) => (img.fit === "contain" ? { backgroundColor: img.bg ?? "#ffffff" } : undefined);
 
 export type StorageOption = { label: string; price: number; oldPrice?: number };
 
@@ -121,6 +112,8 @@ export type Product = {
   tag?: string;
   /** Livraison offerte : une commande contenant ce produit ne paie pas la livraison. */
   freeDelivery?: boolean;
+  /** Couleur de fond des photos (#rrggbb) : photo entière sur ce fond au lieu d'être recadrée. */
+  imageBg?: string;
   isFeatured: boolean; // mis en avant sur l'accueil
   isActive: boolean; // false : masqué du site
 };
@@ -141,7 +134,7 @@ const img = (slug: CategorySlug, alt: string): ProductImage => ({ src: placehold
 
 // Visuels : photos fournies par le client (public/photos, optimisées par
 // npm run photos:optimize) ; à défaut, visuel provisoire du rayon.
-const photo = (file: string, alt: string, fit?: "contain", bg?: string): ProductImage => ({ src: `/photos/${file}`, alt, ...(fit ? { fit } : {}), ...(bg ? { bg } : {}) });
+const photo = (file: string, alt: string): ProductImage => ({ src: `/photos/${file}`, alt });
 
 // TODO client : confirmer chaque prix (FCFA), le stock et le modèle exact.
 // Marques : n'écrire un nom de marque que si le client confirme l'authenticité
@@ -200,7 +193,8 @@ const productInputs: ProductInput[] = [
     brand: "Yesido",
     category: "ecouteurs-casques",
     price: 25_000, // TODO client : prix
-    images: [photo("casque-anc-yesido-640.webp", "Casque Bluetooth Yesido noir, arceau réglable et coussinets en similicuir", "contain")],
+    images: [photo("casque-anc-yesido-640.webp", "Casque Bluetooth Yesido noir, arceau réglable et coussinets en similicuir")],
+    imageBg: "#ffffff",
     stock: 5,
     highlights: ["Réduction de bruit active (ANC)", "Bluetooth"],
     specs: [],
@@ -266,7 +260,8 @@ const productInputs: ProductInput[] = [
     brand: "Yesido",
     category: "montres",
     price: 25_000, // prix de l'affiche, TODO client : à confirmer
-    images: [photo("montre-yesido-io22-600.webp", "Deux montres connectées Yesido IO22 noires, écrans allumés", "contain")],
+    images: [photo("montre-yesido-io22-600.webp", "Deux montres connectées Yesido IO22 noires, écrans allumés")],
+    imageBg: "#ffffff",
     stock: 8,
     highlights: ["Deux bracelets", "Jusqu'à 5 jours d'autonomie", "Résistante à l'eau IP67"],
     // Textes de la fiche fournie par le client (montre-yesido-io22-fiche.jpg)
@@ -294,7 +289,8 @@ const productInputs: ProductInput[] = [
     brand: "",
     category: "accessoires",
     price: 15_000, // TODO client : prix
-    images: [photo("station-charge-3en1-627.webp", "Station de charge 3 en 1 argentée avec support de montre et câble USB", "contain")],
+    images: [photo("station-charge-3en1-627.webp", "Station de charge 3 en 1 argentée avec support de montre et câble USB")],
+    imageBg: "#ffffff",
     stock: 5,
     highlights: ["Charge sans fil", "Support de montre", "3 en 1"],
     specs: [],
@@ -308,7 +304,8 @@ const productInputs: ProductInput[] = [
     brand: "",
     category: "accessoires",
     price: 7_500, // TODO client : prix
-    images: [photo("batterie-porte-cles-640.webp", "Quatre mini batteries porte-clés : noir et rouge, noir et argent, blanc, rose", "contain", "#d9ebf5")],
+    images: [photo("batterie-porte-cles-640.webp", "Quatre mini batteries porte-clés : noir et rouge, noir et argent, blanc, rose")],
+    imageBg: "#d9ebf5",
     colors: [
       { name: "Noir / rouge", hex: "#9b2c33" },
       { name: "Noir / argent", hex: "#2b2d31" },

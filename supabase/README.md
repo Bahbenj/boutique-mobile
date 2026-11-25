@@ -26,6 +26,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 8. `20261125000800_mali.sql` (francs CFA, zones de livraison du Mali, numéros +223, modes de paiement)
 9. `20261125000900_mobile_empire.sql` (avis clients, paiement à la livraison seul par défaut, coordonnées du magasin)
 10. `20261125001000_facebook.sql` (adresse, sous-titre et description repris de la page Facebook)
+11. `20261125001100_storefront.sql` (pastille, livraison offerte et fond des photos par produit ; `place_order` applique la livraison offerte)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -58,6 +59,16 @@ delete from public.categories c
 Les commandes déjà passées ne sont pas touchées (elles gardent une copie des articles). Une catégorie qui contient encore des produits n'est pas supprimée.
 
 Les produits d'exemple utilisent les photos fournies par le client (`/photos/…webp`) ou, à défaut, des **visuels provisoires** (`/photos/provisoire/…svg`) à remplacer depuis l'admin. **Tous leurs prix sont à confirmer** avec le client.
+
+### Ce qu'il faut exécuter (mise à jour de l'étape 4)
+
+Dans **SQL Editor** → **New query** :
+
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 11) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 11, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
+3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
+
+Le site se met à jour tout seul : chaque modification dans l'admin invalide le cache du catalogue, et une commande passée sur le site apparaît dans **Admin → Commandes** avec son numéro.
 
 ## 3. Créer le compte administrateur
 

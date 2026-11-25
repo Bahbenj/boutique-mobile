@@ -36,8 +36,10 @@ const publicClient = () => createClient(supabaseUrl, supabaseAnonKey, { auth: { 
 export async function getCheckoutSettings(): Promise<CheckoutSettings> {
   "use cache";
   cacheTag(SETTINGS_TAG);
-  cacheLife("hours");
-  if (!isSupabaseConfigured) return fallbackCheckout();
+  if (!isSupabaseConfigured) {
+    cacheLife("max");
+    return fallbackCheckout();
+  }
 
   const supabase = publicClient();
   const [zonesRes, settingsRes] = await Promise.all([
@@ -46,8 +48,10 @@ export async function getCheckoutSettings(): Promise<CheckoutSettings> {
   ]);
   if (zonesRes.error || settingsRes.error) {
     console.error("[storefront] paramètres de commande illisibles, repli sur config/site.ts", zonesRes.error ?? settingsRes.error);
+    cacheLife("minutes"); // repli : on réessaie vite
     return fallbackCheckout();
   }
+  cacheLife("hours"); // invalidé immédiatement par l'admin (updateTag)
 
   const fallback = fallbackCheckout();
   const byKey = new Map((settingsRes.data ?? []).map((s) => [s.key as string, s.value as Record<string, unknown>]));
@@ -77,8 +81,10 @@ export async function getCheckoutSettings(): Promise<CheckoutSettings> {
 export async function getPublishedReviews(): Promise<Review[]> {
   "use cache";
   cacheTag(REVIEWS_TAG);
-  cacheLife("hours");
-  if (!isSupabaseConfigured) return [];
+  if (!isSupabaseConfigured) {
+    cacheLife("max");
+    return [];
+  }
 
   const { data, error } = await publicClient()
     .from("reviews")
@@ -90,7 +96,9 @@ export async function getPublishedReviews(): Promise<Review[]> {
   if (error) {
     // Table absente (migration 9 non exécutée) ou autre : on masque la section
     console.error("[storefront] avis illisibles", error.message);
+    cacheLife("minutes");
     return [];
   }
+  cacheLife("hours");
   return (data ?? []).map((r) => ({ name: r.name, city: r.city, rating: r.rating, text: r.text, product: r.product ?? undefined }));
 }

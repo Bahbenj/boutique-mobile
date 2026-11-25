@@ -14,7 +14,8 @@ const json = (v: unknown) => `${q(JSON.stringify(v))}::jsonb`;
 
 const lines: string[] = [
   "-- Généré par scripts/generate-seed.ts depuis data/products.ts : ne pas modifier à la main.",
-  "-- Produits et catégories d'exemple (photos Unsplash de remplacement).",
+  "-- Produits et catégories d'exemple : photos du client (public/photos) ou visuels provisoires.",
+  "-- Nécessite la migration 11 (colonnes tag, free_delivery, image_bg).",
   "",
   "insert into public.categories (name, slug, description, image, position) values",
   categories
@@ -31,8 +32,8 @@ for (const p of products) {
       : {}),
   };
   lines.push(
-    `insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select ${q(p.name)}, ${q(p.slug)}, ${q(p.description)}, (select id from public.categories where slug = ${q(p.category)}), ${q(p.brand)}, ${num(p.price)}, ${num(p.oldPrice)}, ${p.stock}, ${q(p.condition)}, ${q(p.grade)}, ${num(p.battery)}, ${p.isNew}, ${p.isFeatured}, ${p.isActive}, ${arr(p.images.map((i) => i.src))}, ${json(variants)}, ${arr(p.highlights)}, ${json(p.specs)}
+    `insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, tag, free_delivery, image_bg, images, variants, highlights, specs)
+select ${q(p.name)}, ${q(p.slug)}, ${q(p.description)}, (select id from public.categories where slug = ${q(p.category)}), ${q(p.brand)}, ${num(p.price)}, ${num(p.oldPrice)}, ${p.stock}, ${q(p.condition)}, ${q(p.grade)}, ${num(p.battery)}, ${p.isNew}, ${p.isFeatured}, ${p.isActive}, ${q(p.tag)}, ${Boolean(p.freeDelivery)}, ${q(p.imageBg)}, ${arr(p.images.map((i) => i.src))}, ${json(variants)}, ${arr(p.highlights)}, ${json(p.specs)}
 on conflict (slug) do nothing;`,
     "",
   );

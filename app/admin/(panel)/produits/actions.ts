@@ -13,6 +13,7 @@ import {
   type ProductInput,
 } from "@/lib/admin/schema";
 import { requireAdmin } from "@/lib/auth";
+import { CATALOG_TAG } from "@/lib/catalog"; // cache du site public, invalidé à chaque modification
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -20,7 +21,6 @@ import { createClient } from "@/lib/supabase/server";
  * les données avec zod : rien de ce qu'envoie le navigateur n'est pris tel quel.
  */
 
-const CATALOG_TAG = "catalog"; // cache du site public (branché à l'étape 4)
 
 function done() {
   updateTag(CATALOG_TAG);

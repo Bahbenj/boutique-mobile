@@ -1,6 +1,6 @@
 import type { Product } from "@/data/products";
 import { t } from "@/i18n";
-import { discountPercent, stockState } from "@/lib/catalog";
+import { discountPercent, stockState } from "@/lib/product-helpers";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 

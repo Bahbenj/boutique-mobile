@@ -8,6 +8,7 @@ import { t } from "@/i18n";
 import { cartSubtotal, useCart } from "@/lib/cart-store";
 import { money, newEventId, track } from "@/lib/meta-pixel";
 import { deliveryFee, orderWhatsappMessage, type DeliveryMode } from "@/lib/order";
+import { placeOrder, type PlaceOrderResult } from "@/app/(site)/commande/actions";
 import { normalizeMlPhone, phoneHint, phonePlaceholder } from "@/lib/phone";
 import type { CheckoutSettings } from "@/lib/storefront";
 import { useMounted } from "@/lib/use-mounted";
@@ -15,7 +16,7 @@ import { cn, formatPrice } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Field, SelectField, TextareaField } from "@/components/ui/Field";
-import { IconCash, IconCheck, IconWhatsApp } from "@/components/ui/icons";
+import { IconCash, IconCheck, IconSpinner, IconWhatsApp } from "@/components/ui/icons";
 
 type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", string>>;
 
@@ -34,7 +35,9 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
   const [zoneId, setZoneId] = useState("");
   const [payment, setPayment] = useState<PaymentMethod["id"]>(payments[0]?.id ?? "cod");
   const [errors, setErrors] = useState<Errors>({});
-  const [sentLink, setSentLink] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ link: string; number: string | null; total: number } | null>(null);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const checkoutTracked = useRef(false);
 
   const subtotal = cartSubtotal(items);
@@ -54,17 +57,17 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
 
   if (!mounted) return <div className="skeleton h-96 rounded-card" aria-hidden="true" />;
 
-  if (sentLink) {
+  if (sent) {
     return (
-      <div className="mx-auto max-w-lg rounded-card bg-surface p-8 text-center shadow-soft">
+      <div role="status" className="mx-auto max-w-lg rounded-card bg-surface p-8 text-center shadow-soft">
         <span className="mx-auto grid size-14 place-items-center rounded-full bg-success text-canvas">
           <IconCheck size={26} strokeWidth={2.5} />
         </span>
-        <h2 className="mt-5 text-2xl font-extrabold">{t.checkout.sentTitle}</h2>
-        <p className="mt-2 text-muted">{t.checkout.sentText}</p>
-        <Button href={sentLink} variant="whatsapp" className="mt-6">
-          <IconWhatsApp size={18} />
-          {t.checkout.reopenWhatsapp}
+        <h2 className="mt-5 text-2xl font-extrabold">{sent.number ? t.checkout.placedTitle(sent.number) : t.checkout.sentTitle}</h2>
+        <p className="mt-2 text-muted">{sent.number ? t.checkout.placedText(formatPrice(sent.total)) : t.checkout.sentText}</p>
+        <Button href={sent.link} variant="whatsapp" size="lg" className="mt-6 max-sm:w-full max-sm:whitespace-normal">
+          <IconWhatsApp size={20} />
+          {t.checkout.sendWhatsapp}
         </Button>
       </div>
     );
@@ -90,9 +93,11 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
     { label: "Régions", zones: zones.filter((z) => z.group === "region") },
   ].filter((g) => g.zones.length);
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    if (pending) return;
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const get = (k: string) => String(form.get(k) ?? "").trim();
     const phone = normalizeMlPhone(get("phone"));
     const next: Errors = {};
@@ -103,44 +108,78 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
       if (get("address").length < 5) next.address = t.checkout.errors.address;
     }
     setErrors(next);
+    setServerError(null);
     if (Object.keys(next).length || !phone) {
-      e.currentTarget.querySelector<HTMLElement>("[aria-invalid=true]")?.focus();
+      formEl.querySelector<HTMLElement>("[aria-invalid=true]")?.focus();
       return;
     }
 
+    const customer = {
+      name: get("name"),
+      phone,
+      region: mode === "pickup" ? pickup.label : (zone?.name ?? ""),
+      city: get("city"),
+      address: mode === "pickup" ? "" : get("address"),
+      note: get("note") || undefined,
+    };
+
+    // 1. Enregistrement côté serveur : prix relus en base, stock décrémenté (place_order)
+    setPending(true);
+    let result: PlaceOrderResult;
+    try {
+      result = await placeOrder({
+        customer: { name: customer.name, phone, zone_id: mode === "home" ? zone?.id : undefined, city: customer.city, address: customer.address, note: customer.note },
+        items: items.map((i) => ({ product_id: i.productId, qty: i.qty, color: i.color, storage: i.storage })),
+        delivery: mode,
+        payment,
+        website: get("website") || undefined,
+      });
+    } catch {
+      result = { ok: false, fallback: true, error: "Connexion impossible." };
+    }
+    setPending(false);
+
+    // Erreur métier (stock, zone, paiement…) : on reste sur le formulaire
+    if (!result.ok && !result.fallback) {
+      setServerError(result.error);
+      requestAnimationFrame(() => document.getElementById("checkout-error")?.focus());
+      return;
+    }
+
+    // 2. Récapitulatif WhatsApp : montants enregistrés en base (ou, en secours, ceux du panier)
+    const placed = result.ok ? result : null;
     const message = orderWhatsappMessage({
-      lines: items.map((i) => ({ name: i.name, variant: i.variant, qty: i.qty, price: i.price })),
-      customer: {
-        name: get("name"),
-        phone,
-        region: mode === "pickup" ? pickup.label : (zone?.name ?? ""),
-        city: get("city"),
-        address: mode === "pickup" ? "" : get("address"),
-        note: get("note") || undefined,
-      },
+      number: placed?.number,
+      lines: placed?.lines ?? items.map((i) => ({ name: i.name, variant: i.variant, qty: i.qty, price: i.price })),
+      customer: placed ? { ...customer, region: placed.region || customer.region } : customer,
       delivery: mode === "pickup" ? pickup.label : `livraison, ${zone?.delay}`,
       payment,
-      subtotal,
-      fee,
+      subtotal: placed?.subtotal ?? subtotal,
+      fee: placed?.fee ?? fee,
     });
 
-    // Meta Pixel : commande confirmée. Purchase (optimisation sur la valeur)
-    // et Lead (campagnes « prospects »), avec un identifiant d'événement unique.
-    const eventID = newEventId();
-    const order = {
-      content_ids: items.map((i) => i.slug),
-      contents: items.map((i) => ({ id: i.slug, quantity: i.qty })),
-      content_type: "product",
-      num_items: items.reduce((n, i) => n + i.qty, 0),
-      ...money(subtotal + fee),
-    };
-    track("Purchase", order, { eventID });
-    track("Lead", money(subtotal + fee), { eventID: `${eventID}-lead` });
+    // Meta Pixel : commande confirmée. Purchase (optimisation sur la valeur) et
+    // Lead (campagnes « prospects ») ; le numéro de commande sert d'identifiant.
+    const total = placed?.total ?? subtotal + fee;
+    const eventID = placed?.number ?? newEventId();
+    track(
+      "Purchase",
+      {
+        content_ids: items.map((i) => i.slug),
+        contents: items.map((i) => ({ id: i.slug, quantity: i.qty })),
+        content_type: "product",
+        num_items: items.reduce((n, i) => n + i.qty, 0),
+        ...money(total),
+      },
+      { eventID },
+    );
+    track("Lead", money(total), { eventID: `${eventID}-lead` });
 
     const link = whatsappLink(message);
-    window.open(link, "_blank", "noopener,noreferrer");
-    setSentLink(link);
+    setSent({ link, number: placed?.number ?? null, total });
     clear();
+    // Ouverture automatique ; souvent bloquée après un appel réseau (mobile) : le bouton reste affiché
+    window.open(link, "_blank", "noopener,noreferrer");
   };
 
   const radioCard = (checked: boolean) =>
@@ -156,6 +195,8 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
           <legend className="sr-only">{t.checkout.contact}</legend>
           <h2 className="text-xl font-extrabold">{t.checkout.contact}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {/* Champ piège invisible : seuls les robots le remplissent */}
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
             <Field label={t.checkout.name} name="name" autoComplete="name" required error={errors.name} />
             <Field
               label={t.checkout.phone}
@@ -306,8 +347,14 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
               <dd className="text-2xl font-extrabold tracking-tight whitespace-nowrap">{formatPrice(subtotal + fee)}</dd>
             </div>
           </dl>
-          <Button type="submit" size="lg" className="mt-5 w-full">
-            {t.checkout.submit}
+          {serverError && (
+            <p id="checkout-error" tabIndex={-1} role="alert" className="mt-5 rounded-2xl bg-danger-soft p-3 text-sm font-medium text-danger outline-none">
+              {serverError}
+            </p>
+          )}
+          <Button type="submit" size="lg" className="mt-5 w-full" disabled={pending} aria-busy={pending || undefined}>
+            {pending && <IconSpinner size={18} />}
+            {pending ? t.checkout.submitting : t.checkout.submit}
           </Button>
           <p className="mt-3 text-center text-sm text-muted">{t.checkout.noOnlinePayment}</p>
         </div>

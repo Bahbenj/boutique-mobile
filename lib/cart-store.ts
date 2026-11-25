@@ -10,6 +10,9 @@ export type CartItem = {
   slug: string;
   name: string;
   variant?: string; // « Noir · 128 Go »
+  /** Couleur et capacité choisies, revérifiées en base par place_order. */
+  color?: string;
+  storage?: string;
   price: number;
   image: string;
   qty: number;
@@ -51,7 +54,7 @@ export const useCart = create<CartState>()(
       remove: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key) })),
       clear: () => set({ items: [] }),
     }),
-    { name: "cart-v2" }, // v2 : nouveau catalogue, les paniers des anciens exemples sont oubliés
+    { name: "cart-v3" }, // v3 : catalogue en base (identifiants uuid), les anciens paniers sont oubliés
   ),
 );
 

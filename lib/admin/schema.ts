@@ -88,6 +88,19 @@ export const productSchema = z
     is_new: z.boolean(),
     is_featured: z.boolean(),
     is_active: z.boolean(),
+    /** Pastille libre en or (ex. « Promo »), vide = aucune. */
+    tag: z
+      .string()
+      .trim()
+      .max(24, "24 caractères maximum.")
+      .transform((v) => v || null),
+    /** Livraison offerte pour toute commande contenant ce produit. */
+    free_delivery: z.boolean(),
+    /** Photo entière sur ce fond (#rrggbb) au lieu d'être recadrée ; null = recadrée. */
+    image_bg: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, "Couleur invalide.")
+      .nullable(),
     description: text(5000),
     highlights: z.array(z.string().trim().min(1).max(80)).max(12, "12 points forts maximum."),
     specs: z.array(z.tuple([z.string().trim().min(1).max(60), z.string().trim().min(1).max(200)])).max(30),
@@ -153,6 +166,9 @@ export type DbProduct = {
   is_new: boolean;
   is_featured: boolean;
   is_active: boolean;
+  tag: string | null;
+  free_delivery: boolean;
+  image_bg: string | null;
   images: string[];
   variants: { colors?: { name: string; hex: string }[]; storage?: { label: string; price: number; old_price?: number | null }[] };
   highlights: string[];

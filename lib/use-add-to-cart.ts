@@ -35,6 +35,8 @@ export function useAddToCart() {
         slug: p.slug,
         name: p.name,
         variant,
+        color,
+        storage,
         price: priceFor(p, storage).price,
         image: p.images[0].src,
         maxQty: p.stock,

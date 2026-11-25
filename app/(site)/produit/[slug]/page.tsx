@@ -3,17 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { money } from "@/lib/meta-pixel";
-import { products } from "@/data/products";
 import { t } from "@/i18n";
-import { getCategory, getProductBySlug } from "@/lib/catalog";
+import { getCategory, getProductBySlug, getProducts } from "@/lib/catalog";
 import { Container } from "@/components/ui/Container";
 import { IconCash, IconShield, IconTruck } from "@/components/ui/icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
 import { TrackViewContent } from "@/components/layout/MetaPixel";
 
-export function generateStaticParams() {
-  return products.filter((p) => p.isActive).map((p) => ({ slug: p.slug }));
+/** Produits connus au build ; ceux créés ensuite dans l'admin sont rendus à la demande. */
+export async function generateStaticParams() {
+  return (await getProducts()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/produit/[slug]">): Promise<Metadata> {
@@ -76,7 +76,7 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-14 [&>*]:min-w-0">
-        <ProductGallery images={product.images} soldOut={product.stock <= 0} />
+        <ProductGallery images={product.images} soldOut={product.stock <= 0} imageBg={product.imageBg} />
 
         <div>
           <p className="text-sm font-semibold text-muted">{product.brand}</p>

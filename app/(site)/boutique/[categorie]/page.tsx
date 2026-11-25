@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { categories } from "@/data/products";
-import { getCategory, getCategoryChips, getProducts } from "@/lib/catalog";
+import { getCategories, getCategory, getCategoryChips, getProducts } from "@/lib/catalog";
 import { ShopView } from "@/components/shop/ShopView";
 
-export function generateStaticParams() {
-  return categories.map((c) => ({ categorie: c.slug }));
+/** Rayons connus au build ; ceux créés ensuite dans l'admin sont rendus à la demande. */
+export async function generateStaticParams() {
+  return (await getCategories()).map((c) => ({ categorie: c.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/boutique/[categorie]">): Promise<Metadata> {

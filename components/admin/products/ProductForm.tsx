@@ -56,6 +56,9 @@ export function ProductForm({
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [isFeatured, setIsFeatured] = useState(product?.is_featured ?? false);
   const [isNew, setIsNew] = useState(product?.is_new ?? false);
+  const [tag, setTag] = useState(product?.tag ?? "");
+  const [freeDelivery, setFreeDelivery] = useState(product?.free_delivery ?? false);
+  const [imageBg, setImageBg] = useState<string | null>(product?.image_bg ?? null);
   const [description, setDescription] = useState(product?.description ?? "");
   const [highlights, setHighlights] = useState((product?.highlights ?? []).join("\n"));
   const [specs, setSpecs] = useState((product?.specs ?? []).map(([l, v]) => `${l} : ${v}`).join("\n"));
@@ -101,6 +104,9 @@ export function ProductForm({
     is_new: isNew,
     is_featured: isFeatured,
     is_active: isActive,
+    tag,
+    free_delivery: freeDelivery,
+    image_bg: imageBg,
     description,
     highlights: highlights.split("\n").map((l) => l.trim()).filter(Boolean),
     specs: specs
@@ -167,6 +173,26 @@ export function ProductForm({
         <div className="space-y-5">
           <FormSection title="Photos">
             <ImageManager images={images} setImages={touch(setImages) as typeof setImages} initial={initialImages} error={e("images")} />
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+              <Switch
+                checked={imageBg !== null}
+                onChange={(on) => touch(setImageBg)(on ? "#ffffff" : null)}
+                label="Afficher les photos en entier (sans recadrage)"
+                showLabel
+              />
+              {imageBg !== null && (
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  Couleur du fond
+                  <input
+                    type="color"
+                    value={imageBg}
+                    onChange={(ev) => touch(setImageBg)(ev.target.value)}
+                    className="h-9 w-12 cursor-pointer rounded-lg border border-line bg-raised"
+                  />
+                </label>
+              )}
+              <p className="w-full text-xs text-muted">Pour les photos sur fond uni : choisissez la couleur de ce fond, la photo n&apos;est plus coupée sur les vignettes.</p>
+            </div>
           </FormSection>
 
           <FormSection title="Informations">
@@ -337,6 +363,16 @@ export function ProductForm({
               <Switch checked={isActive} onChange={touch(setIsActive)} label="En ligne sur le site" showLabel />
               <Switch checked={isFeatured} onChange={touch(setIsFeatured)} label="Vedette (page d'accueil)" showLabel />
               <Switch checked={isNew} onChange={touch(setIsNew)} label="Badge « Nouveau »" showLabel />
+              <Switch checked={freeDelivery} onChange={touch(setFreeDelivery)} label="Livraison offerte" showLabel />
+              <Field
+                label="Pastille (facultatif)"
+                value={tag}
+                placeholder="Promo"
+                maxLength={24}
+                onChange={(ev) => touch(setTag)(ev.target.value)}
+                error={e("tag")}
+                hint="Affichée en or sur la photo, ex. « Promo », « Arrivage »."
+              />
             </div>
           </FormSection>
 
