@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { countByStatus, listOrders, ORDERS_PER_PAGE } from "@/lib/admin/orders";
-import { orderStatuses, periods, type OrderStatus, type Period } from "@/lib/admin/orders-shared";
+import { orderStatuses, periods, sorts, type OrderStatus, type Period, type Sort } from "@/lib/admin/orders-shared";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { OrderFilters } from "@/components/admin/orders/OrderFilters";
 import { OrderList } from "@/components/admin/orders/OrderList";
@@ -14,9 +14,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   const statut = orderStatuses.includes(sp.statut as OrderStatus) ? (sp.statut as OrderStatus) : undefined;
   const periode = typeof sp.periode === "string" && sp.periode in periods ? (sp.periode as Period) : undefined;
   const q = typeof sp.q === "string" ? sp.q.slice(0, 60) : undefined;
+  const tri = typeof sp.tri === "string" && sp.tri in sorts ? (sp.tri as Sort) : undefined;
   const pageNum = Math.max(1, Number(sp.page) || 1);
 
-  const [{ orders, count, page }, counts] = await Promise.all([listOrders({ statut, periode, q, page: pageNum }), countByStatus()]);
+  const [{ orders, count, page }, counts] = await Promise.all([listOrders({ statut, periode, q, tri, page: pageNum }), countByStatus()]);
   const pages = Math.max(1, Math.ceil(count / ORDERS_PER_PAGE));
   const filtered = Boolean(statut || periode || q);
   const pageHref = (p: number) => {

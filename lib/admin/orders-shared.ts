@@ -114,6 +114,25 @@ export function customerMessage(
 export const customerWhatsapp = (o: Parameters<typeof customerMessage>[0] & { phone: string }) =>
   `https://wa.me/${waNumber(o.phone)}?text=${encodeURIComponent(customerMessage(o))}`;
 
+/** Ligne de l'historique des statuts (table order_status_history, migration 12). */
+export type OrderHistoryEntry = {
+  id: number;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
+  changed_by_email: string | null;
+  changed_by: string | null;
+  created_at: string;
+};
+
+/** Auteur lisible d'un changement : admin, client (création sur le site) ou inconnu (avant l'historique). */
+export const historyAuthor = (h: OrderHistoryEntry) =>
+  h.changed_by_email ?? (h.from_status === null ? "Client (site)" : h.changed_by ? "Administrateur" : "Avant l'historique");
+
+// --- Tri de la liste ---------------------------------------------------------------------
+
+export const sorts = { recent: "Plus récentes", ancien: "Plus anciennes" } as const;
+export type Sort = keyof typeof sorts;
+
 // --- Périodes de la liste -----------------------------------------------------------
 
 export const periods = { jour: "Aujourd'hui", semaine: "Cette semaine", mois: "Ce mois-ci" } as const;

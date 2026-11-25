@@ -2,11 +2,11 @@ import "server-only";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LOW_STOCK_ADMIN } from "./catalog";
-import { orderStatuses, periodStart, type DbOrder, type OrderStatus, type Period } from "./orders-shared";
+import { orderStatuses, periodStart, type DbOrder, type OrderHistoryEntry, type OrderStatus, type Period, type Sort } from "./orders-shared";
 
 /** Lectures des commandes pour l'admin (session admin, soumises à la RLS). */
 
-export type OrderFilters = { statut?: OrderStatus; q?: string; periode?: Period; page?: number };
+export type OrderFilters = { statut?: OrderStatus; q?: string; periode?: Period; tri?: Sort; page?: number };
 export const ORDERS_PER_PAGE = 30;
 
 const toOrder = (row: Record<string, unknown>) =>
@@ -35,7 +35,7 @@ export async function listOrders(filters: OrderFilters) {
   }
 
   const from = (page - 1) * ORDERS_PER_PAGE;
-  const { data, count, error } = await query.order("created_at", { ascending: false }).range(from, from + ORDERS_PER_PAGE - 1);
+  const { data, count, error } = await query.order("created_at", { ascending: filters.tri === "ancien" }).range(from, from + ORDERS_PER_PAGE - 1);
   if (error) throw new Error(error.message);
   return { orders: (data ?? []).map(toOrder), count: count ?? 0, page };
 }
@@ -56,6 +56,21 @@ export async function getOrder(id: string) {
   const supabase = await createClient();
   const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
   return data ? toOrder(data) : null;
+}
+
+/** Historique des statuts d'une commande, du plus ancien au plus récent. */
+export async function getOrderHistory(id: string): Promise<OrderHistoryEntry[]> {
+  await requireAdmin();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("order_status_history")
+    .select("id, from_status, to_status, changed_by, changed_by_email, created_at")
+    .eq("order_id", id)
+    .order("created_at")
+    .order("id");
+  if (error) return []; // migration 12 absente : la fiche reste utilisable sans historique
+  return (data ?? []) as OrderHistoryEntry[];
 }
 
 /** Toutes les commandes filtrées, pour l'export CSV (plafonné). */

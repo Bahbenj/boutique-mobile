@@ -169,7 +169,7 @@ export function ProductForm({
         </p>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-5">
           <FormSection title="Photos">
             <ImageManager images={images} setImages={touch(setImages) as typeof setImages} initial={initialImages} error={e("images")} />

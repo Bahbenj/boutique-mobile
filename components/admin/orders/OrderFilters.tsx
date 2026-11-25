@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { orderStatuses, periods, statusLabels, type OrderStatus } from "@/lib/admin/orders-shared";
+import { orderStatuses, periods, sorts, statusLabels, type OrderStatus } from "@/lib/admin/orders-shared";
 import { cn } from "@/lib/utils";
 import { IconSearch, IconSpinner } from "@/components/ui/icons";
 
@@ -89,7 +89,20 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
             className="h-11 w-full rounded-full border border-line bg-surface ps-11 pe-4 text-[1rem] outline-none placeholder:text-fg/40 focus:border-accent focus:ring-4 focus:ring-accent/25"
           />
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <select
+            aria-label="Trier par date"
+            value={params.get("tri") ?? "recent"}
+            onChange={(e) => update({ tri: e.target.value === "recent" ? null : e.target.value })}
+            style={chevron}
+            className="h-11 min-w-0 flex-1 appearance-none rounded-full border border-line bg-surface bg-[length:14px] bg-[position:right_0.9rem_center] bg-no-repeat ps-4 pe-9 text-sm font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 sm:flex-none"
+          >
+            {Object.entries(sorts).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
           <select
             aria-label="Période"
             value={params.get("periode") ?? ""}
@@ -107,7 +120,7 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
           <a
             href={`/admin/commandes/export${exportParams.size ? `?${exportParams}` : ""}`}
             download
-            className="flex h-11 shrink-0 items-center rounded-full bg-surface px-4 text-sm font-semibold shadow-soft hover:bg-fg/5"
+            className="flex h-11 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-sm font-semibold shadow-soft hover:bg-fg/5 max-sm:w-full"
           >
             Export CSV
           </a>

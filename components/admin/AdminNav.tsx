@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
-import { IconExternal } from "@/components/ui/icons";
+import { IconExternal, IconMenu } from "@/components/ui/icons";
 import { adminNav } from "./nav";
 
 const isActive = (pathname: string, href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
 /**
  * Navigation admin. Desktop (≥ 1024 px) : barre latérale fixe.
- * Mobile : barre d'onglets en bas, pouces à portée, 5 sections.
+ * Mobile : barre d'onglets en bas, pouces à portée : sections principales
+ * (`primary` dans nav.ts) + « Plus » pour les autres, lisible dès 360 px.
  */
 export function AdminNav({ account }: { account: ReactNode }) {
   // usePathname lit l'URL de la requête : sous <Suspense> (Cache Components) ;
@@ -78,34 +79,99 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
         </div>
       </aside>
 
-      {/* Mobile : onglets en bas */}
-      <nav
-        aria-label="Administration"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
-      >
-        <ul className="grid auto-cols-fr grid-flow-col">
-          {adminNav.map(({ href, short, Icon }) => {
+      {/* Mobile : onglets principaux en bas + menu « Plus » pour le reste */}
+      <MobileTabs pathname={pathname} />
+    </>
+  );
+}
+
+const tab = "flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-colors";
+
+function MobileTabs({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const [lastPath, setLastPath] = useState(pathname);
+  const panel = useRef<HTMLDivElement>(null);
+  const primary = adminNav.filter((i) => i.primary);
+  const more = adminNav.filter((i) => !i.primary);
+  const moreActive = more.some((i) => isActive(pathname, i.href));
+
+  // Fermeture à chaque navigation, sur Échap et au clic en dehors
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onClick = (e: MouseEvent) => !panel.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("click", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onClick);
+    };
+  }, [open]);
+
+  return (
+    <nav
+      aria-label="Administration"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+    >
+      <div ref={panel}>
+        {open && (
+          <ul id="admin-more" className="absolute inset-x-3 bottom-full mb-2 space-y-1 rounded-card bg-raised p-2 shadow-lift ring-1 ring-fg/10">
+            {more.map(({ href, label, Icon }) => {
+              const active = isActive(pathname, href);
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex h-12 items-center gap-3 rounded-2xl px-4 font-semibold",
+                      active ? "bg-accent text-on-accent" : "text-fg hover:bg-fg/5",
+                    )}
+                  >
+                    <Icon size={19} />
+                    {label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <ul className="grid" style={{ gridTemplateColumns: `repeat(${primary.length + (more.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+          {primary.map(({ href, short, Icon }) => {
             const active = isActive(pathname, href);
             return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-colors",
-                    active ? "text-fg" : "text-fg/50",
-                  )}
-                >
+              <li key={href} className="min-w-0">
+                <Link href={href} aria-current={active ? "page" : undefined} className={cn(tab, active ? "text-fg" : "text-fg/60")}>
                   <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", active && "bg-accent-soft")}>
                     <Icon size={20} />
                   </span>
-                  {short}
+                  <span className="max-w-full truncate px-0.5">{short}</span>
                 </Link>
               </li>
             );
           })}
+          {more.length > 0 && (
+            <li className="min-w-0">
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls="admin-more"
+                onClick={() => setOpen((o) => !o)}
+                className={cn(tab, open || moreActive ? "text-fg" : "text-fg/60")}
+              >
+                <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", (open || moreActive) && "bg-accent-soft")}>
+                  <IconMenu size={20} />
+                </span>
+                Plus
+              </button>
+            </li>
+          )}
         </ul>
-      </nav>
-    </>
+      </div>
+    </nav>
   );
 }
