@@ -7,6 +7,7 @@ import { whatsappLink } from "@/lib/whatsapp";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { HexIcon } from "@/components/ui/Hex";
 import { IconCheck, IconClock, IconHeadset, IconPhone, IconPin, IconWhatsApp } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
@@ -32,8 +33,7 @@ export default function AboutPage() {
         <span className="text-gold">.</span>
       </h1>
       <p className="mt-5 max-w-2xl text-muted sm:text-lg">
-        {name} vend et entretient des smartphones à {address.district}, à {address.city}, depuis {since}. Tecno, Samsung, Apple, neufs
-        ou d&apos;occasion, et tous les accessoires qui vont avec.
+        {name} vend et entretient des smartphones à {address.district}, à {address.city}, depuis {since} : {siteConfig.description.charAt(0).toLowerCase() + siteConfig.description.slice(1)}.
       </p>
 
       {/* Histoire */}
@@ -54,8 +54,8 @@ export default function AboutPage() {
             <p>Nous vendons au détail, aux particuliers, en magasin comme en ligne, avec une livraison dans tout le Mali.</p>
           </div>
         </div>
-        <div className="relative min-h-[18rem] overflow-hidden rounded-card bg-raised">
-          <Image src={repairImage.src} alt={repairImage.alt} fill sizes="(min-width: 1024px) 45vw, 100vw" quality={75} className="object-cover" />
+        <div className="hex-soft aspect-hex relative mx-auto w-full max-w-[22rem] self-center bg-raised">
+          <Image src={repairImage.src} alt={repairImage.alt} fill sizes="(min-width: 1024px) 22rem, 80vw" quality={75} className="object-cover" />
         </div>
       </section>
 
@@ -72,9 +72,9 @@ export default function AboutPage() {
         <ul className="mt-6 grid gap-3 sm:grid-cols-3">
           {afterSalesPoints.map((point) => (
             <li key={point} className="flex items-start gap-3 rounded-2xl bg-raised p-4">
-              <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-gold-soft text-gold-text">
-                <IconCheck size={14} strokeWidth={2.5} />
-              </span>
+              <HexIcon tone="gold" size="sm" className="mt-0.5">
+                <IconCheck size={12} strokeWidth={2.75} />
+              </HexIcon>
               <span className="font-medium">{point}</span>
             </li>
           ))}

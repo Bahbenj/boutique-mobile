@@ -25,6 +25,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 7. `20261125000700_dashboard.sql` (statistiques du tableau de bord)
 8. `20261125000800_mali.sql` (francs CFA, zones de livraison du Mali, numéros +223, modes de paiement)
 9. `20261125000900_mobile_empire.sql` (avis clients, paiement à la livraison seul par défaut, coordonnées du magasin)
+10. `20261125001000_facebook.sql` (adresse, sous-titre et description repris de la page Facebook)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -32,21 +33,29 @@ Puis, pour les produits d'exemple, faites de même avec `supabase/seed.sql`. Ce 
 
 > Alternative en ligne de commande : `npx supabase link --project-ref <ref>` puis `npx supabase db push`.
 
-### Base déjà installée avec les anciens produits d'exemple
+### Base déjà installée avec d'anciens produits d'exemple
 
-`seed.sql` n'écrase jamais un produit existant. Si votre base contient encore les 14 produits d'exemple de la première version (iPhone 15 Pro, Redmi Note 13 Pro…) et que vous ne les avez **pas** modifiés, supprimez-les puis relancez `supabase/seed.sql` pour obtenir les 9 nouveaux exemples Mobile Empire :
+`seed.sql` n'écrase jamais un produit existant. Si votre base contient encore des produits d'exemple des versions précédentes (iPhone 15 Pro, Tecno Camon 30, AirPods Pro…) et que vous ne les avez **pas** modifiés, supprimez-les puis relancez `supabase/seed.sql` pour obtenir les 9 exemples actuels (casque JBL, casque ANC EP07, montre connectée…) :
 
 ```sql
 delete from public.products where slug in (
+  -- 1re version
   'iphone-15-pro', 'samsung-galaxy-s24-ultra', 'iphone-13', 'samsung-galaxy-a55',
   'xiaomi-redmi-note-13-pro', 'iphone-12-pro-occasion', 'iphone-11-occasion', 'iphone-xs-occasion',
   'samsung-galaxy-s21-ultra-occasion', 'airpods-pro-2', 'ecouteurs-sans-fil-anc',
-  'chargeur-rapide-usb-c-20w', 'coque-fibre-aramide', 'casque-bluetooth'
+  'chargeur-rapide-usb-c-20w', 'coque-fibre-aramide', 'casque-bluetooth',
+  -- 2e version
+  'tecno-camon-30', 'tecno-spark-20-pro', 'iphone-13-occasion', 'casque-bluetooth-oraimo',
+  'coque-antichoc-verre-trempe', 'chargeur-samsung-25w'
 );
-delete from public.categories where slug = 'neufs';
+delete from public.categories c
+  where slug in ('neufs', 'occasion', 'ecouteurs', 'casques')
+    and not exists (select 1 from public.products p where p.category_id = c.id);
 ```
 
-Les commandes déjà passées ne sont pas touchées (elles gardent une copie des articles). La catégorie « Accessoires » existante est conservée : renommez-la « Chargeurs et câbles » dans **Admin → Catégories** si vous le souhaitez.
+Les commandes déjà passées ne sont pas touchées (elles gardent une copie des articles). Une catégorie qui contient encore des produits n'est pas supprimée.
+
+Les produits d'exemple utilisent des **visuels provisoires** (`/photos/provisoire/…svg`) : remplacez-les par les vraies photos depuis l'admin. **Tous leurs prix sont à confirmer** avec le client.
 
 ## 3. Créer le compte administrateur
 
@@ -77,7 +86,7 @@ Le résultat doit indiquer « 1 row ». Pour retirer l'accès : `delete from pub
 
 ## 5. Vérifier
 
-Ouvrez `/admin` : la page de connexion s'affiche. Connectez-vous : le tableau de bord indique 9 produits, 6 catégories et 0 commande.
+Ouvrez `/admin` : la page de connexion s'affiche. Connectez-vous : le tableau de bord indique 9 produits, 6 catégories (Smartphones, Écouteurs et casques, Montres connectées, Chargeurs et câbles, Coques et protections, Gadgets) et 0 commande.
 
 Puis :
 

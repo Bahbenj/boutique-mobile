@@ -34,7 +34,8 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
 
   const count = cartCount(items);
   const subtotal = cartSubtotal(items);
-  const left = freeFrom == null ? 0 : Math.max(0, freeFrom - subtotal);
+  const offered = items.some((i) => i.freeDelivery);
+  const left = freeFrom == null || offered ? 0 : Math.max(0, freeFrom - subtotal);
 
   return createPortal(
     <AnimatePresence>
@@ -115,7 +116,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
             ) : (
               <>
                 {/* Progression vers la livraison offerte (masquée si jamais offerte) */}
-                {freeFrom != null && (
+                {(freeFrom != null || offered) && (
                   <div className="mx-5 rounded-2xl bg-surface p-3.5 shadow-soft">
                     <p className="flex items-center gap-2 text-sm font-semibold">
                       <IconTruck size={18} className="shrink-0 text-muted" />
@@ -124,7 +125,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
                     <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-raised">
                       <div
                         className="h-full origin-left rounded-full bg-accent transition-transform duration-500 ease-out-expo rtl:origin-right"
-                        style={{ transform: `scaleX(${freeFrom > 0 ? Math.min(1, subtotal / freeFrom) : 1})` }}
+                        style={{ transform: `scaleX(${!offered && freeFrom ? Math.min(1, subtotal / freeFrom) : 1})` }}
                       />
                     </div>
                   </div>

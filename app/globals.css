@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Design tokens · thème sombre « tech » (noir, anthracite, bleu électrique,
- * rose doré). Les couleurs de marque sont surchargées au runtime par
+ * Design tokens · thème sombre (noir, anthracite, or / bronze rosé du logo,
+ * bleu électrique et marine des hexagones). Les couleurs de marque sont surchargées au runtime par
  * config/site.ts → theme (voir app/layout.tsx) : changer la charte = changer
  * site.ts. Contrastes vérifiés AA (≥ 4,5:1) pour chaque texte sur chaque fond.
  * Charte : aucun rouge ni jaune, y compris pour les alertes (lavande) et les
@@ -10,17 +10,18 @@
  */
 :root {
   /* Fonds */
-  --canvas: #07080c; /* fond de page (noir) */
-  --surface: #12141b; /* cartes (anthracite) */
-  --raised: #1b1e27; /* éléments posés sur une carte, emplacements d'image */
+  --canvas: #060709; /* fond de page (noir) */
+  --surface: #111318; /* cartes (anthracite) */
+  --raised: #1a1d24; /* éléments posés sur une carte, emplacements d'image */
+  --navy: #0c1a3a; /* bleu marine : fonds à motif hexagonal */
   /* Texte */
-  --fg: #eef1f6; /* texte principal (17:1 sur le fond) */
-  --muted: #a1a9ba; /* texte secondaire (7:1 sur les cartes) */
+  --fg: #f2efea; /* texte principal (17:1 sur le fond) */
+  --muted: #a9a5a0; /* texte secondaire (7:1 sur les cartes) */
   /* Accents */
-  --accent: #3d8bff; /* bleu électrique : boutons, liens, focus */
-  --on-accent: #07080c; /* texte posé sur l'accent (6:1) */
-  --gold: #b76e79; /* rose doré : badges, soulignements, détails */
-  --on-gold: #07080c; /* texte posé sur le rose doré (5,3:1) */
+  --gold: #c8956c; /* or / bronze rosé du logo : boutons principaux, détails (7,6:1) */
+  --on-gold: #060709; /* texte posé sur l'or */
+  --accent: #3d8bff; /* bleu électrique : liens, états actifs, focus, hexagones */
+  --on-accent: #060709; /* texte posé sur le bleu (6:1) */
   /* États (jamais de rouge ni de jaune) */
   --danger: #b8a2ff; /* erreurs, suppression : lavande */
   --success: #3ddbc3; /* succès, en stock : turquoise */
@@ -36,7 +37,8 @@
   --fg-soft: color-mix(in oklab, var(--fg), var(--canvas) 12%);
   --accent-hover: color-mix(in oklab, var(--accent), white 14%);
   --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface));
-  --gold-text: color-mix(in oklab, var(--gold), white 32%); /* rose doré lisible en texte (7:1) */
+  --gold-text: color-mix(in oklab, var(--gold), white 18%); /* or en texte sur carte (≥ 7:1) */
+  --gold-hover: color-mix(in oklab, var(--gold), white 14%);
   --gold-soft: color-mix(in oklab, var(--gold) 18%, var(--surface));
   --danger-soft: color-mix(in oklab, var(--danger) 14%, var(--surface));
   --success-soft: color-mix(in oklab, var(--success) 14%, var(--surface));
@@ -54,12 +56,13 @@
   --muted: #4b5262;
   --accent: #1d5fd6;
   --on-accent: #ffffff;
-  --gold: #8f4b56;
+  --gold: #8a5a35;
   --on-gold: #ffffff;
+  --navy: #e8eefb;
   --danger: #5b3fc4;
   --success: #0f766e;
   --line: #d9dce3;
-  --gold-text: #8f4b56;
+  --gold-text: #8a5a35;
   color-scheme: light;
 }
 
@@ -77,6 +80,8 @@
   --color-on-accent: var(--on-accent);
   --color-gold: var(--gold);
   --color-gold-text: var(--gold-text);
+  --color-gold-hover: var(--gold-hover);
+  --color-navy: var(--navy);
   --color-gold-soft: var(--gold-soft);
   --color-on-gold: var(--on-gold);
   --color-danger: var(--danger);
@@ -135,6 +140,38 @@
 }
 
 @layer utilities {
+  /*
+   * Hexagone, motif de la marque (bannières Facebook).
+   * .hex       : pointe en haut, angles vifs (icônes, puces, monogramme)
+   * .hex-soft  : pointe en haut, angles adoucis (grandes images, portrait)
+   * .hex-wide  : pointe sur les côtés, angles adoucis (grandes images, paysage)
+   * .aspect-hex / .aspect-hex-wide : proportions d'un hexagone régulier
+   * Les masques s'étirent à la taille de l'élément (preserveAspectRatio none).
+   */
+  .hex {
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  }
+  .hex-soft {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86.6 100' preserveAspectRatio='none'%3E%3Cpolygon points='43.3,5 81.6,27 81.6,73 43.3,95 5,73 5,27' fill='%23fff' stroke='%23fff' stroke-width='9' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+  }
+  .hex-wide {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 86.6' preserveAspectRatio='none'%3E%3Cpolygon points='27,5 73,5 95,43.3 73,81.6 27,81.6 5,43.3' fill='%23fff' stroke='%23fff' stroke-width='9' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+  }
+  .aspect-hex {
+    aspect-ratio: 0.866 / 1;
+  }
+  .aspect-hex-wide {
+    aspect-ratio: 1.1547 / 1;
+  }
+  /* Nid d'abeille en filigrane : la couleur suit `color` (currentColor via background) */
+  .hex-pattern {
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E")
+      0 0 / 56px 100px repeat;
+  }
+
   .text-display {
     font-weight: 800;
     letter-spacing: var(--tracking-tightest);

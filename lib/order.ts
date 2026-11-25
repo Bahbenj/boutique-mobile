@@ -9,8 +9,15 @@ export type DeliveryMode = "home" | "pickup";
  * gratuit. Calcul d'AFFICHAGE : le montant facturé est recalculé en base
  * (place_order) à partir des zones et réglages enregistrés.
  */
-export function deliveryFee(mode: DeliveryMode, zone: Pick<DeliveryZone, "fee"> | undefined, subtotal: number, freeFrom: number | null) {
-  if (mode === "pickup" || !zone) return 0;
+export function deliveryFee(
+  mode: DeliveryMode,
+  zone: Pick<DeliveryZone, "fee"> | undefined,
+  subtotal: number,
+  freeFrom: number | null,
+  /** Le panier contient un produit à livraison offerte. */
+  offered = false,
+) {
+  if (mode === "pickup" || !zone || offered) return 0;
   if (freeFrom != null && subtotal >= freeFrom) return 0;
   return zone.fee;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "dark" | "light" | "outline" | "ghost" | "whatsapp";
+type Variant = "primary" | "blue" | "dark" | "light" | "outline" | "ghost" | "whatsapp";
 type Size = "sm" | "md" | "lg";
 
 const base =
@@ -11,7 +11,10 @@ const base =
   "active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 select-none";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-on-accent hover:bg-accent-hover hover:shadow-[0_0_24px_-6px_var(--accent)]",
+  /** Action principale : or du logo. */
+  primary: "bg-gold text-on-gold hover:bg-gold-hover hover:shadow-[0_0_24px_-6px_var(--gold)]",
+  /** Action secondaire colorée : bleu des hexagones. */
+  blue: "bg-accent text-on-accent hover:bg-accent-hover",
   /** Bouton secondaire plein : clair sur fond sombre. */
   dark: "bg-fg text-canvas hover:bg-fg-soft",
   light: "bg-raised text-fg ring-1 ring-fg/10 hover:bg-line",

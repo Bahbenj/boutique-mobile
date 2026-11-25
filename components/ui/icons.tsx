@@ -269,3 +269,21 @@ export const IconMail = (p: IconProps) => (
     <path d="m4 7 8 6 8-6" />
   </Svg>
 );
+export const IconFlash = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="m12.5 7-2.5 5h4l-2.5 5" />
+  </Svg>
+);
+export const IconSliders = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </Svg>
+);
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8 5.5v13l10.5-6.5L8 5.5Z" />
+  </Svg>
+);

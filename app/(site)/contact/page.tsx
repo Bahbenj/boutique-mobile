@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { directionsUrl, siteConfig, storeAddress, telHref } from "@/config/site";
 import { t } from "@/i18n";
+import { reviewRequestMessage } from "@/data/home";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { HexIcon } from "@/components/ui/Hex";
 import { IconClock, IconFacebook, IconMail, IconPhone, IconPin, IconTiktok, IconWhatsApp } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
@@ -91,6 +93,12 @@ export default function ContactPage() {
                   TikTok {social.tiktokHandle}
                 </Button>
               </li>
+              <li>
+                <Button href={whatsappLink(reviewRequestMessage)} variant="light" size="sm">
+                  <IconWhatsApp size={16} />
+                  {t.home.leaveReview}
+                </Button>
+              </li>
             </ul>
           </div>
         </div>
@@ -112,8 +120,8 @@ export default function ContactPage() {
 function Item({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
     <div className="flex gap-4">
-      <dt className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent ring-1 ring-accent/25">
-        {icon}
+      <dt className="shrink-0">
+        <HexIcon>{icon}</HexIcon>
         <span className="sr-only">{label}</span>
       </dt>
       <dd className="min-w-0 pt-2">{children}</dd>

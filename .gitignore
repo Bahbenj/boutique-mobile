@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Photos originales du client (non publiées, optimisées par npm run photos:optimize)
+/public/photos/originaux/

@@ -14,6 +14,8 @@ export type CartItem = {
   image: string;
   qty: number;
   maxQty: number;
+  /** Produit à livraison offerte : la commande entière ne paie pas la livraison. */
+  freeDelivery?: boolean;
 };
 
 type CartState = {
@@ -49,7 +51,7 @@ export const useCart = create<CartState>()(
       remove: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key) })),
       clear: () => set({ items: [] }),
     }),
-    { name: "cart-v1" },
+    { name: "cart-v2" }, // v2 : nouveau catalogue, les paniers des anciens exemples sont oubliés
   ),
 );
 

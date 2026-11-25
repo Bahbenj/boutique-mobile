@@ -34,7 +34,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
       {/* Desktop */}
       <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-e border-line bg-surface px-4 py-5 lg:flex">
         <Link href="/admin" className="flex items-center gap-2 px-2 font-extrabold tracking-tight">
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.7rem]">
+          <span aria-hidden="true" className="hex grid h-9 w-8 place-items-center bg-gradient-to-b from-gold-hover to-gold text-on-gold text-[0.7rem]">
             {siteConfig.shortName}
           </span>
           <span className="leading-tight">

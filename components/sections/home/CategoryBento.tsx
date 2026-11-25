@@ -47,7 +47,7 @@ export async function CategoryBento({ index }: { index: number }) {
   }));
   if (withServices) {
     tiles.push({
-      href: "#services",
+      href: "/reparation",
       title: t.home.servicesCardTitle,
       text: t.home.servicesCardText,
       badge: t.home.afterSalesKicker,
@@ -75,7 +75,7 @@ export async function CategoryBento({ index }: { index: number }) {
               <Reveal key={tile.href} delay={(i % 4) * 0.06} className={cn("min-h-0", layout)}>
                 <Link
                   href={tile.href}
-                  className="group relative flex h-full flex-col justify-end overflow-hidden rounded-card bg-raised p-4 text-white ring-1 ring-white/8 transition-shadow duration-300 hover:shadow-lift sm:p-6"
+                  className="group relative flex h-full flex-col justify-end overflow-hidden rounded-card bg-gradient-to-b from-navy to-canvas p-4 text-white ring-1 ring-white/8 transition-shadow duration-300 hover:shadow-lift sm:p-6"
                 >
                   <Image
                     src={tile.image}
@@ -83,7 +83,11 @@ export async function CategoryBento({ index }: { index: number }) {
                     fill
                     sizes={sizes}
                     quality={75}
-                    className="object-cover transition-transform duration-1000 ease-out-expo group-hover:scale-105"
+                    className={cn(
+                      "transition-transform duration-1000 ease-out-expo group-hover:scale-105",
+                      // Visuel provisoire (SVG portrait) : calé à droite plutôt que recadré sous le titre
+                      tile.image.endsWith(".svg") ? "object-contain object-right-top" : "object-cover",
+                    )}
                   />
                   {/* Voiles : bas pour le titre, haut pour le badge sur photo claire */}
                   <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/0" />

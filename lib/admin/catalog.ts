@@ -97,7 +97,10 @@ export function storagePath(url: string) {
   return decodeURIComponent(url.slice((supabaseUrl + PUBLIC_PREFIX).length));
 }
 
-/** Seules nos photos (bucket catalog) et les placeholders Unsplash sont acceptés. */
+/** Fichiers du site (public/photos, public/brand) : visuels provisoires et photos optimisées. */
+const LOCAL_IMAGE = /^\/(photos|brand)\/[\w\-/]+\.(webp|avif|jpe?g|png|svg)$/;
+
+/** Seules nos photos (bucket catalog, dossiers du site) et les placeholders Unsplash sont acceptés. */
 export function isAllowedImage(url: string) {
-  return storagePath(url) !== null || url.startsWith("https://images.unsplash.com/");
+  return storagePath(url) !== null || LOCAL_IMAGE.test(url) || url.startsWith("https://images.unsplash.com/");
 }

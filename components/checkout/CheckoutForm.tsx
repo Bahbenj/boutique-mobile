@@ -82,7 +82,8 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
   }
 
   const zone = zones.find((z) => z.id === zoneId);
-  const fee = deliveryFee(mode, zone, subtotal, freeFrom);
+  const offered = items.some((i) => i.freeDelivery);
+  const fee = deliveryFee(mode, zone, subtotal, freeFrom, offered);
   const selectedPayment = payments.find((m) => m.id === payment);
   const zoneGroups = [
     { label: "District de Bamako", zones: zones.filter((z) => z.group === "bamako") },
@@ -234,7 +235,8 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
             )}
             <TextareaField label={t.checkout.note} name="note" className="sm:col-span-2" rows={2} />
           </div>
-          {mode === "home" && freeFrom != null && <p className="mt-3 text-sm text-muted">{t.checkout.freeFrom(formatPrice(freeFrom))}</p>}
+          {mode === "home" && offered && <p className="mt-3 text-sm font-semibold text-success">{t.checkout.offeredByProduct}</p>}
+          {mode === "home" && !offered && freeFrom != null && <p className="mt-3 text-sm text-muted">{t.checkout.freeFrom(formatPrice(freeFrom))}</p>}
         </fieldset>
 
         <fieldset className="rounded-card bg-surface p-5 shadow-soft sm:p-7">

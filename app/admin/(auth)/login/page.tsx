@@ -12,7 +12,7 @@ export default function AdminLoginPage() {
     <main id="contenu" className="grid flex-1 place-items-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center gap-2 font-extrabold tracking-tight">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.75rem]">
+          <span aria-hidden="true" className="hex grid h-9 w-8 place-items-center bg-gradient-to-b from-gold-hover to-gold text-on-gold text-[0.75rem]">
             {siteConfig.shortName}
           </span>
           {siteConfig.name}

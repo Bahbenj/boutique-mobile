@@ -26,7 +26,9 @@ export function productBadges({ product: p, price = p.price, oldPrice = p.oldPri
   if (stock === "out") items.push({ key: "out", label: t.product.outOfStock, tone: "inverse" });
   if (p.isNew && !used && stock !== "out") items.push({ key: "new", label: t.product.new, tone: "gold" });
   if (used) items.push({ key: "used", label: compact || !p.grade ? usedLabel : `${usedLabel} · ${p.grade}`, tone: "neutral" });
-  if (off && stock !== "out") items.push({ key: "promo", label: compact ? `−${off} %` : t.product.promo(off), tone: "accent" });
+  if (off && stock !== "out") items.push({ key: "promo", label: compact ? `−${off} %` : t.product.promo(off), tone: "gold" });
+  else if (p.tag && stock !== "out") items.push({ key: "tag", label: p.tag, tone: "gold" });
+  if (p.freeDelivery && stock !== "out") items.push({ key: "free", label: t.product.freeDelivery, tone: "accent" });
   if (!compact && stock === "low") items.push({ key: "low", label: t.product.lowStock, tone: "neutral" });
   return items;
 }

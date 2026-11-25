@@ -14,9 +14,9 @@ export const siteConfig = {
   /** Monogramme du logo texte, en attendant le vrai logo (voir `logo`). */
   shortName: "ME",
   slogan: "Vendre avec passion, servir avec excellence.",
-  tagline: "Smartphones & accessoires",
-  description:
-    "Smartphones Tecno, Samsung et Apple neufs et d'occasion, AirPods, casques, coques et accessoires. Réparation, déblocage et service après-vente à N'Tabacoro, Bamako. Livraison dans tout le Mali, paiement à la livraison.",
+  /** Sous-titre de la page Facebook du magasin. */
+  tagline: "smartphone repair & E-commerce",
+  description: "Votre destination incontournable pour la réparation et la vente de matériel électronique à Bamako",
   /** Année d'ouverture : affichée « Depuis 2018 ». */
   since: 2018,
   url: "https://www.example.com", // TODO client : domaine définitif (SEO, sitemap, OG)
@@ -25,24 +25,35 @@ export const siteConfig = {
   timeZone: "Africa/Bamako",
   currency: "XOF", // franc CFA (UEMOA), sans décimales
   currencyLabel: "FCFA",
-  /** Chemin d'un logo image dans /public (ex. "/logo.svg"). null = logo texte « ME ». TODO client */
-  logo: null as string | null,
+  /**
+   * Logo image (dossier public/brand/, voir son README). null = logo texte.
+   * Deux variantes : `onDark` doré sur noir (site), `onLight` bleu sur blanc
+   * (documents imprimés, fonds clairs). TODO client : fournir le logo.
+   */
+  logo: {
+    onDark: null as string | null, // ex. "/brand/logo-dore.svg"
+    onLight: null as string | null, // ex. "/brand/logo-bleu.svg"
+  },
 
   // --- Couleurs (injectées en variables CSS dans app/layout.tsx) ------------
-  // Thème sombre « tech ». TODO client : nuances exactes à confirmer.
-  // Changer une valeur ici suffit : cartes, bordures, survols et versions
-  // atténuées en sont dérivés (app/globals.css). Garder un contraste AA :
-  // texte ≥ 4,5:1 sur canvas et surface. Charte : ni rouge ni jaune.
+  // D'après la page Facebook : logo « MOBILE EMPIRE » doré sur noir, bannières
+  // à hexagones bleus. TODO client : quand le logo sera fourni, échantillonner
+  // ses couleurs (npm run brand:colors -- public/brand/<logo>) et remplacer
+  // `gold` / `accent` / `navy`. Changer une valeur ici suffit : cartes,
+  // bordures, survols et versions atténuées en sont dérivés (app/globals.css).
+  // Contraste AA : texte ≥ 4,5:1 sur canvas, surface et navy (tous vérifiés).
+  // Charte : ni jaune vif ni rouge, y compris pour les alertes.
   theme: {
-    canvas: "#07080C", // fond de page (noir)
-    surface: "#12141B", // cartes (anthracite)
-    raised: "#1B1E27", // éléments posés sur une carte
-    fg: "#EEF1F6", // texte principal
-    muted: "#A1A9BA", // texte secondaire
-    accent: "#3D8BFF", // bleu électrique : boutons, liens, focus
-    onAccent: "#07080C", // texte posé sur l'accent
-    gold: "#B76E79", // rose doré : badges, soulignements, détails
-    onGold: "#07080C", // texte posé sur le rose doré
+    canvas: "#060709", // fond de page (noir)
+    surface: "#111318", // cartes (anthracite)
+    raised: "#1A1D24", // éléments posés sur une carte
+    fg: "#F2EFEA", // texte principal (blanc chaud, s'accorde à l'or)
+    muted: "#A9A5A0", // texte secondaire
+    gold: "#C8956C", // or / bronze rosé du logo : boutons principaux, logo, détails (7,6:1 sur noir)
+    onGold: "#060709", // texte posé sur l'or
+    accent: "#3D8BFF", // bleu électrique des hexagones : liens, états actifs, focus
+    onAccent: "#060709", // texte posé sur le bleu
+    navy: "#0C1A3A", // bleu marine : fonds à motif hexagonal
     danger: "#B8A2FF", // alertes et erreurs (lavande, jamais de rouge)
     success: "#3DDBC3", // succès, « en stock » (turquoise)
   },
@@ -54,17 +65,21 @@ export const siteConfig = {
   whatsapp: "22363515582",
   /** Numéro principal (appels, barre mobile). */
   phone: "+223 63 51 55 82",
-  /** Tous les numéros affichés (pied de page, contact). */
+  /**
+   * Tous les numéros affichés (pied de page, contact), le principal en premier.
+   * TODO client : confirmer le second numéro (73 92 31 35 ou 74 05 86 18).
+   */
   phones: ["+223 63 51 55 82", "+223 74 05 86 18"],
   email: "diarraousmane719@gmail.com",
   address: {
-    street: "", // TODO client : rue ou repère précis (facultatif)
+    street: "Près de l'école fondamentale", // repère indiqué sur la page Facebook
     district: "N'Tabacoro",
     city: "Bamako",
     country: "ML",
   },
   /** URL d'intégration Google Maps (Partager → Intégrer une carte). TODO client : remplacer par l'épingle exacte du magasin. */
   mapEmbedUrl: "https://www.google.com/maps?q=N%27Tabacoro%2C+Bamako%2C+Mali&output=embed",
+  /** TODO client : horaires à confirmer (valeur du premier questionnaire). */
   hours: [{ days: "Tous les jours", time: "8h – 21h" }],
   social: {
     facebook: "https://www.facebook.com/share/14yBZGGk9Mi/?mibextid=wwXIfr",
@@ -149,11 +164,11 @@ export const paymentMethods: PaymentMethod[] = [
 export const paymentMethodIds = paymentMethods.map((m) => m.id) as [PaymentMethod["id"], ...PaymentMethod["id"][]];
 export const paymentLabel = (id: string) => paymentMethods.find((m) => m.id === id)?.label ?? id;
 
-/** Adresse sur une ligne : « N'Tabacoro, Bamako » (la rue est facultative). */
-export const storeAddress = [siteConfig.address.street, siteConfig.address.district, siteConfig.address.city].filter(Boolean).join(", ");
+/** Adresse sur une ligne : « N'Tabacoro, près de l'école fondamentale, Bamako ». */
+export const storeAddress = [siteConfig.address.district, siteConfig.address.street.toLowerCase(), siteConfig.address.city].filter(Boolean).join(", ");
 
 /** Lien Google Maps « itinéraire » vers le magasin. */
-export const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${storeAddress}, Mali`)}`;
+export const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${siteConfig.address.district}, ${siteConfig.address.city}, Mali`)}`;
 
 /** « +223 63 51 55 82 » → « tel:+22363515582 » */
 export const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;

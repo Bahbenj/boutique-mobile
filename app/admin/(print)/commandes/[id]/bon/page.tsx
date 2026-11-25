@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { siteConfig } from "@/config/site";
+import { siteConfig, storeAddress } from "@/config/site";
+import { Logo } from "@/components/layout/Logo";
 import { getOrder } from "@/lib/admin/orders";
 import { deliveryLabel, formatOrderDateLong, formatPhone, itemCount, paymentLabel, variantLabel } from "@/lib/admin/orders-shared";
 import { formatPrice } from "@/lib/utils";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Bon de livraison" };
 export default async function DeliveryNotePage({ params }: PageProps<"/admin/commandes/[id]/bon">) {
   const order = await getOrder((await params).id);
   if (!order) notFound();
-  const { address, phone } = siteConfig;
+  const { phone } = siteConfig;
   const pickup = order.delivery_method === "pickup";
 
   return (
@@ -28,10 +29,9 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
       <article className="delivery-note mx-auto max-w-[21cm] bg-surface p-6 text-[13px] leading-snug text-black shadow-soft sm:p-10 print:max-w-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-6 border-b-2 border-black pb-4">
           <div>
-            <p className="text-xl font-extrabold">{siteConfig.name}</p>
-            <p>
-              {address.street}, {address.district}, {address.city}
-            </p>
+            <Logo variant="light" href={null} className="mb-1.5" />
+            <p className="sr-only">{siteConfig.name}</p>
+            <p>{storeAddress}</p>
             <p>Tél. {phone}</p>
           </div>
           <div className="text-end">

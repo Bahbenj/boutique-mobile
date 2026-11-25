@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { deliveryZones, paymentMethods, siteConfig, type DeliveryZone, type PaymentMethod } from "@/config/site";
-import { reviews as exampleReviews, type Review } from "@/data/home";
+import type { Review } from "@/data/home";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/env";
 
 /**
@@ -73,12 +73,12 @@ export async function getCheckoutSettings(): Promise<CheckoutSettings> {
   };
 }
 
-/** Avis publiés (admin → Avis). Sans base : avis d'exemple de data/home.ts. */
+/** Avis publiés (admin → Avis). Sans base : aucun avis, la section reste masquée. */
 export async function getPublishedReviews(): Promise<Review[]> {
   "use cache";
   cacheTag(REVIEWS_TAG);
   cacheLife("hours");
-  if (!isSupabaseConfigured) return exampleReviews;
+  if (!isSupabaseConfigured) return [];
 
   const { data, error } = await publicClient()
     .from("reviews")

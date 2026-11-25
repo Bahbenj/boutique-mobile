@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
+import { HexDot } from "./Hex";
 
 /** En-tête de section : badge numéroté, grand titre, chapô et action optionnels. */
 export function SectionHeading({
@@ -27,6 +28,7 @@ export function SectionHeading({
     <div className={cn("flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="max-w-3xl">
         <Badge index={index} tone={dark ? "glass" : "neutral"}>
+          <HexDot />
           {kicker}
         </Badge>
         <h2

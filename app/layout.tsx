@@ -47,6 +47,7 @@ const brandVars = {
   "--on-accent": theme.onAccent,
   "--gold": theme.gold,
   "--on-gold": theme.onGold,
+  "--navy": theme.navy,
   "--danger": theme.danger,
   "--success": theme.success,
 } as CSSProperties;

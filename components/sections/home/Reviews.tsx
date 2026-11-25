@@ -1,9 +1,11 @@
-import type { Review } from "@/data/home";
+import { reviewRequestMessage, type Review } from "@/data/home";
+import { whatsappLink } from "@/lib/whatsapp";
+import { Button } from "@/components/ui/Button";
 import { t } from "@/i18n";
 import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { IconStar } from "@/components/ui/icons";
+import { IconStar, IconWhatsApp } from "@/components/ui/icons";
 
 /** Avis clients publiés (gérés dans /admin/avis). Masqué s'il n'y en a aucun. */
 export function Reviews({ index, reviews }: { index: number; reviews: Review[] }) {
@@ -13,7 +15,18 @@ export function Reviews({ index, reviews }: { index: number; reviews: Review[] }
     <section aria-labelledby="avis-title" className="pb-20 sm:pb-28">
       <Container>
         <Reveal>
-          <SectionHeading id="avis-title" index={index} kicker={t.home.reviewsKicker} title={t.home.reviewsTitle} />
+          <SectionHeading
+            id="avis-title"
+            index={index}
+            kicker={t.home.reviewsKicker}
+            title={t.home.reviewsTitle}
+            action={
+              <Button href={whatsappLink(reviewRequestMessage)} variant="light">
+                <IconWhatsApp size={18} />
+                {t.home.leaveReview}
+              </Button>
+            }
+          />
         </Reveal>
       </Container>
 

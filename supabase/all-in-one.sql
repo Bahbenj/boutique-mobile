@@ -1,6 +1,6 @@
 -- =============================================================================
 -- TOUT-EN-UN · généré par scripts/build-all-in-one.mjs : ne pas modifier à la main.
--- Contenu : migrations/20261124000100_schema.sql, migrations/20261124000200_security.sql, migrations/20261124000300_orders.sql, migrations/20261124000400_storage_settings.sql, migrations/20261124000500_storage_admin_select.sql, migrations/20261124000600_grants.sql, migrations/20261125000700_dashboard.sql, migrations/20261125000800_mali.sql, migrations/20261125000900_mobile_empire.sql, seed.sql.
+-- Contenu : migrations/20261124000100_schema.sql, migrations/20261124000200_security.sql, migrations/20261124000300_orders.sql, migrations/20261124000400_storage_settings.sql, migrations/20261124000500_storage_admin_select.sql, migrations/20261124000600_grants.sql, migrations/20261125000700_dashboard.sql, migrations/20261125000800_mali.sql, migrations/20261125000900_mobile_empire.sql, migrations/20261125001000_facebook.sql, seed.sql.
 --
 -- À coller en une seule fois dans Supabase → SQL Editor → Run.
 -- • Une seule transaction : en cas d'erreur, rien n'est appliqué.
@@ -1254,54 +1254,76 @@ update public.settings
 
 
 -- #############################################################################
+-- # migrations/20261125001000_facebook.sql
+-- #############################################################################
+-- =============================================================================
+-- 10 · Mise à jour d'après la page Facebook de Mobile Empire
+-- =============================================================================
+-- Rejouable. Infos du magasin (clé « store ») modifiées seulement si elles
+-- contiennent encore les valeurs posées par la migration 9 : une saisie du
+-- commerçant n'est jamais écrasée.
+-- TODO client : second numéro (73 92 31 35 ou 74 05 86 18) et horaires à confirmer.
+
+update public.settings
+  set value = value
+    || case when value -> 'address' ->> 'street' = ''
+         then jsonb_build_object('address', (value -> 'address') || jsonb_build_object('street', 'Près de l''école fondamentale'))
+         else '{}'::jsonb end
+    || case when value ? 'tagline' then '{}'::jsonb else '{ "tagline": "smartphone repair & E-commerce" }'::jsonb end
+    || case when value ? 'description' then '{}'::jsonb
+         else '{ "description": "Votre destination incontournable pour la réparation et la vente de matériel électronique à Bamako" }'::jsonb end
+  where key = 'store';
+
+
+-- #############################################################################
 -- # seed.sql
 -- #############################################################################
 -- Généré par scripts/generate-seed.ts depuis data/products.ts : ne pas modifier à la main.
 -- Produits et catégories d'exemple (photos Unsplash de remplacement).
 
 insert into public.categories (name, slug, description, image, position) values
-  ('Smartphones neufs', 'smartphones', 'Tecno, Samsung et Apple, scellés et garantis 12 mois.', 'https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80', 0),
-  ('Smartphones d''occasion', 'occasion', 'Testés sur 30 points, garantis 3 mois.', 'https://images.unsplash.com/photo-1604671368394-2240d0b1bb6c?auto=format&fit=crop&w=1200&q=80', 1),
-  ('AirPods et écouteurs', 'ecouteurs', 'AirPods, écouteurs sans fil et filaires.', 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 2),
-  ('Casques audio', 'casques', 'Casques Bluetooth pour la musique et les appels.', 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80', 3),
-  ('Coques et protections', 'protections', 'Coques et verres trempés, pose offerte en magasin.', 'https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&w=1200&q=80', 4),
-  ('Chargeurs et câbles', 'accessoires', 'Chargeurs rapides, câbles et adaptateurs.', 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80', 5)
+  ('Smartphones', 'smartphones', 'Samsung, Tecno et autres marques.', '/photos/provisoire/smartphones.svg', 0),
+  ('Écouteurs et casques', 'ecouteurs-casques', 'Écouteurs sans fil et casques Bluetooth.', '/photos/provisoire/ecouteurs-casques.svg', 1),
+  ('Montres connectées', 'montres', 'Montres connectées pour tous les jours.', '/photos/provisoire/montres.svg', 2),
+  ('Chargeurs et câbles', 'accessoires', 'Chargeurs, chargeurs sans fil et câbles.', '/photos/provisoire/accessoires.svg', 3),
+  ('Coques et protections', 'protections', 'Coques et protections d''écran.', '/photos/provisoire/protections.svg', 4),
+  ('Gadgets', 'gadgets', 'Loupes d''écran et petits accessoires malins.', '/photos/provisoire/gadgets.svg', 5)
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Camon 30', 'tecno-camon-30', 'Le photophone de Tecno : grand écran AMOLED, selfie 50 Mpx et charge ultra-rapide. Neuf, scellé, garanti 12 mois.', (select id from public.categories where slug = 'smartphones'), 'Tecno', 145000, null, 10, 'neuf', null, null, true, true, true, array['https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Uyuni White","hex":"#e9e7e2"},{"name":"Basaltic Dark","hex":"#25272b"}],"storage":[{"label":"256 Go · 8 Go RAM","price":145000},{"label":"512 Go · 12 Go RAM","price":175000}]}'::jsonb, array['Caméra 50 Mpx stabilisée', 'Écran AMOLED 120 Hz', 'Charge 70 W', 'Double SIM']::text[], '[["Écran","6,78″ AMOLED, 120 Hz"],["Caméras","50 + 2 Mpx, selfie 50 Mpx"],["Batterie","5 000 mAh, charge 70 W"],["SIM","Double SIM"],["Garantie","12 mois"]]'::jsonb
+select 'Smartphone Samsung Galaxy', 'smartphone-samsung', 'Smartphone Samsung neuf. Demandez-nous sur WhatsApp les modèles disponibles en magasin.', (select id from public.categories where slug = 'smartphones'), 'Samsung', 100000, null, 5, 'neuf', null, null, false, true, true, array['/photos/provisoire/smartphones.svg']::text[], '{}'::jsonb, array['Modèle et capacité à préciser']::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Spark 20 Pro', 'tecno-spark-20-pro', 'Le meilleur rapport qualité-prix : grand écran fluide, caméra 108 Mpx et grosse batterie.', (select id from public.categories where slug = 'smartphones'), 'Tecno', 95000, null, 15, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Moonlit Black","hex":"#1f2024"},{"name":"Frosty Ivory","hex":"#ecebe6"}],"storage":[{"label":"256 Go · 8 Go RAM","price":95000}]}'::jsonb, array['Caméra 108 Mpx', 'Écran 120 Hz', 'Batterie 5 000 mAh', 'Double SIM']::text[], '[["Écran","6,78″ IPS, 120 Hz"],["Caméras","108 Mpx, selfie 32 Mpx"],["Batterie","5 000 mAh, charge 33 W"],["SIM","Double SIM"],["Garantie","12 mois"]]'::jsonb
+select 'Smartphone Tecno', 'smartphone-tecno', 'Smartphone Tecno neuf. Demandez-nous sur WhatsApp les modèles disponibles en magasin.', (select id from public.categories where slug = 'smartphones'), 'Tecno', 80000, null, 5, 'neuf', null, null, false, true, true, array['/photos/provisoire/smartphones.svg']::text[], '{}'::jsonb, array['Modèle et capacité à préciser']::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Galaxy A55 5G', 'samsung-galaxy-a55', 'Le milieu de gamme le plus complet de Samsung : 5G, écran fluide, finition verre et métal.', (select id from public.categories where slug = 'smartphones'), 'Samsung', 230000, 250000, 8, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Bleu nuit","hex":"#1e2a44"},{"name":"Lilas","hex":"#c9b8e0"}],"storage":[{"label":"128 Go","price":230000,"old_price":250000},{"label":"256 Go","price":260000,"old_price":280000}]}'::jsonb, array['5G', 'Écran 120 Hz', 'Résistant à l''eau IP67', '4 ans de mises à jour']::text[], '[["Écran","6,6″ Super AMOLED, 120 Hz"],["Processeur","Exynos 1480"],["Caméras","50 + 12 + 5 Mpx"],["Batterie","5 000 mAh, charge 25 W"],["Garantie","12 mois"]]'::jsonb
+select 'Casque Bluetooth JBL', 'casque-bluetooth-jbl', 'Casque Bluetooth JBL en promotion, livraison offerte.', (select id from public.categories where slug = 'ecouteurs-casques'), 'JBL', 10000, null, 10, 'neuf', null, null, false, true, true, array['/photos/provisoire/ecouteurs-casques.svg']::text[], '{}'::jsonb, array['Bluetooth', 'Livraison offerte']::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Galaxy S24 Ultra', 'samsung-galaxy-s24-ultra', 'Le Galaxy le plus abouti : S Pen intégré, zoom 100× et écran anti-reflets. Neuf, scellé.', (select id from public.categories where slug = 'smartphones'), 'Samsung', 750000, null, 3, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Titanium Black","hex":"#2b2b2b"},{"name":"Titanium Gray","hex":"#8a8a86"}],"storage":[{"label":"256 Go","price":750000},{"label":"512 Go","price":830000}]}'::jsonb, array['S Pen intégré', 'Zoom 100×', 'Galaxy AI', 'Châssis titane']::text[], '[["Écran","6,8″ Dynamic AMOLED 2X, 120 Hz"],["Processeur","Snapdragon 8 Gen 3 for Galaxy"],["Caméras","200 + 50 + 12 + 10 Mpx"],["Batterie","5 000 mAh, charge 45 W"],["Garantie","12 mois"]]'::jsonb
+select 'Écouteurs JBL Tour Pro 2', 'ecouteurs-jbl-tour-pro-2', 'Écouteurs JBL Tour Pro 2.', (select id from public.categories where slug = 'ecouteurs-casques'), 'JBL', 15000, null, 10, 'neuf', null, null, false, true, true, array['/photos/provisoire/ecouteurs-casques.svg']::text[], '{}'::jsonb, '{}'::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone 13', 'iphone-13-occasion', 'Contrôlé, nettoyé et réinitialisé en magasin. Livré avec un câble de charge et un verre trempé posé.', (select id from public.categories where slug = 'occasion'), 'Apple', 230000, 300000, 2, 'occasion', 'Très bon état', 87, false, true, true, array['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Minuit","hex":"#1f2328"}],"storage":[{"label":"128 Go","price":230000,"old_price":300000},{"label":"256 Go","price":265000,"old_price":340000}]}'::jsonb, array['Testé sur 30 points', 'Batterie 87 %', 'Débloqué tout opérateur']::text[], '[["Écran","6,1″ Super Retina XDR"],["Puce","A15 Bionic"],["Caméras","12 + 12 Mpx"],["État","Très bon état : micro-rayures invisibles à 20 cm"],["Garantie","3 mois"]]'::jsonb
+select 'Casque ANC EP07', 'casque-anc-ep07', 'Casque à réduction de bruit active : coupez-vous du bruit et profitez de votre musique.', (select id from public.categories where slug = 'ecouteurs-casques'), '', 20000, null, 10, 'neuf', null, null, false, true, true, array['/photos/provisoire/ecouteurs-casques.svg']::text[], '{}'::jsonb, array['Réduction de bruit 35 dB', 'Bluetooth 5.3', 'Jusqu''à 60 h d''autonomie']::text[], '[["Connexion","Bluetooth 5.3"],["Réduction de bruit","Active (ANC), jusqu''à 35 dB"],["Autonomie sans ANC","50 à 60 h"],["Autonomie avec ANC","30 à 40 h"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'AirPods Pro (2e gén.)', 'airpods-pro-2', 'Réduction de bruit deux fois plus efficace et mode Transparence adaptatif. Neufs, scellés.', (select id from public.categories where slug = 'ecouteurs'), 'Apple', 150000, 165000, 6, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Réduction de bruit active', 'Boîtier USB-C', 'Audio spatial']::text[], '[["Autonomie","6 h (30 h avec le boîtier)"],["Charge","USB-C, MagSafe, Qi"],["Résistance","IP54"],["Garantie","12 mois"]]'::jsonb
+select 'Écouteurs sans fil', 'ecouteurs-sans-fil', 'Écouteurs sans fil. Demandez-nous les modèles et coloris disponibles.', (select id from public.categories where slug = 'ecouteurs-casques'), '', 8000, null, 10, 'neuf', null, null, false, false, true, array['/photos/provisoire/ecouteurs-casques.svg']::text[], '{}'::jsonb, '{}'::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Casque Bluetooth BoomPop', 'casque-bluetooth-oraimo', 'Un casque léger et endurant pour la musique et les appels, compatible avec tous les téléphones.', (select id from public.categories where slug = 'casques'), 'Oraimo', 15000, null, 12, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Noir","hex":"#1c1c1c"}]}'::jsonb, array['40 h d''autonomie', 'Basses renforcées', 'Appels mains libres']::text[], '[["Autonomie","40 h"],["Connexion","Bluetooth 5.3, prise jack"],["Garantie","6 mois"]]'::jsonb
+select 'Montre connectée', 'montre-connectee', 'Montre connectée. Demandez-nous les modèles et coloris disponibles.', (select id from public.categories where slug = 'montres'), '', 25000, null, 8, 'neuf', null, null, false, true, true, array['/photos/provisoire/montres.svg']::text[], '{}'::jsonb, '{}'::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Coque antichoc + verre trempé', 'coque-antichoc-verre-trempe', 'La protection complète à petit prix. Venez la faire poser gratuitement en magasin.', (select id from public.categories where slug = 'protections'), 'Mobile Empire', 5000, null, 40, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Transparent","hex":"#dfe3e8"},{"name":"Noir","hex":"#1c1c1c"}]}'::jsonb, array['Pose du verre offerte en magasin', 'Coins renforcés', 'Tecno, Samsung, iPhone']::text[], '[["Contenu","1 coque + 1 verre trempé 9H"],["Modèles","Préciser le modèle à la commande"]]'::jsonb
+select 'Chargeur sans fil', 'chargeur-sans-fil', 'Chargeur sans fil. Vérifiez avec nous la compatibilité avec votre téléphone.', (select id from public.categories where slug = 'accessoires'), '', 10000, null, 10, 'neuf', null, null, false, false, true, array['/photos/provisoire/accessoires.svg']::text[], '{}'::jsonb, '{}'::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Chargeur rapide 25 W + câble USB-C', 'chargeur-samsung-25w', 'Le chargeur officiel Samsung avec son câble : recharge rapide et sûre.', (select id from public.categories where slug = 'accessoires'), 'Samsung', 12000, null, 30, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Charge super rapide 25 W', 'Câble USB-C fourni', 'Compatible Tecno et iPhone 15']::text[], '[["Puissance","25 W (PD 3.0)"],["Connecteur","USB-C"],["Garantie","6 mois"]]'::jsonb
+select 'Loupe d''écran', 'loupe-ecran', 'Loupe d''écran pour smartphone : l''image de votre téléphone en plus grand, pour vos vidéos.', (select id from public.categories where slug = 'gadgets'), '', 7000, null, 10, 'neuf', null, null, false, false, true, array['/photos/provisoire/gadgets.svg']::text[], '{}'::jsonb, '{}'::text[], '[]'::jsonb
 on conflict (slug) do nothing;
 
 commit;

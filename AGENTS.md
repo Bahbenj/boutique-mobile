@@ -14,18 +14,20 @@ Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, 
 
 ## Où modifier quoi
 
-- **Identité, contact, horaires, réseaux, couleurs** : `config/site.ts` (rien n'est codé en dur dans les composants). WhatsApp = premier numéro, **à confirmer par le client** (TODO).
-- **Produits et rayons d'exemple** : `data/products.ts` (9 produits, 6 catégories), puis `npm run seed:generate` et `npm run db:all-in-one`. Le site public lit encore ce fichier via `lib/catalog.ts` ; l'admin lit Supabase (branchement du catalogue public : étape 4).
-- **Textes de l'accueil** (hero, services, FAQ, avis d'exemple) : `data/home.ts` ; libellés d'interface : `i18n/fr.ts`.
+- **Identité, contact, horaires, réseaux, couleurs, logo** : `config/site.ts` (rien n'est codé en dur dans les composants). Sous-titre « smartphone repair & E-commerce » et description repris de la page Facebook. TODO client : numéro WhatsApp, second numéro (73 92 31 35 ou 74 05 86 18), horaires.
+- **Produits et rayons d'exemple** : `data/products.ts` (9 produits, 6 catégories, inspirés de la page Facebook), puis `npm run seed:generate` et `npm run db:all-in-one`. **Tous les prix sont TODO** ; ne jamais inventer de caractéristique technique (seules celles publiées par le client). `tag` (pastille « Promo ») et `freeDelivery` (livraison offerte : la commande entière ne paie pas la livraison) n'existent que dans les données statiques, pas encore en base. Le site public lit ce fichier via `lib/catalog.ts` ; l'admin lit Supabase (branchement du catalogue public : étape 4).
+- **Textes** (hero, services, parcours de réparation, vidéos, FAQ) : `data/home.ts` ; libellés d'interface : `i18n/fr.ts`. Page Réparation : `app/(site)/reparation/page.tsx` ; vidéos à déclarer dans `repairVideos`.
+- **Photos et logo** : jamais d'image chargée depuis Facebook. Logo dans `public/brand/` (README), photos dans `public/photos/` (README) : `npm run photos:optimize` (WebP 640/1280/1920), `npm run brand:colors -- <logo>` (couleurs à reporter dans `theme`). Visuels provisoires : `public/photos/provisoire/` (`npm run photos:placeholders`).
 - **Zones, frais de livraison, retrait, modes de paiement** : réglés dans `/admin/parametres` (tables `delivery_zones` et `settings`), lus côté site par `lib/storefront.ts` (`"use cache"`, tag `settings`, invalidé par l'admin), avec repli sur `config/site.ts` sans base. Paiement à la livraison seul activé par défaut. Les mêmes réglages alimentent le seuil « livraison offerte » du panier (`app/(site)/layout.tsx` → `CartDrawer`), la FAQ et les étapes de commande (`buildFaqs`, `buildOrderSteps` dans `data/home.ts`) : ne jamais y relire `siteConfig.delivery` ni `paymentMethods` directement.
 - **Page À propos** : `app/(site)/a-propos/page.tsx` (TODO client : compléter l'histoire et présenter l'équipe, sans rien inventer).
-- **Avis clients** : `/admin/avis` (table `reviews`, migration 9). Section masquée tant qu'aucun avis n'est publié ; les avis de `data/home.ts` ne servent que sans Supabase.
+- **Avis clients** : `/admin/avis` (table `reviews`, migration 9). Section masquée tant qu'aucun avis n'est publié (aucun avis d'exemple, même sans base). Lien « Laisser un avis » = WhatsApp pré-rempli (`reviewRequestMessage`).
 
-## Thème (sombre « tech »)
+## Thème (sombre, or et bleu, motif hexagonal)
 
-- Couleurs dans `config/site.ts → theme`, injectées en variables CSS par `app/layout.tsx` ; valeurs par défaut et dérivées dans `app/globals.css`. Utiliser les classes sémantiques : `bg-canvas` (fond noir), `bg-surface` (cartes anthracite), `bg-raised`, `text-fg`, `text-muted`, `border-line`, `bg-accent` / `text-on-accent` (bleu électrique), `bg-gold` / `text-gold-text` (rose doré, détails et badges), `text-danger` / `bg-danger-soft` (erreurs, lavande), `text-success`.
-- **Charte client : aucun rouge ni jaune, même pour les alertes.** Pas de `red-*`, `amber-*`, `yellow-*`, `orange-*` de Tailwind. Ne pas utiliser `bg-white` pour une carte (`bg-surface`) ; `text-white` / `bg-white/xx` seulement sur photo.
-- Contraste AA vérifié (texte ≥ 4,5:1) : le bleu et le rose doré se posent avec du texte **noir** (`text-on-accent`, `text-on-gold`), jamais blanc. Le rose doré en texte : `text-gold-text`.
+- Couleurs dans `config/site.ts → theme`, injectées en variables CSS par `app/layout.tsx` ; valeurs par défaut et dérivées dans `app/globals.css`. Classes sémantiques : `bg-canvas` (fond noir), `bg-surface` (cartes anthracite), `bg-raised`, `bg-navy` (bleu marine, fonds à motif), `text-fg`, `text-muted`, `border-line`, `bg-gold` / `text-on-gold` / `text-gold-text` (or bronze rosé du logo : boutons principaux `Button variant="primary"`, détails), `bg-accent` / `text-on-accent` (bleu électrique : liens, états actifs, focus, hexagones), `text-danger` / `bg-danger-soft` (erreurs, lavande), `text-success`.
+- **Motif hexagonal** : `components/ui/Hex.tsx` (`HexIcon`, `HexDot`, `HexDivider`, `HexPattern`) et classes `.hex`, `.hex-soft`, `.hex-wide`, `.aspect-hex`, `.hex-pattern` (`app/globals.css`). Grandes images éditoriales en `hex-soft` ; les photos produit restent rectangulaires arrondies (lisibilité). Logo : `components/layout/Logo.tsx`, variantes `dark` (doré sur noir) et `light` (bleu sur blanc, bon de livraison).
+- **Charte client : ni rouge ni jaune vif, même pour les alertes.** Pas de `red-*`, `amber-*`, `yellow-*`, `orange-*` de Tailwind. Ne pas utiliser `bg-white` pour une carte (`bg-surface`) ; `text-white` / `bg-white/xx` seulement sur photo. Typographie : espace insécable avant « ? ! : ; » et dans « 35 dB ».
+- Contraste AA vérifié (texte ≥ 4,5:1, y compris sur `bg-navy`) : l'or et le bleu se posent avec du texte **noir** (`text-on-gold`, `text-on-accent`), jamais blanc.
 - `data-theme="light"` (variables claires) est réservé à l'impression (bon de livraison, `app/admin/(print)`).
 
 ## Meta Pixel
@@ -38,4 +40,4 @@ Migrations dans `supabase/migrations/` (rejouables, ne jamais écraser une saisi
 
 ## Vérifications
 
-Pas de suite de tests automatisés : `npx tsc --noEmit`, `npm run lint` et `npm run build` doivent passer.
+Pas de suite de tests automatisés : `npx tsc --noEmit`, `npm run lint` et `npm run build` doivent passer. Vérifier aussi l'affichage à 360 px et 1280 px (aucun débordement horizontal, boutons longs en `max-sm:w-full max-sm:whitespace-normal`).

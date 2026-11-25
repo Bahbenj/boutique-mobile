@@ -54,6 +54,9 @@ export const grades = ["Comme neuf", "Très bon état", "Bon état"] as const;
 
 export const MAX_IMAGES = 10;
 
+/** URL https (Supabase Storage, Unsplash) ou fichier du site (/photos/…, /brand/…). */
+const imageUrl = z.string().trim().refine((v) => /^https:\/\/\S+$/.test(v) || /^\/(photos|brand)\/[\w\-/]+\.(webp|avif|jpe?g|png|svg)$/.test(v), "Photo invalide.");
+
 export const colorSchema = z.object({
   name: z.string().trim().min(1, "Nom de couleur requis.").max(40),
   hex: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Couleur invalide."),
@@ -88,7 +91,7 @@ export const productSchema = z
     description: text(5000),
     highlights: z.array(z.string().trim().min(1).max(80)).max(12, "12 points forts maximum."),
     specs: z.array(z.tuple([z.string().trim().min(1).max(60), z.string().trim().min(1).max(200)])).max(30),
-    images: z.array(z.url()).max(MAX_IMAGES, `${MAX_IMAGES} photos maximum.`),
+    images: z.array(imageUrl).max(MAX_IMAGES, `${MAX_IMAGES} photos maximum.`),
     variants: z.object({
       colors: z.array(colorSchema).max(12).optional(),
       storage: z.array(storageSchema).max(8).optional(),
@@ -118,7 +121,7 @@ export const categorySchema = z.object({
   name: z.string().trim().min(1, "Nom requis.").max(80, "80 caractères maximum."),
   slug: z.string().trim().regex(SLUG_RE, "Lettres minuscules, chiffres et tirets uniquement.").max(80),
   description: text(300),
-  image: z.url().nullable(),
+  image: imageUrl.nullable(),
 });
 
 export type CategoryInput = z.input<typeof categorySchema>;

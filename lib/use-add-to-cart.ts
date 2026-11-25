@@ -38,6 +38,7 @@ export function useAddToCart() {
         price: priceFor(p, storage).price,
         image: p.images[0].src,
         maxQty: p.stock,
+        freeDelivery: p.freeDelivery || undefined,
       },
       qty,
     );

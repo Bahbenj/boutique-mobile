@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { t } from "@/i18n";
 import { Container } from "@/components/ui/Container";
+import { HexIcon } from "@/components/ui/Hex";
 import { IconCash, IconHeadset, IconShield, IconTruck } from "@/components/ui/icons";
 
 const items: { key: keyof typeof t.promises; Icon: ComponentType<{ size?: number }> }[] = [
@@ -27,9 +28,9 @@ export function Promises() {
                 (i === 2 ? "lg:border-s lg:border-line lg:ps-6 " : "")
               }
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-accent ring-1 ring-accent/25">
+              <HexIcon>
                 <Icon size={20} />
-              </span>
+              </HexIcon>
               <span>
                 <span className="block text-[0.9375rem] leading-snug font-bold tracking-tight">{t.promises[key].title}</span>
                 <span className="mt-0.5 block text-sm leading-snug text-muted">{t.promises[key].text}</span>

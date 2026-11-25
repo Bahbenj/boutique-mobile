@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { siteConfig, storeAddress, telHref } from "@/config/site";
 import { t } from "@/i18n";
+import { reviewRequestMessage } from "@/data/home";
 import { cn } from "@/lib/utils";
+import { whatsappLink } from "@/lib/whatsapp";
 import { Container } from "@/components/ui/Container";
 import { IconFacebook, IconMail, IconTiktok } from "@/components/ui/icons";
 import { CurrentYear } from "./CurrentYear";
@@ -34,7 +36,7 @@ export function Footer() {
             <Logo />
             <p className="mt-4 text-[0.9375rem] font-semibold text-gold-text">{siteConfig.slogan}</p>
             <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
-              {t.home.since(siteConfig.since)} à {siteConfig.address.district}. Smartphones, accessoires et service après-vente.
+              {t.home.since(siteConfig.since)} · {siteConfig.description}.
             </p>
             <ul className="mt-6 flex gap-2">
               {socials.map(({ href, label, Icon }) => (
@@ -82,6 +84,11 @@ export function Footer() {
                 </a>
               </li>
             ))}
+            <li>
+              <a href={whatsappLink(reviewRequestMessage)} target="_blank" rel="noopener noreferrer" className="text-[0.9375rem] font-semibold text-gold-text transition-colors hover:text-fg">
+                {t.home.leaveReview}
+              </a>
+            </li>
             {siteConfig.hours.map((h) => (
               <li key={h.days} className="text-[0.9375rem] text-fg/70">
                 <span className="text-fg">{h.days}</span> · {h.time}
