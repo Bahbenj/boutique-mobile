@@ -1,8 +1,7 @@
 import Image from "next/image";
 import { siteConfig, telHref } from "@/config/site";
-import { afterSalesPoints, repairImage, repairQuoteMessage } from "@/data/home";
+import { afterSalesPoints, repairImage } from "@/data/home";
 import { t } from "@/i18n";
-import { whatsappLink } from "@/lib/whatsapp";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -63,7 +62,7 @@ export function Services({ index }: { index: number }) {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button href={whatsappLink(repairQuoteMessage)} variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
+                <Button href="/reparation#devis" variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
                   <IconWhatsApp size={20} />
                   {t.home.repairQuote}
                 </Button>

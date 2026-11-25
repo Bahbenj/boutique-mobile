@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { siteConfig, storeAddress, telHref } from "@/config/site";
-import { repairImage, repairQuoteMessage, repairSteps, repairVideos } from "@/data/home";
+import { repairImage, repairSteps, repairVideos } from "@/data/home";
 import { t } from "@/i18n";
-import { whatsappLink } from "@/lib/whatsapp";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -11,6 +10,7 @@ import { HexDivider, HexIcon, HexPattern } from "@/components/ui/Hex";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconPhone, IconPin, IconPlay, IconTiktok, IconWhatsApp } from "@/components/ui/icons";
+import { RepairQuoteForm } from "@/components/sections/RepairQuoteForm";
 import { ServiceGrid } from "@/components/sections/ServiceGrid";
 
 export const metadata: Metadata = {
@@ -21,7 +21,6 @@ export const metadata: Metadata = {
 
 /** Page Réparation et services : services, parcours en 3 étapes, devis WhatsApp, vidéos. */
 export default function RepairPage() {
-  const quote = whatsappLink(repairQuoteMessage);
 
   return (
     <>
@@ -38,7 +37,7 @@ export default function RepairPage() {
             </h1>
             <p className="mt-5 max-w-xl text-muted sm:text-lg">{t.repair.lead}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href={quote} variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
+              <Button href="#devis" variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
                 <IconWhatsApp size={20} />
                 {t.home.repairQuote}
               </Button>
@@ -92,7 +91,7 @@ export default function RepairPage() {
               ))}
             </ol>
             <div className="mt-12">
-              <Button href={quote} variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
+              <Button href="#devis" variant="whatsapp" size="lg" className="max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
                 <IconWhatsApp size={20} />
                 {t.home.repairQuote}
               </Button>
@@ -140,26 +139,27 @@ export default function RepairPage() {
         </Container>
       </section>
 
-      {/* Appel à l'action final */}
-      <Container className="pb-20 sm:pb-28">
-        <div className="relative overflow-hidden rounded-card-lg bg-surface p-6 shadow-soft ring-1 ring-gold/30 sm:p-10">
-          <HexPattern className="text-gold/10" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-[clamp(1.75rem,5vw,2.5rem)] leading-tight font-extrabold tracking-tight">{t.repair.ctaTitle}</h2>
+      {/* Demande de devis : enregistrée en base, puis envoyée sur WhatsApp */}
+      <section id="devis" aria-labelledby="devis-title" className="scroll-mt-24 pb-20 sm:pb-28">
+        <Container>
+          <div className="relative grid gap-8 overflow-hidden rounded-card-lg bg-raised/40 p-5 ring-1 ring-gold/30 sm:p-10 lg:grid-cols-[1fr_1.3fr] lg:items-start">
+            <HexPattern className="text-gold/10" />
+            <div className="relative">
+              <h2 id="devis-title" className="text-[clamp(1.75rem,5vw,2.5rem)] leading-tight font-extrabold tracking-tight">
+                {t.repair.ctaTitle}
+              </h2>
               <p className="mt-2 max-w-xl text-muted">{t.repair.ctaText}</p>
-              <p className="mt-3 flex items-center gap-2 text-sm font-semibold">
-                <IconPin size={16} className="text-accent" />
+              <p className="mt-4 flex items-center gap-2 text-sm font-semibold">
+                <IconPin size={16} className="shrink-0 text-accent" />
                 {storeAddress}
               </p>
             </div>
-            <Button href={quote} variant="whatsapp" size="lg" className="shrink-0 max-sm:w-full max-sm:whitespace-normal max-sm:px-4 max-sm:text-center">
-              <IconWhatsApp size={20} />
-              {t.home.repairQuote}
-            </Button>
+            <div className="relative">
+              <RepairQuoteForm />
+            </div>
           </div>
-        </div>
-      </Container>
+        </Container>
+      </section>
     </>
   );
 }

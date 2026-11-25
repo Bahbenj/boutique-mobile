@@ -85,7 +85,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
   );
 }
 
-const tab = "flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-colors";
+const tab = "flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold tracking-[-0.02em] transition-colors";
 
 function MobileTabs({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
@@ -149,7 +149,7 @@ function MobileTabs({ pathname }: { pathname: string }) {
                   <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", active && "bg-accent-soft")}>
                     <Icon size={20} />
                   </span>
-                  <span className="max-w-full truncate px-0.5">{short}</span>
+                  <span className="max-w-full truncate">{short}</span>
                 </Link>
               </li>
             );

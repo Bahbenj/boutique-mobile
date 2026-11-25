@@ -88,10 +88,6 @@ export const repairSteps = [
   { title: "Réparation", text: "Votre téléphone est réparé et vérifié avec vous à la remise." },
 ];
 
-/** Message pré-rempli du bouton « Demander un devis sur WhatsApp ». */
-export const repairQuoteMessage =
-  "Bonjour Mobile Empire, je voudrais un devis de réparation.\nModèle du téléphone : …\nPanne constatée : …";
-
 /**
  * Vidéos de réparation (page /reparation). Vide pour l'instant : la section
  * affiche un emplacement réservé et renvoie vers TikTok. TODO client : déposer

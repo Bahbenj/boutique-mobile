@@ -97,7 +97,7 @@ export type DashboardStats = {
 export async function getDashboard() {
   await requireAdmin();
   const supabase = await createClient();
-  const [stats, latest, lowStock] = await Promise.all([
+  const [stats, latest, lowStock, repairs] = await Promise.all([
     supabase.rpc("admin_dashboard_stats"),
     supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(6),
     supabase
@@ -108,6 +108,8 @@ export async function getDashboard() {
       .order("stock")
       .order("name")
       .limit(8),
+    // Demandes de réparation non traitées (migration 13) : facultatif, ne bloque pas le tableau de bord
+    supabase.from("repair_requests").select("id", { count: "exact", head: true }).eq("status", "nouvelle"),
   ]);
   const error = stats.error ?? latest.error ?? lowStock.error;
   if (error) return { error };
@@ -123,5 +125,7 @@ export async function getDashboard() {
     } satisfies DashboardStats,
     latest: (latest.data ?? []).map(toOrder),
     lowStock: { items: (lowStock.data ?? []) as { id: string; name: string; stock: number; images: string[] }[], count: lowStock.count ?? 0 },
+    /** null : table absente (migration 13 non exécutée) */
+    pendingRepairs: repairs.error ? null : (repairs.count ?? 0),
   };
 }

@@ -28,6 +28,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 10. `20261125001000_facebook.sql` (adresse, sous-titre et description repris de la page Facebook)
 11. `20261125001100_storefront.sql` (pastille, livraison offerte et fond des photos par produit ; `place_order` applique la livraison offerte)
 12. `20261125001200_order_history.sql` (historique des statuts de commande : qui et quand, lecture admin uniquement)
+13. `20261125001300_repair_requests.sql` (demandes de réparation du formulaire de /reparation : création par le serveur seul, 3 demandes par heure et par numéro au plus ; l'admin ne modifie que le statut, le devis et les notes)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -65,7 +66,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 12) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 12, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 13) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 13, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 

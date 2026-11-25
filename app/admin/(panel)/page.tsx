@@ -4,10 +4,10 @@ import Link from "next/link";
 import { getDashboard } from "@/lib/admin/orders";
 import { formatOrderDate } from "@/lib/admin/orders-shared";
 import { requireAdmin } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { StatusBadge } from "@/components/admin/orders/StatusBadge";
-import { IconArrowRight, IconImage } from "@/components/ui/icons";
+import { IconArrowRight, IconImage, IconWrench } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
@@ -29,7 +29,7 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const { stats, latest, lowStock } = data;
+  const { stats, latest, lowStock, pendingRepairs } = data;
   const toProcess = stats.pending.nouvelle + stats.pending.confirmee;
   const periodsList = [
     { label: "Aujourd'hui", ...stats.today, href: "/admin/commandes?periode=jour" },
@@ -71,6 +71,30 @@ export default async function AdminDashboardPage() {
           ))}
         </ul>
       </section>
+
+      {/* Demandes de réparation non traitées */}
+      {pendingRepairs !== null && (
+        <Link
+          href={pendingRepairs ? "/admin/reparations?statut=nouvelle" : "/admin/reparations"}
+          className={cn(
+            "mt-3 flex items-center gap-4 rounded-card p-4 transition-shadow hover:shadow-lift sm:p-5",
+            pendingRepairs ? "bg-gold-soft ring-1 ring-gold/40" : "bg-surface shadow-soft",
+          )}
+        >
+          <span className={cn("grid size-11 shrink-0 place-items-center rounded-full", pendingRepairs ? "bg-gold text-on-gold" : "bg-raised text-muted")}>
+            <IconWrench size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold">
+              {pendingRepairs
+                ? `${pendingRepairs} demande${pendingRepairs > 1 ? "s" : ""} de réparation à traiter`
+                : "Aucune demande de réparation en attente"}
+            </span>
+            <span className="block text-sm text-muted">{pendingRepairs ? "Envoyez le devis sur WhatsApp." : "Les nouvelles demandes du site arrivent ici."}</span>
+          </span>
+          <IconArrowRight size={18} className="shrink-0 text-muted" />
+        </Link>
+      )}
 
       {/* Activité par période : chiffre d'affaires hors commandes annulées */}
       <section aria-labelledby="activity-title" className="mt-5">
