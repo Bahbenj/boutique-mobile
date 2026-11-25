@@ -22,8 +22,8 @@ export default function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
       />
       <div className="min-w-0 flex-1">
         {/* Barre du haut (mobile) */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-cream/90 px-4 backdrop-blur-xl lg:hidden">
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-ink text-[0.7rem] font-extrabold text-accent">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur-xl lg:hidden">
+          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.7rem] font-extrabold">
             {siteConfig.shortName}
           </span>
           <span className="flex-1 truncate font-extrabold tracking-tight">Administration</span>

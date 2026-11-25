@@ -42,8 +42,8 @@ export function Navbar() {
       <nav
         aria-label="Navigation principale"
         className={cn(
-          "pointer-events-auto mx-auto max-w-5xl rounded-[1.75rem] bg-white/75 shadow-pill ring-1 ring-ink/5",
-          "backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(0))]:bg-white",
+          "pointer-events-auto mx-auto max-w-5xl rounded-[1.75rem] bg-surface/75 shadow-pill ring-1 ring-fg/5",
+          "backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(0))]:bg-surface",
         )}
       >
         <div className="flex h-14 items-center gap-2 ps-4 pe-2 sm:h-16 sm:ps-5">
@@ -57,8 +57,8 @@ export function Navbar() {
                   href={l.href}
                   aria-current={isActive(l.href) ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-3.5 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink",
-                    isActive(l.href) && "bg-ink/5 text-ink",
+                    "rounded-full px-3.5 py-2 text-sm font-medium text-fg/70 transition-colors hover:bg-fg/5 hover:text-fg",
+                    isActive(l.href) && "bg-fg/8 text-fg underline decoration-gold decoration-2 underline-offset-[6px]",
                   )}
                 >
                   {l.label}
@@ -71,7 +71,7 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => openAuth("login")}
-              className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink sm:flex"
+              className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-fg/80 transition-colors hover:bg-fg/5 hover:text-fg sm:flex"
             >
               <IconUser size={18} />
               {t.nav.account}
@@ -80,11 +80,11 @@ export function Navbar() {
             <button
               type="button"
               onClick={openCart}
-              className="relative grid size-10 place-items-center rounded-full text-ink transition-colors hover:bg-ink/5"
+              className="relative grid size-10 place-items-center rounded-full text-fg transition-colors hover:bg-fg/5"
               aria-label={cartLabel}
             >
               <IconBag size={20} />
-              <CartBadge className="absolute -end-0.5 -top-0.5 ring-2 ring-white" />
+              <CartBadge className="absolute -end-0.5 -top-0.5 ring-2 ring-surface" />
             </button>
 
             <div className="hidden sm:block">
@@ -99,7 +99,7 @@ export function Navbar() {
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
               aria-label={menuOpen ? t.nav.close : t.nav.menu}
-              className="grid size-10 place-items-center rounded-full bg-ink text-cream lg:hidden"
+              className="grid size-10 place-items-center rounded-full bg-raised text-fg ring-1 ring-fg/10 lg:hidden"
             >
               {menuOpen ? <IconClose size={18} /> : <IconMenu size={18} />}
             </button>
@@ -123,21 +123,21 @@ export function Navbar() {
                     <Link
                       href={l.href}
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-2xl px-3 py-3 text-lg font-bold tracking-tight text-ink hover:bg-ink/5"
+                      className="flex items-center justify-between rounded-2xl px-3 py-3 text-lg font-bold tracking-tight text-fg hover:bg-fg/5"
                     >
                       {l.label}
                     </Link>
                   </li>
                 ))}
               </ul>
-              <div className="grid grid-cols-2 gap-2 border-t border-ink/8 p-3">
+              <div className="grid grid-cols-2 gap-2 border-t border-fg/8 p-3">
                 <button
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
                     openAuth("login");
                   }}
-                  className={buttonClasses("light", "md", "ring-1 ring-ink/10")}
+                  className={buttonClasses("light", "md", "ring-1 ring-fg/10")}
                 >
                   <IconUser size={18} />
                   {t.nav.account}

@@ -32,9 +32,9 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
   return (
     <>
       {/* Desktop */}
-      <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-e border-line bg-white px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-e border-line bg-surface px-4 py-5 lg:flex">
         <Link href="/admin" className="flex items-center gap-2 px-2 font-extrabold tracking-tight">
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-ink text-[0.7rem] text-accent">
+          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.7rem]">
             {siteConfig.shortName}
           </span>
           <span className="leading-tight">
@@ -53,7 +53,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex h-11 items-center gap-3 rounded-full px-4 text-[0.9375rem] font-semibold transition-colors",
-                      active ? "bg-ink text-cream" : "text-ink/70 hover:bg-ink/5 hover:text-ink",
+                      active ? "bg-accent text-on-accent" : "text-fg/70 hover:bg-fg/5 hover:text-fg",
                     )}
                   >
                     <Icon size={19} />
@@ -69,7 +69,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-10 items-center gap-3 rounded-full px-4 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
+            className="flex h-10 items-center gap-3 rounded-full px-4 text-sm font-medium text-fg/70 hover:bg-fg/5 hover:text-fg"
           >
             <IconExternal size={17} />
             Voir le site
@@ -81,9 +81,9 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
       {/* Mobile : onglets en bas */}
       <nav
         aria-label="Administration"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid auto-cols-fr grid-flow-col">
           {adminNav.map(({ href, short, Icon }) => {
             const active = isActive(pathname, href);
             return (
@@ -93,7 +93,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-colors",
-                    active ? "text-ink" : "text-ink/50",
+                    active ? "text-fg" : "text-fg/50",
                   )}
                 >
                   <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", active && "bg-accent-soft")}>

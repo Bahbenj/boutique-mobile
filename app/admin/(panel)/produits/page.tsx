@@ -37,7 +37,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
       <ProductFilters categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
       {products.length === 0 ? (
-        <div className="mt-6 rounded-card bg-white p-8 text-center shadow-soft">
+        <div className="mt-6 rounded-card bg-surface p-8 text-center shadow-soft">
           <p className="font-semibold">{filtered ? "Aucun produit ne correspond à ces filtres." : "Aucun produit pour l'instant."}</p>
           {!filtered && (
             <Link href="/admin/produits/nouveau" className={buttonClasses("dark", "md", "mt-4")}>
@@ -46,7 +46,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
           )}
         </div>
       ) : (
-        <div className="mt-5 lg:overflow-hidden lg:rounded-card lg:bg-white lg:shadow-soft">
+        <div className="mt-5 lg:overflow-hidden lg:rounded-card lg:bg-surface lg:shadow-soft">
           <div
             aria-hidden="true"
             className="hidden grid-cols-[3.5rem_minmax(0,1fr)_9.5rem_9.5rem_5.5rem_7.5rem] gap-4 border-b border-line px-4 py-3 text-xs font-semibold text-muted lg:grid"

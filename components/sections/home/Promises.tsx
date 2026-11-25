@@ -1,13 +1,13 @@
 import type { ComponentType } from "react";
 import { t } from "@/i18n";
 import { Container } from "@/components/ui/Container";
-import { IconCash, IconCheck, IconShield, IconTruck } from "@/components/ui/icons";
+import { IconCash, IconHeadset, IconShield, IconTruck } from "@/components/ui/icons";
 
 const items: { key: keyof typeof t.promises; Icon: ComponentType<{ size?: number }> }[] = [
   { key: "cod", Icon: IconCash },
   { key: "delivery", Icon: IconTruck },
   { key: "warranty", Icon: IconShield },
-  { key: "tested", Icon: IconCheck },
+  { key: "afterSales", Icon: IconHeadset },
 ];
 
 /** Bandeau de réassurance juste après le hero. */
@@ -27,7 +27,7 @@ export function Promises() {
                 (i === 2 ? "lg:border-s lg:border-line lg:ps-6 " : "")
               }
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-ink shadow-soft">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-accent ring-1 ring-accent/25">
                 <Icon size={20} />
               </span>
               <span>

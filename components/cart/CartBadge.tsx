@@ -17,7 +17,7 @@ export function CartBadge({ className }: { className?: string }) {
       key={bump}
       aria-hidden="true"
       className={cn(
-        "grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.65rem] font-bold text-accent-ink tabular-nums",
+        "grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[0.65rem] font-bold text-on-accent tabular-nums",
         bump > 0 && "animate-cart-pulse",
         className,
       )}

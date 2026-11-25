@@ -3,6 +3,7 @@
 import type { Product } from "@/data/products";
 import { t } from "@/i18n";
 import { useCart } from "./cart-store";
+import { money, track } from "./meta-pixel";
 import { useUI } from "./ui-store";
 
 export type Selection = { color?: string; storage?: string };
@@ -40,6 +41,14 @@ export function useAddToCart() {
       },
       qty,
     );
+    const price = priceFor(p, storage).price;
+    track("AddToCart", {
+      content_ids: [p.slug],
+      content_name: variant ? `${p.name} (${variant})` : p.name,
+      content_type: "product",
+      contents: [{ id: p.slug, quantity: qty }],
+      ...money(price * qty),
+    });
     bumpCart();
     openCart();
     showToast({ title: t.cart.added, text: variant ? `${p.name} · ${variant}` : p.name, image: p.images[0].src });

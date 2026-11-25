@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { siteConfig } from "@/config/site";
 import { heroScenes as scenes } from "@/data/home";
 import { t } from "@/i18n";
 import { useUI } from "@/lib/ui-store";
@@ -123,7 +124,7 @@ export function HeroScroll() {
 
   return (
     <section aria-label="Présentation" className="relative">
-      <div ref={root} className="relative h-svh min-h-[34rem] w-full overflow-hidden bg-ink text-white">
+      <div ref={root} className="relative h-svh min-h-[34rem] w-full overflow-hidden bg-canvas text-white">
         {/* Visuels */}
         <div className="absolute inset-0" aria-hidden="true">
           {scenes.map((s, i) => (
@@ -202,10 +203,13 @@ export function HeroScroll() {
         <div className="absolute inset-x-0 bottom-0 px-4 pb-14 sm:px-8 sm:pb-16">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
             <div>
-              <p className="mb-3 text-sm font-semibold text-white/70 sm:text-base">Téléphones & accessoires</p>
+              <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-white/75 sm:text-base">
+                <span className="rounded-full bg-gold px-2.5 py-0.5 text-xs font-bold text-on-gold">{t.home.since(siteConfig.since)}</span>
+                {siteConfig.slogan}
+              </p>
               <h1 className="relative">
                 <span className="sr-only">
-                  {scenes.map((s) => s.title).join(" ")} Téléphones neufs et d&apos;occasion, accessoires, livraison en Tunisie.
+                  {scenes.map((s) => s.title).join(" ")} {siteConfig.name} : smartphones neufs et d&apos;occasion, accessoires et service après-vente à Bamako, livraison dans tout le Mali.
                 </span>
                 {/* Pile de titres masquée : un seul visible à la fois */}
                 <span
@@ -221,7 +225,7 @@ export function HeroScroll() {
                       style={{ transform: i === 0 ? undefined : "translateY(120%)" }}
                     >
                       {s.title.replace(/\.$/, "")}
-                      <span className="text-accent">.</span>
+                      <span className="text-gold">.</span>
                     </span>
                   ))}
                 </span>

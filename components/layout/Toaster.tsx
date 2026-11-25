@@ -42,24 +42,24 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-full bg-ink py-2 ps-2 pe-5 text-cream shadow-lift"
+            className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-full bg-raised py-2 ps-2 pe-5 text-fg shadow-lift ring-1 ring-accent/30"
             onClick={dismiss}
           >
             {toast.image ? (
-              <span className="relative size-10 shrink-0 overflow-hidden rounded-full bg-cream-deep">
+              <span className="relative size-10 shrink-0 overflow-hidden rounded-full bg-raised">
                 <Image src={toast.image} alt="" fill sizes="40px" className="object-cover" />
-                <span className="absolute -end-0.5 -bottom-0.5 grid size-4 place-items-center rounded-full bg-accent text-accent-ink ring-2 ring-ink">
+                <span className="absolute -end-0.5 -bottom-0.5 grid size-4 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-fg">
                   <IconCheck size={10} strokeWidth={3} />
                 </span>
               </span>
             ) : (
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-accent-ink">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent">
                 <IconCheck size={18} strokeWidth={2.5} />
               </span>
             )}
             <span className="min-w-0">
               <span className="block text-sm font-bold">{toast.title}</span>
-              {toast.text && <span className="block truncate text-xs text-cream/70">{toast.text}</span>}
+              {toast.text && <span className="block truncate text-xs text-muted">{toast.text}</span>}
             </span>
           </motion.div>
         )}

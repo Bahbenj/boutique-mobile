@@ -13,7 +13,7 @@ import { IconPlus } from "@/components/ui/icons";
  */
 export function QuickAdd({ product: p }: { product: Product }) {
   const addToCart = useAddToCart();
-  const cls = buttonClasses("light", "sm", "mt-3 h-10 w-full ring-1 ring-line hover:bg-ink hover:text-cream hover:ring-ink");
+  const cls = buttonClasses("light", "sm", "mt-3 h-10 w-full ring-1 ring-line hover:bg-accent hover:text-on-accent hover:ring-accent");
 
   if (p.stock <= 0) {
     return (

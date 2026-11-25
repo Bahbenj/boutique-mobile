@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "light" | "cream" | "dark" | "accent" | "glass";
+type Tone = "neutral" | "subtle" | "inverse" | "accent" | "gold" | "glass";
 
 const tones: Record<Tone, string> = {
-  light: "bg-white text-ink ring-1 ring-ink/8",
-  cream: "bg-cream text-ink ring-1 ring-ink/8",
-  dark: "bg-ink text-cream",
-  accent: "bg-accent text-accent-ink",
+  neutral: "bg-raised text-fg ring-1 ring-fg/12",
+  subtle: "bg-canvas text-muted ring-1 ring-fg/10",
+  inverse: "bg-fg text-canvas",
+  accent: "bg-accent text-on-accent",
+  /** Rose doré : détails, nouveautés, mises en avant. */
+  gold: "bg-gold text-on-gold",
   glass: "bg-white/12 text-white ring-1 ring-white/20 backdrop-blur-md",
 };
 
@@ -15,7 +17,7 @@ const tones: Record<Tone, string> = {
 export function Badge({
   children,
   index,
-  tone = "light",
+  tone = "neutral",
   className,
 }: {
   children: ReactNode;

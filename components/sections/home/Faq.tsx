@@ -29,7 +29,7 @@ export function Faq({ index }: { index: number }) {
                   <span className="flex-1">{f.q}</span>
                   <span
                     aria-hidden="true"
-                    className="grid size-9 shrink-0 place-items-center rounded-full bg-white shadow-soft transition-[transform,background-color] duration-300 ease-out-expo group-open:rotate-45 group-open:bg-accent"
+                    className="grid size-9 shrink-0 place-items-center rounded-full bg-surface shadow-soft transition-[transform,background-color] duration-300 ease-out-expo group-open:rotate-45 group-open:bg-accent"
                   >
                     <IconPlus size={16} />
                   </span>

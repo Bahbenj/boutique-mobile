@@ -11,11 +11,12 @@ const base =
   "active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 select-none";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-accent-ink hover:bg-accent-hover",
-  dark: "bg-ink text-cream hover:bg-ink-soft",
-  light: "bg-white text-ink hover:bg-cream",
-  outline: "border border-current/20 text-current hover:bg-current/5",
-  ghost: "text-current hover:bg-ink/5",
+  primary: "bg-accent text-on-accent hover:bg-accent-hover hover:shadow-[0_0_24px_-6px_var(--accent)]",
+  /** Bouton secondaire plein : clair sur fond sombre. */
+  dark: "bg-fg text-canvas hover:bg-fg-soft",
+  light: "bg-raised text-fg ring-1 ring-fg/10 hover:bg-line",
+  outline: "border border-current/25 text-current hover:bg-current/8",
+  ghost: "text-current hover:bg-fg/8",
   whatsapp: "bg-whatsapp text-[#0b3d1f] hover:brightness-95",
 };
 

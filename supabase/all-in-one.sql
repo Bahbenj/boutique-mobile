@@ -1,6 +1,6 @@
 -- =============================================================================
 -- TOUT-EN-UN · généré par scripts/build-all-in-one.mjs : ne pas modifier à la main.
--- Contenu : migrations/20261124000100_schema.sql, migrations/20261124000200_security.sql, migrations/20261124000300_orders.sql, migrations/20261124000400_storage_settings.sql, migrations/20261124000500_storage_admin_select.sql, migrations/20261124000600_grants.sql, migrations/20261125000700_dashboard.sql, seed.sql.
+-- Contenu : migrations/20261124000100_schema.sql, migrations/20261124000200_security.sql, migrations/20261124000300_orders.sql, migrations/20261124000400_storage_settings.sql, migrations/20261124000500_storage_admin_select.sql, migrations/20261124000600_grants.sql, migrations/20261125000700_dashboard.sql, migrations/20261125000800_mali.sql, migrations/20261125000900_mobile_empire.sql, seed.sql.
 --
 -- À coller en une seule fois dans Supabase → SQL Editor → Run.
 -- • Une seule transaction : en cas d'erreur, rien n'est appliqué.
@@ -648,7 +648,7 @@ revoke all on function public.orders_restock_on_cancel() from public, anon, auth
 -- 7 · Tableau de bord : statistiques des commandes
 -- =============================================================================
 -- Calculées en base (une requête au lieu de rapatrier toutes les commandes),
--- à l'heure de Tunis pour que « aujourd'hui » corresponde à la journée du magasin.
+-- à l'heure de Bamako (GMT) pour que « aujourd'hui » corresponde à la journée du magasin.
 --
 -- security invoker : s'exécute avec les droits de l'appelant, donc soumise à la
 -- RLS des commandes ; un non-admin est en plus refusé explicitement.
@@ -664,7 +664,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  v_now timestamp := now() at time zone 'Africa/Tunis';
+  v_now timestamp := now() at time zone 'Africa/Bamako';
   v_day timestamp := date_trunc('day', v_now);
   v_week timestamp := date_trunc('week', v_now);
   v_month timestamp := date_trunc('month', v_now);
@@ -675,10 +675,10 @@ begin
   end if;
 
   with o as (
-    select status, total, created_at at time zone 'Africa/Tunis' as local_at
+    select status, total, created_at at time zone 'Africa/Bamako' as local_at
     from public.orders
     -- commandes du mois + toutes celles encore à traiter (quelle que soit leur date)
-    where created_at >= (v_month at time zone 'Africa/Tunis')
+    where created_at >= (v_month at time zone 'Africa/Bamako')
        or status in ('nouvelle', 'confirmee', 'expediee')
   )
   select jsonb_build_object(
@@ -723,71 +723,585 @@ grant update (status) on table public.orders to authenticated;
 
 
 -- #############################################################################
+-- # migrations/20261125000800_mali.sql
+-- #############################################################################
+-- =============================================================================
+-- 8 · Adaptation au Mali : FCFA, zones de livraison, +223, Mobile Money
+-- =============================================================================
+-- Rejouable. Ne remplace jamais une saisie du commerçant : les valeurs
+-- d'exemple tunisiennes ne sont converties que si elles sont restées intactes.
+
+-- --- 1. Montants en francs CFA : entiers, sans décimales ----------------------
+-- numeric(10,3) (dinars, millimes) plafonnait à 9 999 999 : insuffisant en FCFA
+-- pour une grosse commande. numeric(12,0) : jusqu'à 999 milliards, arrondi à l'unité.
+
+alter table public.products
+  alter column price type numeric(12, 0) using round(price),
+  alter column old_price type numeric(12, 0) using round(old_price);
+
+alter table public.orders
+  alter column subtotal type numeric(12, 0) using round(subtotal),
+  alter column delivery_fee type numeric(12, 0) using round(delivery_fee),
+  alter column total type numeric(12, 0) using round(total);
+
+-- --- 2. Commandes : « gouvernorat » devient « région / commune » ---------------
+
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'orders' and column_name = 'governorate') then
+    alter table public.orders rename column governorate to region;
+  end if;
+  if exists (select 1 from pg_constraint where conname = 'orders_governorate_check') then
+    alter table public.orders rename constraint orders_governorate_check to orders_region_check;
+  end if;
+end
+$$;
+
+alter table public.orders drop constraint if exists orders_region_check;
+alter table public.orders add constraint orders_region_check check (char_length(region) between 2 and 80);
+
+-- Mode de paiement choisi par le client (pas de paiement en ligne)
+alter table public.orders add column if not exists payment_method text not null default 'cod';
+alter table public.orders drop constraint if exists orders_payment_method_check;
+alter table public.orders add constraint orders_payment_method_check
+  check (payment_method in ('cod', 'orange_money', 'moov_money', 'wave', 'sama_money', 'virement'));
+
+-- --- 3. Zones de livraison --------------------------------------------------------
+-- District de Bamako (communes I à VI) puis régions. Frais, délai et activation
+-- modifiables dans /admin/parametres. id = identifiant stable (non modifiable).
+
+create table if not exists public.delivery_zones (
+  id text primary key check (id ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  name text not null check (char_length(name) between 2 and 80),
+  zone_group text not null check (zone_group in ('bamako', 'region')),
+  fee numeric(12, 0) not null default 0 check (fee >= 0),
+  delay text not null default '' check (char_length(delay) <= 40),
+  is_active boolean not null default true,
+  position integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+create or replace trigger delivery_zones_updated_at
+  before update on public.delivery_zones
+  for each row execute function public.set_updated_at();
+
+alter table public.delivery_zones enable row level security;
+
+drop policy if exists "delivery_zones_select_public" on public.delivery_zones;
+create policy "delivery_zones_select_public" on public.delivery_zones
+  for select to anon, authenticated
+  using (is_active or (select public.is_admin()));
+
+drop policy if exists "delivery_zones_insert_admin" on public.delivery_zones;
+create policy "delivery_zones_insert_admin" on public.delivery_zones
+  for insert to authenticated
+  with check ((select public.is_admin()));
+
+drop policy if exists "delivery_zones_update_admin" on public.delivery_zones;
+create policy "delivery_zones_update_admin" on public.delivery_zones
+  for update to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "delivery_zones_delete_admin" on public.delivery_zones;
+create policy "delivery_zones_delete_admin" on public.delivery_zones
+  for delete to authenticated
+  using ((select public.is_admin()));
+
+-- Droits au strict nécessaire (cf. migration 6) : lecture publique des zones
+-- actives (RLS), modification par l'admin, pas de suppression depuis l'API
+-- (une zone se désactive ; la supprimer casserait l'historique).
+revoke all on table public.delivery_zones from anon, authenticated;
+grant select on table public.delivery_zones to anon;
+grant select, insert, update on table public.delivery_zones to authenticated;
+grant all on table public.delivery_zones to service_role;
+
+insert into public.delivery_zones (id, name, zone_group, fee, delay, is_active, position) values
+  ('bamako-commune-1', 'Bamako – Commune I', 'bamako', 1500, '24 h', true, 0),
+  ('bamako-commune-2', 'Bamako – Commune II', 'bamako', 1500, '24 h', true, 1),
+  ('bamako-commune-3', 'Bamako – Commune III', 'bamako', 1500, '24 h', true, 2),
+  ('bamako-commune-4', 'Bamako – Commune IV', 'bamako', 1500, '24 h', true, 3),
+  ('bamako-commune-5', 'Bamako – Commune V', 'bamako', 2000, '24 h', true, 4),
+  ('bamako-commune-6', 'Bamako – Commune VI', 'bamako', 2000, '24 h', true, 5),
+  ('kayes', 'Région de Kayes', 'region', 5000, '3 à 5 jours', true, 6),
+  ('koulikoro', 'Région de Koulikoro', 'region', 3000, '1 à 2 jours', true, 7),
+  ('sikasso', 'Région de Sikasso', 'region', 4000, '2 à 4 jours', true, 8),
+  ('segou', 'Région de Ségou', 'region', 4000, '2 à 4 jours', true, 9),
+  ('mopti', 'Région de Mopti', 'region', 5000, '3 à 5 jours', true, 10),
+  ('tombouctou', 'Région de Tombouctou', 'region', 7500, '5 à 7 jours', true, 11),
+  ('gao', 'Région de Gao', 'region', 7500, '5 à 7 jours', true, 12),
+  ('kidal', 'Région de Kidal', 'region', 10000, 'Sur demande', false, 13),
+  ('menaka', 'Région de Ménaka', 'region', 10000, 'Sur demande', false, 14),
+  ('taoudenit', 'Région de Taoudénit', 'region', 10000, 'Sur demande', false, 15)
+on conflict (id) do nothing;
+
+-- --- 4. Paramètres : livraison, paiement, magasin --------------------------------
+
+-- Livraison : remplace l'ancienne structure (options + frais par gouvernorat)
+update public.settings
+  set value = '{ "free_from": 100000, "pickup": { "enabled": true, "label": "Retrait en magasin", "delay": "Sous 2 h" } }'::jsonb
+  where key = 'delivery' and (value ? 'governorate_fees' or value ? 'options');
+
+insert into public.settings (key, value) values
+  ('delivery', '{ "free_from": 100000, "pickup": { "enabled": true, "label": "Retrait en magasin", "delay": "Sous 2 h" } }'::jsonb)
+on conflict (key) do nothing;
+
+-- Paiement : modes activables, numéros Mobile Money du magasin (exemples)
+insert into public.settings (key, value) values
+  ('payment', '{
+  "methods": [
+    {
+      "id": "cod",
+      "label": "Paiement à la livraison",
+      "account": "",
+      "instructions": "Vous payez en espèces au livreur, après avoir vérifié le colis.",
+      "enabled": true
+    },
+    {
+      "id": "orange_money",
+      "label": "Orange Money",
+      "account": "+223 70 00 00 00",
+      "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.",
+      "enabled": true
+    },
+    {
+      "id": "moov_money",
+      "label": "Moov Money",
+      "account": "+223 60 00 00 00",
+      "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.",
+      "enabled": true
+    },
+    {
+      "id": "wave",
+      "label": "Wave",
+      "account": "+223 70 00 00 00",
+      "instructions": "Nous vous envoyons le lien ou le numéro Wave par WhatsApp après confirmation.",
+      "enabled": true
+    },
+    {
+      "id": "sama_money",
+      "label": "Sama Money",
+      "account": "+223 70 00 00 00",
+      "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.",
+      "enabled": true
+    },
+    {
+      "id": "virement",
+      "label": "Virement bancaire",
+      "account": "",
+      "instructions": "Nous vous envoyons nos coordonnées bancaires par WhatsApp après confirmation.",
+      "enabled": true
+    }
+  ]
+}'::jsonb)
+on conflict (key) do nothing;
+
+-- Magasin : chaque champ est converti SEULEMENT s'il contient encore la valeur
+-- d'exemple tunisienne ; tout champ déjà saisi par le commerçant est conservé.
+update public.settings
+  set value = value
+    || case when value ->> 'whatsapp' = '21600000000' then '{ "whatsapp": "22370000000" }'::jsonb else '{}'::jsonb end
+    || case when value ->> 'phone' = '+216 00 000 000' then '{ "phone": "+223 70 00 00 00" }'::jsonb else '{}'::jsonb end
+    || case when value ->> 'email' = 'contact@example.tn' then '{ "email": "contact@example.com" }'::jsonb else '{}'::jsonb end
+    || case when value -> 'address' ->> 'street' = 'Avenue Habib Bourguiba' and value -> 'address' ->> 'city' = 'Tunis'
+         then '{ "address": { "street": "Rue 311, ACI 2000", "district": "Commune IV", "city": "Bamako" } }'::jsonb else '{}'::jsonb end
+    || case when value -> 'hours' = '[{ "days": "Lundi – Samedi", "time": "09:00 – 20:00" }, { "days": "Dimanche", "time": "10:00 – 14:00" }]'::jsonb
+         then '{ "hours": [{ "days": "Lundi – Samedi", "time": "08:30 – 20:00" }, { "days": "Dimanche", "time": "10:00 – 14:00" }] }'::jsonb else '{}'::jsonb end
+    || case when value ? 'time_zone' then '{}'::jsonb else '{ "time_zone": "Africa/Bamako" }'::jsonb end
+  where key = 'store';
+
+-- --- 5. Produits d'exemple : prix en FCFA ------------------------------------------
+-- Uniquement si le prix ET les capacités sont encore ceux de l'exemple en dinars :
+-- un prix modifié par le commerçant n'est jamais touché.
+
+update public.products
+  set price = 750000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"128 Go","price":750000},{"label":"256 Go","price":830000},{"label":"512 Go","price":980000}]'::jsonb) else variants end
+  where slug = 'iphone-15-pro' and price = 4799 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"128 Go","price":4799},{"label":"256 Go","price":5299},{"label":"512 Go","price":6199}]'::jsonb;
+
+update public.products
+  set price = 700000, old_price = 750000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"256 Go","price":700000,"old_price":750000},{"label":"512 Go","price":780000,"old_price":830000}]'::jsonb) else variants end
+  where slug = 'samsung-galaxy-s24-ultra' and price = 4399 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"256 Go","price":4399,"old_price":4699},{"label":"512 Go","price":4899,"old_price":5199}]'::jsonb;
+
+update public.products
+  set price = 400000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"128 Go","price":400000},{"label":"256 Go","price":460000}]'::jsonb) else variants end
+  where slug = 'iphone-13' and price = 2499 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"128 Go","price":2499},{"label":"256 Go","price":2899}]'::jsonb;
+
+update public.products
+  set price = 215000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"128 Go","price":215000},{"label":"256 Go","price":245000}]'::jsonb) else variants end
+  where slug = 'samsung-galaxy-a55' and price = 1349 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"128 Go","price":1349},{"label":"256 Go","price":1549}]'::jsonb;
+
+update public.products
+  set price = 175000, old_price = 190000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"256 Go","price":175000,"old_price":190000},{"label":"512 Go","price":205000,"old_price":220000}]'::jsonb) else variants end
+  where slug = 'xiaomi-redmi-note-13-pro' and price = 1099 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"256 Go","price":1099,"old_price":1199},{"label":"512 Go","price":1299,"old_price":1399}]'::jsonb;
+
+update public.products
+  set price = 270000, old_price = 350000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"128 Go","price":270000,"old_price":350000},{"label":"256 Go","price":300000,"old_price":380000}]'::jsonb) else variants end
+  where slug = 'iphone-12-pro-occasion' and price = 1699 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"128 Go","price":1699,"old_price":2199},{"label":"256 Go","price":1899,"old_price":2399}]'::jsonb;
+
+update public.products
+  set price = 165000, old_price = 220000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"64 Go","price":165000,"old_price":220000},{"label":"128 Go","price":190000,"old_price":245000}]'::jsonb) else variants end
+  where slug = 'iphone-11-occasion' and price = 1049 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"64 Go","price":1049,"old_price":1399},{"label":"128 Go","price":1199,"old_price":1549}]'::jsonb;
+
+update public.products
+  set price = 120000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"64 Go","price":120000}]'::jsonb) else variants end
+  where slug = 'iphone-xs-occasion' and price = 749 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"64 Go","price":749}]'::jsonb;
+
+update public.products
+  set price = 220000, old_price = 300000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[{"label":"256 Go","price":220000,"old_price":300000}]'::jsonb) else variants end
+  where slug = 'samsung-galaxy-s21-ultra-occasion' and price = 1399 and coalesce(variants -> 'storage', '[]'::jsonb) = '[{"label":"256 Go","price":1399,"old_price":1899}]'::jsonb;
+
+update public.products
+  set price = 145000, old_price = 160000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[]'::jsonb) else variants end
+  where slug = 'airpods-pro-2' and price = 899 and coalesce(variants -> 'storage', '[]'::jsonb) = '[]'::jsonb;
+
+update public.products
+  set price = 30000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[]'::jsonb) else variants end
+  where slug = 'ecouteurs-sans-fil-anc' and price = 189 and coalesce(variants -> 'storage', '[]'::jsonb) = '[]'::jsonb;
+
+update public.products
+  set price = 10000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[]'::jsonb) else variants end
+  where slug = 'chargeur-rapide-usb-c-20w' and price = 79 and coalesce(variants -> 'storage', '[]'::jsonb) = '[]'::jsonb;
+
+update public.products
+  set price = 5000, old_price = null,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[]'::jsonb) else variants end
+  where slug = 'coque-fibre-aramide' and price = 59 and coalesce(variants -> 'storage', '[]'::jsonb) = '[]'::jsonb;
+
+update public.products
+  set price = 55000, old_price = 65000,
+      variants = case when variants ? 'storage' then jsonb_set(variants, '{storage}', '[]'::jsonb) else variants end
+  where slug = 'casque-bluetooth' and price = 349 and coalesce(variants -> 'storage', '[]'::jsonb) = '[]'::jsonb;
+
+-- --- 6. Création de commande : zones et paiement -----------------------------------
+-- Remplace la version « gouvernorats ». Toujours appelée par le serveur seul
+-- (service_role), toujours sans confiance envers le navigateur :
+--   • prix relus en base (capacité par capacité), stock décrémenté atomiquement ;
+--   • frais lus dans la zone ACTIVE choisie (p_customer.zone_id), livraison
+--     offerte au-delà du seuil ; retrait en magasin gratuit ;
+--   • mode de paiement accepté seulement s'il est activé dans les paramètres.
+-- p_customer : { name, phone (8 chiffres), zone_id, city, address, note }
+-- Erreurs : invalid_items, invalid_qty, product_unavailable, invalid_variant,
+-- insufficient_stock, invalid_delivery, invalid_zone, invalid_payment.
+
+drop function if exists public.place_order(jsonb, jsonb, text);
+
+create or replace function public.place_order(p_customer jsonb, p_items jsonb, p_delivery text, p_payment text)
+returns table (order_id uuid, order_number text, order_total numeric)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_item jsonb;
+  v_product public.products%rowtype;
+  v_zone public.delivery_zones%rowtype;
+  v_qty integer;
+  v_price numeric;
+  v_color text;
+  v_storage text;
+  v_lines jsonb := '[]'::jsonb;
+  v_subtotal numeric := 0;
+  v_fee numeric := 0;
+  v_region text;
+  v_delivery jsonb;
+  v_payment jsonb;
+  v_free_from numeric;
+  v_order public.orders%rowtype;
+begin
+  if jsonb_typeof(p_items) is distinct from 'array'
+     or jsonb_array_length(p_items) = 0
+     or jsonb_array_length(p_items) > 30 then
+    raise exception 'invalid_items';
+  end if;
+
+  -- Mode de paiement : doit exister et être activé
+  select value into v_payment from public.settings where key = 'payment';
+  if not exists (
+    select 1 from jsonb_array_elements(coalesce(v_payment -> 'methods', '[]'::jsonb)) m
+    where m ->> 'id' = p_payment and coalesce((m ->> 'enabled')::boolean, false)
+  ) then
+    raise exception 'invalid_payment';
+  end if;
+
+  perform 1
+    from public.products
+    where id in (select (e ->> 'product_id')::uuid from jsonb_array_elements(p_items) e)
+    order by id
+    for update;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    v_qty := (v_item ->> 'qty')::integer;
+    if v_qty is null or v_qty < 1 or v_qty > 20 then
+      raise exception 'invalid_qty';
+    end if;
+
+    select * into v_product
+      from public.products
+      where id = (v_item ->> 'product_id')::uuid and is_active;
+    if not found then
+      raise exception 'product_unavailable';
+    end if;
+
+    v_color := nullif(v_item ->> 'color', '');
+    v_storage := nullif(v_item ->> 'storage', '');
+
+    v_price := v_product.price;
+    if jsonb_array_length(coalesce(v_product.variants -> 'storage', '[]'::jsonb)) > 0 then
+      select (s ->> 'price')::numeric into v_price
+        from jsonb_array_elements(v_product.variants -> 'storage') s
+        where s ->> 'label' = v_storage;
+      if v_price is null then
+        raise exception 'invalid_variant';
+      end if;
+    end if;
+
+    if jsonb_array_length(coalesce(v_product.variants -> 'colors', '[]'::jsonb)) > 0
+       and not exists (
+         select 1 from jsonb_array_elements(v_product.variants -> 'colors') c where c ->> 'name' = v_color
+       ) then
+      raise exception 'invalid_variant';
+    end if;
+
+    update public.products set stock = stock - v_qty where id = v_product.id and stock >= v_qty;
+    if not found then
+      raise exception 'insufficient_stock' using detail = v_product.name;
+    end if;
+
+    v_lines := v_lines || jsonb_build_object(
+      'product_id', v_product.id,
+      'slug', v_product.slug,
+      'name', v_product.name,
+      'color', v_color,
+      'storage', v_storage,
+      'qty', v_qty,
+      'price', round(v_price),
+      'image', v_product.images[1]
+    );
+    v_subtotal := v_subtotal + round(v_price) * v_qty;
+  end loop;
+
+  -- Livraison
+  select value into v_delivery from public.settings where key = 'delivery';
+  if p_delivery = 'pickup' then
+    if coalesce((v_delivery -> 'pickup' ->> 'enabled')::boolean, true) is not true then
+      raise exception 'invalid_delivery';
+    end if;
+    v_fee := 0;
+    v_region := coalesce(v_delivery -> 'pickup' ->> 'label', 'Retrait en magasin');
+  elsif p_delivery = 'home' then
+    select * into v_zone from public.delivery_zones where id = p_customer ->> 'zone_id' and is_active;
+    if not found then
+      raise exception 'invalid_zone';
+    end if;
+    v_fee := v_zone.fee;
+    v_region := v_zone.name;
+    v_free_from := (v_delivery ->> 'free_from')::numeric;
+    if v_free_from is not null and v_subtotal >= v_free_from then
+      v_fee := 0;
+    end if;
+  else
+    raise exception 'invalid_delivery';
+  end if;
+
+  insert into public.orders (
+    customer_name, phone, region, city, address, delivery_method, payment_method,
+    items, subtotal, delivery_fee, total, note
+  ) values (
+    trim(p_customer ->> 'name'),
+    p_customer ->> 'phone',
+    v_region,
+    coalesce(trim(p_customer ->> 'city'), ''),
+    case when p_delivery = 'pickup' then '' else coalesce(trim(p_customer ->> 'address'), '') end,
+    p_delivery,
+    p_payment,
+    v_lines,
+    v_subtotal,
+    v_fee,
+    v_subtotal + v_fee,
+    nullif(trim(p_customer ->> 'note'), '')
+  )
+  returning * into v_order;
+
+  return query select v_order.id, v_order.number, v_order.total;
+end;
+$$;
+
+revoke all on function public.place_order(jsonb, jsonb, text, text) from public, anon, authenticated;
+grant execute on function public.place_order(jsonb, jsonb, text, text) to service_role;
+
+
+-- #############################################################################
+-- # migrations/20261125000900_mobile_empire.sql
+-- #############################################################################
+-- =============================================================================
+-- 9 · Personnalisation Mobile Empire : avis clients, paiement, infos magasin
+-- =============================================================================
+-- Rejouable. Ne remplace jamais une saisie du commerçant : les paramètres ne
+-- sont modifiés que s'ils contiennent encore les valeurs d'exemple.
+
+-- --- 1. Avis clients ------------------------------------------------------------
+-- Gérés dans /admin/avis. Seuls les avis publiés sont visibles sur le site.
+-- La table démarre VIDE : la section « Avis » de l'accueil reste masquée tant
+-- que le commerçant n'a pas saisi de vrais avis (aucun faux avis en ligne).
+
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 1 and 60),
+  city text not null default '' check (char_length(city) <= 60),
+  rating smallint not null default 5 check (rating between 1 and 5),
+  text text not null check (char_length(text) between 1 and 600),
+  product text check (product is null or char_length(product) <= 80),
+  is_published boolean not null default true,
+  position integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists reviews_published_position_idx on public.reviews (is_published, position, created_at desc);
+
+create or replace trigger reviews_updated_at
+  before update on public.reviews
+  for each row execute function public.set_updated_at();
+
+alter table public.reviews enable row level security;
+
+drop policy if exists "reviews_select_public" on public.reviews;
+create policy "reviews_select_public" on public.reviews
+  for select to anon, authenticated
+  using (is_published or (select public.is_admin()));
+
+drop policy if exists "reviews_insert_admin" on public.reviews;
+create policy "reviews_insert_admin" on public.reviews
+  for insert to authenticated
+  with check ((select public.is_admin()));
+
+drop policy if exists "reviews_update_admin" on public.reviews;
+create policy "reviews_update_admin" on public.reviews
+  for update to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "reviews_delete_admin" on public.reviews;
+create policy "reviews_delete_admin" on public.reviews
+  for delete to authenticated
+  using ((select public.is_admin()));
+
+-- Droits au strict nécessaire (cf. migration 6) : lecture publique (filtrée par
+-- la RLS), gestion complète par l'admin.
+revoke all on table public.reviews from anon, authenticated;
+grant select on table public.reviews to anon;
+grant select, insert, update, delete on table public.reviews to authenticated;
+grant all on table public.reviews to service_role;
+
+-- --- 2. Paiement : à la livraison uniquement pour l'instant -----------------------
+-- Les autres modes restent configurés mais désactivés ; ils se réactivent dans
+-- /admin/parametres. Uniquement si les modes sont encore ceux de l'exemple
+-- (migration 8) : un réglage du commerçant n'est jamais touché.
+
+update public.settings
+  set value = jsonb_set(
+    value,
+    '{methods}',
+    (select jsonb_agg(case when m ->> 'id' = 'cod' then m else jsonb_set(m, '{enabled}', 'false'::jsonb) end order by ord)
+       from jsonb_array_elements(value -> 'methods') with ordinality as e(m, ord))
+  )
+  where key = 'payment'
+    and value = '{
+  "methods": [
+    { "id": "cod", "label": "Paiement à la livraison", "account": "", "instructions": "Vous payez en espèces au livreur, après avoir vérifié le colis.", "enabled": true },
+    { "id": "orange_money", "label": "Orange Money", "account": "+223 70 00 00 00", "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.", "enabled": true },
+    { "id": "moov_money", "label": "Moov Money", "account": "+223 60 00 00 00", "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.", "enabled": true },
+    { "id": "wave", "label": "Wave", "account": "+223 70 00 00 00", "instructions": "Nous vous envoyons le lien ou le numéro Wave par WhatsApp après confirmation.", "enabled": true },
+    { "id": "sama_money", "label": "Sama Money", "account": "+223 70 00 00 00", "instructions": "Nous vous envoyons le numéro et le montant exact par WhatsApp après confirmation.", "enabled": true },
+    { "id": "virement", "label": "Virement bancaire", "account": "", "instructions": "Nous vous envoyons nos coordonnées bancaires par WhatsApp après confirmation.", "enabled": true }
+  ]
+}'::jsonb;
+
+-- --- 3. Magasin : coordonnées Mobile Empire ----------------------------------------
+-- Champ par champ, seulement si la valeur est encore celle de l'exemple.
+-- TODO client : confirmer le numéro WhatsApp (repris du premier numéro).
+
+update public.settings
+  set value = value
+    || case when coalesce(value ->> 'name', 'Boutique Mobile') = 'Boutique Mobile' then '{ "name": "Mobile Empire" }'::jsonb else '{}'::jsonb end
+    || case when value ->> 'whatsapp' in ('22370000000', '21600000000') then '{ "whatsapp": "22363515582" }'::jsonb else '{}'::jsonb end
+    || case when value ->> 'phone' in ('+223 70 00 00 00', '+216 00 000 000') then '{ "phone": "+223 63 51 55 82" }'::jsonb else '{}'::jsonb end
+    || case when value ? 'phones' then '{}'::jsonb else '{ "phones": ["+223 63 51 55 82", "+223 74 05 86 18"] }'::jsonb end
+    || case when value ->> 'email' in ('contact@example.com', 'contact@example.tn') then '{ "email": "diarraousmane719@gmail.com" }'::jsonb else '{}'::jsonb end
+    || case when value -> 'address' ->> 'street' in ('Rue 311, ACI 2000', 'Avenue Habib Bourguiba')
+         then jsonb_build_object('address', jsonb_build_object('street', '', 'district', 'N''Tabacoro', 'city', 'Bamako')) else '{}'::jsonb end
+    || case when value -> 'hours' in (
+              '[{ "days": "Lundi – Samedi", "time": "08:30 – 20:00" }, { "days": "Dimanche", "time": "10:00 – 14:00" }]'::jsonb,
+              '[{ "days": "Lundi – Samedi", "time": "09:00 – 20:00" }, { "days": "Dimanche", "time": "10:00 – 14:00" }]'::jsonb)
+         then '{ "hours": [{ "days": "Tous les jours", "time": "8h – 21h" }] }'::jsonb else '{}'::jsonb end
+    || case when value ? 'slogan' then '{}'::jsonb else '{ "slogan": "Vendre avec passion, servir avec excellence.", "since": 2018 }'::jsonb end
+    || case when value ? 'social' then '{}'::jsonb
+         else '{ "social": { "facebook": "https://www.facebook.com/share/14yBZGGk9Mi/?mibextid=wwXIfr", "tiktok": "https://www.tiktok.com/@mobile__empire" } }'::jsonb end
+  where key = 'store';
+
+
+-- #############################################################################
 -- # seed.sql
 -- #############################################################################
 -- Généré par scripts/generate-seed.ts depuis data/products.ts : ne pas modifier à la main.
 -- Produits et catégories d'exemple (photos Unsplash de remplacement).
 
 insert into public.categories (name, slug, description, image, position) values
-  ('Téléphones neufs', 'neufs', 'Scellés, facturés, garantis 12 mois.', 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?auto=format&fit=crop&w=1200&q=80', 0),
-  ('Téléphones d''occasion', 'occasion', 'Testés sur 30 points, garantis 3 mois.', 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?auto=format&fit=crop&w=1200&q=80', 1),
-  ('Accessoires', 'accessoires', 'Écouteurs, chargeurs, coques et protections.', 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 2)
+  ('Smartphones neufs', 'smartphones', 'Tecno, Samsung et Apple, scellés et garantis 12 mois.', 'https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80', 0),
+  ('Smartphones d''occasion', 'occasion', 'Testés sur 30 points, garantis 3 mois.', 'https://images.unsplash.com/photo-1604671368394-2240d0b1bb6c?auto=format&fit=crop&w=1200&q=80', 1),
+  ('AirPods et écouteurs', 'ecouteurs', 'AirPods, écouteurs sans fil et filaires.', 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 2),
+  ('Casques audio', 'casques', 'Casques Bluetooth pour la musique et les appels.', 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80', 3),
+  ('Coques et protections', 'protections', 'Coques et verres trempés, pose offerte en magasin.', 'https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&w=1200&q=80', 4),
+  ('Chargeurs et câbles', 'accessoires', 'Chargeurs rapides, câbles et adaptateurs.', 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80', 5)
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone 15 Pro', 'iphone-15-pro', 'Le plus léger des iPhone Pro, avec un châssis en titane et la puce A17 Pro. Neuf, scellé, livré avec facture.', (select id from public.categories where slug = 'neufs'), 'Apple', 4799, null, 6, 'neuf', null, null, true, true, true, array['https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1617997455403-41f333d44d5b?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Titane naturel","hex":"#8f8a81"},{"name":"Titane noir","hex":"#3b3b3d"},{"name":"Titane bleu","hex":"#3f4a5a"}],"storage":[{"label":"128 Go","price":4799},{"label":"256 Go","price":5299},{"label":"512 Go","price":6199}]}'::jsonb, array['Puce A17 Pro', 'Châssis en titane', 'Triple caméra 48 Mpx', 'USB-C']::text[], '[["Écran","6,1″ Super Retina XDR, 120 Hz"],["Puce","A17 Pro"],["Caméras","48 + 12 + 12 Mpx, zoom optique 3×"],["Batterie","Jusqu''à 23 h de vidéo"],["Connecteur","USB-C (USB 3)"],["Garantie","12 mois"]]'::jsonb
+select 'Camon 30', 'tecno-camon-30', 'Le photophone de Tecno : grand écran AMOLED, selfie 50 Mpx et charge ultra-rapide. Neuf, scellé, garanti 12 mois.', (select id from public.categories where slug = 'smartphones'), 'Tecno', 145000, null, 10, 'neuf', null, null, true, true, true, array['https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Uyuni White","hex":"#e9e7e2"},{"name":"Basaltic Dark","hex":"#25272b"}],"storage":[{"label":"256 Go · 8 Go RAM","price":145000},{"label":"512 Go · 12 Go RAM","price":175000}]}'::jsonb, array['Caméra 50 Mpx stabilisée', 'Écran AMOLED 120 Hz', 'Charge 70 W', 'Double SIM']::text[], '[["Écran","6,78″ AMOLED, 120 Hz"],["Caméras","50 + 2 Mpx, selfie 50 Mpx"],["Batterie","5 000 mAh, charge 70 W"],["SIM","Double SIM"],["Garantie","12 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Galaxy S24 Ultra', 'samsung-galaxy-s24-ultra', 'Le Galaxy le plus complet : S Pen intégré, zoom 100× et écran anti-reflets. Neuf, scellé, version internationale.', (select id from public.categories where slug = 'neufs'), 'Samsung', 4399, 4699, 4, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Titanium Black","hex":"#2b2b2b"},{"name":"Titanium Gray","hex":"#8a8a86"}],"storage":[{"label":"256 Go","price":4399,"old_price":4699},{"label":"512 Go","price":4899,"old_price":5199}]}'::jsonb, array['S Pen intégré', 'Zoom 100×', 'Écran 6,8″ 120 Hz', 'Galaxy AI']::text[], '[["Écran","6,8″ Dynamic AMOLED 2X, 120 Hz"],["Processeur","Snapdragon 8 Gen 3 for Galaxy"],["Caméras","200 + 50 + 12 + 10 Mpx"],["Batterie","5 000 mAh, charge 45 W"],["Garantie","12 mois"]]'::jsonb
+select 'Spark 20 Pro', 'tecno-spark-20-pro', 'Le meilleur rapport qualité-prix : grand écran fluide, caméra 108 Mpx et grosse batterie.', (select id from public.categories where slug = 'smartphones'), 'Tecno', 95000, null, 15, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Moonlit Black","hex":"#1f2024"},{"name":"Frosty Ivory","hex":"#ecebe6"}],"storage":[{"label":"256 Go · 8 Go RAM","price":95000}]}'::jsonb, array['Caméra 108 Mpx', 'Écran 120 Hz', 'Batterie 5 000 mAh', 'Double SIM']::text[], '[["Écran","6,78″ IPS, 120 Hz"],["Caméras","108 Mpx, selfie 32 Mpx"],["Batterie","5 000 mAh, charge 33 W"],["SIM","Double SIM"],["Garantie","12 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone 13', 'iphone-13', 'Un iPhone fiable et rapide au meilleur prix. Neuf, scellé, garanti 12 mois.', (select id from public.categories where slug = 'neufs'), 'Apple', 2499, null, 9, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Minuit","hex":"#1f2328"},{"name":"Lumière stellaire","hex":"#ece6dc"},{"name":"Bleu","hex":"#2f4f6b"}],"storage":[{"label":"128 Go","price":2499},{"label":"256 Go","price":2899}]}'::jsonb, array['Puce A15 Bionic', 'Double caméra 12 Mpx', 'Mode Cinématique']::text[], '[["Écran","6,1″ Super Retina XDR"],["Puce","A15 Bionic"],["Caméras","12 + 12 Mpx"],["Batterie","Jusqu''à 19 h de vidéo"],["Garantie","12 mois"]]'::jsonb
+select 'Galaxy A55 5G', 'samsung-galaxy-a55', 'Le milieu de gamme le plus complet de Samsung : 5G, écran fluide, finition verre et métal.', (select id from public.categories where slug = 'smartphones'), 'Samsung', 230000, 250000, 8, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Bleu nuit","hex":"#1e2a44"},{"name":"Lilas","hex":"#c9b8e0"}],"storage":[{"label":"128 Go","price":230000,"old_price":250000},{"label":"256 Go","price":260000,"old_price":280000}]}'::jsonb, array['5G', 'Écran 120 Hz', 'Résistant à l''eau IP67', '4 ans de mises à jour']::text[], '[["Écran","6,6″ Super AMOLED, 120 Hz"],["Processeur","Exynos 1480"],["Caméras","50 + 12 + 5 Mpx"],["Batterie","5 000 mAh, charge 25 W"],["Garantie","12 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Galaxy A55 5G', 'samsung-galaxy-a55', 'Le milieu de gamme le plus complet de Samsung : 5G, écran fluide et grosse batterie.', (select id from public.categories where slug = 'neufs'), 'Samsung', 1349, null, 12, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Bleu nuit","hex":"#1e2a44"},{"name":"Lilas","hex":"#c9b8e0"}],"storage":[{"label":"128 Go","price":1349},{"label":"256 Go","price":1549}]}'::jsonb, array['5G', 'Écran 120 Hz', 'Batterie 5 000 mAh', 'Résistant à l''eau IP67']::text[], '[["Écran","6,6″ Super AMOLED, 120 Hz"],["Processeur","Exynos 1480"],["Caméras","50 + 12 + 5 Mpx"],["Batterie","5 000 mAh, charge 25 W"],["Garantie","12 mois"]]'::jsonb
+select 'Galaxy S24 Ultra', 'samsung-galaxy-s24-ultra', 'Le Galaxy le plus abouti : S Pen intégré, zoom 100× et écran anti-reflets. Neuf, scellé.', (select id from public.categories where slug = 'smartphones'), 'Samsung', 750000, null, 3, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Titanium Black","hex":"#2b2b2b"},{"name":"Titanium Gray","hex":"#8a8a86"}],"storage":[{"label":"256 Go","price":750000},{"label":"512 Go","price":830000}]}'::jsonb, array['S Pen intégré', 'Zoom 100×', 'Galaxy AI', 'Châssis titane']::text[], '[["Écran","6,8″ Dynamic AMOLED 2X, 120 Hz"],["Processeur","Snapdragon 8 Gen 3 for Galaxy"],["Caméras","200 + 50 + 12 + 10 Mpx"],["Batterie","5 000 mAh, charge 45 W"],["Garantie","12 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Redmi Note 13 Pro', 'xiaomi-redmi-note-13-pro', 'Une caméra 200 Mpx et la charge rapide 67 W à prix doux. Neuf, scellé, garanti 12 mois.', (select id from public.categories where slug = 'neufs'), 'Xiaomi', 1099, 1199, 15, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Noir","hex":"#1c1c1c"},{"name":"Bleu glacier","hex":"#a9c7d8"}],"storage":[{"label":"256 Go","price":1099,"old_price":1199},{"label":"512 Go","price":1299,"old_price":1399}]}'::jsonb, array['Caméra 200 Mpx', 'Écran AMOLED 120 Hz', 'Charge 67 W']::text[], '[["Écran","6,67″ AMOLED, 120 Hz"],["Processeur","Snapdragon 7s Gen 2"],["Caméras","200 + 8 + 2 Mpx"],["Batterie","5 100 mAh, charge 67 W"],["Garantie","12 mois"]]'::jsonb
+select 'iPhone 13', 'iphone-13-occasion', 'Contrôlé, nettoyé et réinitialisé en magasin. Livré avec un câble de charge et un verre trempé posé.', (select id from public.categories where slug = 'occasion'), 'Apple', 230000, 300000, 2, 'occasion', 'Très bon état', 87, false, true, true, array['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Minuit","hex":"#1f2328"}],"storage":[{"label":"128 Go","price":230000,"old_price":300000},{"label":"256 Go","price":265000,"old_price":340000}]}'::jsonb, array['Testé sur 30 points', 'Batterie 87 %', 'Débloqué tout opérateur']::text[], '[["Écran","6,1″ Super Retina XDR"],["Puce","A15 Bionic"],["Caméras","12 + 12 Mpx"],["État","Très bon état : micro-rayures invisibles à 20 cm"],["Garantie","3 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone 12 Pro', 'iphone-12-pro-occasion', 'Contrôlé, nettoyé et réinitialisé en magasin. Livré avec un câble de charge et un verre trempé posé.', (select id from public.categories where slug = 'occasion'), 'Apple', 1699, 2199, 3, 'occasion', 'Très bon état', 88, false, true, true, array['https://images.unsplash.com/photo-1604671368394-2240d0b1bb6c?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Bleu Pacifique","hex":"#2f4f63"}],"storage":[{"label":"128 Go","price":1699,"old_price":2199},{"label":"256 Go","price":1899,"old_price":2399}]}'::jsonb, array['Testé sur 30 points', 'Batterie 88 %', 'Débloqué tout opérateur']::text[], '[["Écran","6,1″ Super Retina XDR"],["Puce","A14 Bionic"],["Caméras","12 + 12 + 12 Mpx, LiDAR"],["État","Très bon état : micro-rayures invisibles à 20 cm"],["Garantie","3 mois"]]'::jsonb
+select 'AirPods Pro (2e gén.)', 'airpods-pro-2', 'Réduction de bruit deux fois plus efficace et mode Transparence adaptatif. Neufs, scellés.', (select id from public.categories where slug = 'ecouteurs'), 'Apple', 150000, 165000, 6, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Réduction de bruit active', 'Boîtier USB-C', 'Audio spatial']::text[], '[["Autonomie","6 h (30 h avec le boîtier)"],["Charge","USB-C, MagSafe, Qi"],["Résistance","IP54"],["Garantie","12 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone 11', 'iphone-11-occasion', 'Le premier iPhone idéal pour un budget serré. Contrôlé en magasin, garanti 3 mois.', (select id from public.categories where slug = 'occasion'), 'Apple', 1049, 1399, 5, 'occasion', 'Comme neuf', 91, false, true, true, array['https://images.unsplash.com/photo-1591337676887-a217a6970a8a?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Blanc","hex":"#f1f0ec"}],"storage":[{"label":"64 Go","price":1049,"old_price":1399},{"label":"128 Go","price":1199,"old_price":1549}]}'::jsonb, array['Testé sur 30 points', 'Batterie 91 %', 'Aucune rayure']::text[], '[["Écran","6,1″ Liquid Retina"],["Puce","A13 Bionic"],["Caméras","12 + 12 Mpx"],["État","Comme neuf : aucune trace d''usage"],["Garantie","3 mois"]]'::jsonb
+select 'Casque Bluetooth BoomPop', 'casque-bluetooth-oraimo', 'Un casque léger et endurant pour la musique et les appels, compatible avec tous les téléphones.', (select id from public.categories where slug = 'casques'), 'Oraimo', 15000, null, 12, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Noir","hex":"#1c1c1c"}]}'::jsonb, array['40 h d''autonomie', 'Basses renforcées', 'Appels mains libres']::text[], '[["Autonomie","40 h"],["Connexion","Bluetooth 5.3, prise jack"],["Garantie","6 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'iPhone XS', 'iphone-xs-occasion', 'Un iPhone compact à petit prix, idéal en premier smartphone ou en téléphone de secours.', (select id from public.categories where slug = 'occasion'), 'Apple', 749, null, 0, 'occasion', 'Bon état', 84, false, false, true, array['https://images.unsplash.com/photo-1567581935884-3349723552ca?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Gris sidéral","hex":"#3a3a3c"}],"storage":[{"label":"64 Go","price":749}]}'::jsonb, array['Testé sur 30 points', 'Batterie 84 %', 'Écran OLED']::text[], '[["Écran","5,8″ Super Retina OLED"],["Puce","A12 Bionic"],["État","Bon état : rayures légères sur le châssis"],["Garantie","3 mois"]]'::jsonb
+select 'Coque antichoc + verre trempé', 'coque-antichoc-verre-trempe', 'La protection complète à petit prix. Venez la faire poser gratuitement en magasin.', (select id from public.categories where slug = 'protections'), 'Mobile Empire', 5000, null, 40, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Transparent","hex":"#dfe3e8"},{"name":"Noir","hex":"#1c1c1c"}]}'::jsonb, array['Pose du verre offerte en magasin', 'Coins renforcés', 'Tecno, Samsung, iPhone']::text[], '[["Contenu","1 coque + 1 verre trempé 9H"],["Modèles","Préciser le modèle à la commande"]]'::jsonb
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Galaxy S21 Ultra', 'samsung-galaxy-s21-ultra-occasion', 'L''ancien haut de gamme de Samsung, toujours redoutable en photo. Contrôlé et garanti 3 mois.', (select id from public.categories where slug = 'occasion'), 'Samsung', 1399, 1899, 1, 'occasion', 'Très bon état', 86, false, false, true, array['https://images.unsplash.com/photo-1610792516307-ea5acd9c3b00?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Phantom Black","hex":"#1d1d1f"}],"storage":[{"label":"256 Go","price":1399,"old_price":1899}]}'::jsonb, array['Testé sur 30 points', 'Zoom 100×', 'Écran 120 Hz']::text[], '[["Écran","6,8″ Dynamic AMOLED 2X, 120 Hz"],["Caméras","108 + 12 + 10 + 10 Mpx"],["État","Très bon état"],["Garantie","3 mois"]]'::jsonb
-on conflict (slug) do nothing;
-
-insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'AirPods Pro (2e gén.)', 'airpods-pro-2', 'Réduction de bruit deux fois plus efficace et mode Transparence adaptatif. Neufs, scellés.', (select id from public.categories where slug = 'accessoires'), 'Apple', 899, 999, 8, 'neuf', null, null, false, true, true, array['https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Réduction de bruit active', 'Boîtier USB-C', 'Audio spatial']::text[], '[["Autonomie","6 h (30 h avec le boîtier)"],["Charge","USB-C, MagSafe, Qi"],["Résistance","IP54"],["Garantie","12 mois"]]'::jsonb
-on conflict (slug) do nothing;
-
-insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Écouteurs sans fil ANC', 'ecouteurs-sans-fil-anc', 'La réduction de bruit sans se ruiner, compatible iPhone et Android.', (select id from public.categories where slug = 'accessoires'), 'Soundcore', 189, null, 20, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Noir","hex":"#1c1c1c"},{"name":"Blanc","hex":"#f2f2f2"}]}'::jsonb, array['Réduction de bruit', '40 h d''autonomie', 'Bluetooth 5.3']::text[], '[["Autonomie","10 h (40 h avec le boîtier)"],["Connexion","Bluetooth 5.3"],["Garantie","6 mois"]]'::jsonb
-on conflict (slug) do nothing;
-
-insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Chargeur rapide USB-C 20 W', 'chargeur-rapide-usb-c-20w', 'Le chargeur officiel pour recharger un iPhone à 50 % en 30 minutes environ.', (select id from public.categories where slug = 'accessoires'), 'Apple', 79, null, 40, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Charge rapide 50 % en 30 min', 'Compatible iPhone 8 et +']::text[], '[["Puissance","20 W"],["Connecteur","USB-C"],["Garantie","6 mois"]]'::jsonb
-on conflict (slug) do nothing;
-
-insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Coque fibre aramide', 'coque-fibre-aramide', 'Ultra fine et résistante, pour protéger sans alourdir.', (select id from public.categories where slug = 'accessoires'), 'Boutique', 59, null, 25, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&w=1200&q=80']::text[], '{"colors":[{"name":"Noir carbone","hex":"#222"}]}'::jsonb, array['0,6 mm d''épaisseur', 'Compatible MagSafe', 'Pose offerte en magasin']::text[], '[["Matière","Fibre aramide"],["Modèles","iPhone 12 à 15 (préciser à la commande)"]]'::jsonb
-on conflict (slug) do nothing;
-
-insert into public.products (name, slug, description, category_id, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs)
-select 'Casque Bluetooth', 'casque-bluetooth', 'Un casque léger et endurant pour la musique et les appels.', (select id from public.categories where slug = 'accessoires'), 'Sony', 349, 399, 6, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['50 h d''autonomie', 'Charge rapide', 'Appels mains libres']::text[], '[["Autonomie","50 h"],["Connexion","Bluetooth 5.2"],["Garantie","12 mois"]]'::jsonb
+select 'Chargeur rapide 25 W + câble USB-C', 'chargeur-samsung-25w', 'Le chargeur officiel Samsung avec son câble : recharge rapide et sûre.', (select id from public.categories where slug = 'accessoires'), 'Samsung', 12000, null, 30, 'neuf', null, null, false, false, true, array['https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80']::text[], '{}'::jsonb, array['Charge super rapide 25 W', 'Câble USB-C fourni', 'Compatible Tecno et iPhone 15']::text[], '[["Puissance","25 W (PD 3.0)"],["Connecteur","USB-C"],["Garantie","6 mois"]]'::jsonb
 on conflict (slug) do nothing;
 
 commit;

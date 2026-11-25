@@ -12,12 +12,12 @@ export default function AdminLoginPage() {
     <main id="contenu" className="grid flex-1 place-items-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center gap-2 font-extrabold tracking-tight">
-          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-ink text-[0.75rem] text-accent">
+          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.75rem]">
             {siteConfig.shortName}
           </span>
           {siteConfig.name}
         </div>
-        <div className="rounded-card-lg bg-white p-6 shadow-soft sm:p-8">
+        <div className="rounded-card-lg bg-surface p-6 shadow-soft sm:p-8">
           <span className="grid size-11 place-items-center rounded-full bg-accent-soft">
             <IconLock size={20} />
           </span>

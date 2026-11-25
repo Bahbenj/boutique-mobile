@@ -20,7 +20,7 @@ export function ProductCard({ product: p, sizes, className }: { product: Product
   return (
     <article className={cn("group flex h-full flex-col", className)}>
       {/* Le visuel duplique le lien du titre : retiré du clavier et des lecteurs d'écran */}
-      <Link href={href} tabIndex={-1} aria-hidden="true" className="relative block aspect-[4/5] overflow-hidden rounded-card bg-cream-deep">
+      <Link href={href} tabIndex={-1} aria-hidden="true" className="relative block aspect-[4/5] overflow-hidden rounded-card bg-raised">
         <Image
           src={p.images[0].src}
           alt=""

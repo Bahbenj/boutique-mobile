@@ -55,7 +55,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
         <p className="text-sm text-muted">
           L&apos;ordre ci-dessous est celui du site (menu de la boutique, page d&apos;accueil).
           {pendingOrder && (
-            <span className="ms-2 inline-flex items-center gap-1 font-semibold text-ink" role="status">
+            <span className="ms-2 inline-flex items-center gap-1 font-semibold text-fg" role="status">
               <IconSpinner size={14} /> Enregistrement…
             </span>
           )}
@@ -69,18 +69,18 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
       </div>
 
       {editing === "new" && (
-        <div className="mb-4 rounded-card bg-white p-5 shadow-soft">
+        <div className="mb-4 rounded-card bg-surface p-5 shadow-soft">
           <h2 className="mb-4 text-lg font-extrabold">Nouvelle catégorie</h2>
           <CategoryForm category={null} onDone={() => setEditing(null)} />
         </div>
       )}
 
       {list.length === 0 && editing !== "new" ? (
-        <p className="rounded-card bg-white p-8 text-center font-semibold shadow-soft">Aucune catégorie pour l&apos;instant.</p>
+        <p className="rounded-card bg-surface p-8 text-center font-semibold shadow-soft">Aucune catégorie pour l&apos;instant.</p>
       ) : (
         <ol className="space-y-3">
           {list.map((c, i) => (
-            <li key={c.id} className="rounded-card bg-white p-3 shadow-soft sm:p-4">
+            <li key={c.id} className="rounded-card bg-surface p-3 shadow-soft sm:p-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex shrink-0 flex-col">
                   <IconButton label={`Monter ${c.name}`} disabled={i === 0 || pendingOrder} onClick={() => move(i, -1)} className="size-9">
@@ -90,7 +90,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                     <IconChevron dir="down" size={16} />
                   </IconButton>
                 </div>
-                <span className="relative size-11 shrink-0 overflow-hidden rounded-xl bg-cream-deep sm:size-14 sm:rounded-2xl">
+                <span className="relative size-11 shrink-0 overflow-hidden rounded-xl bg-raised sm:size-14 sm:rounded-2xl">
                   {c.image ? (
                     <Image src={c.image} alt="" fill sizes="56px" className="object-cover" />
                   ) : (
@@ -106,7 +106,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                   </p>
                   <p className="truncate text-xs text-muted">
                     <span className="hidden sm:inline">/boutique/{c.slug} · </span>
-                    <Link href={`/admin/produits?categorie=${c.id}`} className="font-semibold hover:text-ink hover:underline">
+                    <Link href={`/admin/produits?categorie=${c.id}`} className="font-semibold hover:text-fg hover:underline">
                       {c.productCount} produit{c.productCount > 1 ? "s" : ""}
                     </Link>
                   </p>
@@ -144,10 +144,10 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
         }
       >
         <p>
-          La catégorie <strong className="text-ink">{toDelete?.name}</strong> sera supprimée.
+          La catégorie <strong className="text-fg">{toDelete?.name}</strong> sera supprimée.
         </p>
         {toDelete && toDelete.productCount > 0 && (
-          <p className="mt-2 rounded-2xl bg-accent-soft p-3 text-ink">
+          <p className="mt-2 rounded-2xl bg-accent-soft p-3 text-fg">
             Ses {toDelete.productCount} produit{toDelete.productCount > 1 ? "s" : ""} ne seront pas supprimés : ils passeront « sans catégorie ».
           </p>
         )}
@@ -216,7 +216,7 @@ function CategoryForm({ category, onDone }: { category: Category | null; onDone:
           onClick={() => fileInput.current?.click()}
           className={cn(
             "relative grid aspect-square w-28 place-items-center overflow-hidden rounded-2xl text-sm font-semibold text-muted sm:w-full",
-            image ? "bg-cream-deep" : "border-2 border-dashed border-line hover:border-ink/40",
+            image ? "bg-raised" : "border-2 border-dashed border-line hover:border-fg/40",
           )}
           aria-label={image ? "Changer la photo" : "Ajouter une photo"}
         >
@@ -224,7 +224,7 @@ function CategoryForm({ category, onDone }: { category: Category | null; onDone:
           {uploading ? <IconSpinner size={20} /> : !image && <IconImage size={22} />}
         </button>
         {image && (
-          <button type="button" onClick={() => setImage(null)} className="mt-1 text-xs font-semibold text-muted underline hover:text-ink">
+          <button type="button" onClick={() => setImage(null)} className="mt-1 text-xs font-semibold text-muted underline hover:text-fg">
             Retirer
           </button>
         )}

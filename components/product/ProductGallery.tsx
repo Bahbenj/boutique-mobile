@@ -12,7 +12,7 @@ export function ProductGallery({ images, soldOut }: { images: ProductImage[]; so
 
   return (
     <div className="lg:sticky lg:top-28">
-      <div className="relative aspect-square overflow-hidden rounded-card-lg bg-cream-deep sm:aspect-[5/4] lg:aspect-square">
+      <div className="relative aspect-square overflow-hidden rounded-card-lg bg-raised sm:aspect-[5/4] lg:aspect-square">
         <Image
           key={current.src}
           src={current.src}
@@ -34,8 +34,8 @@ export function ProductGallery({ images, soldOut }: { images: ProductImage[]; so
                 aria-label={`Photo ${i + 1} : ${img.alt}`}
                 aria-current={i === index || undefined}
                 className={cn(
-                  "relative block size-16 overflow-hidden rounded-2xl bg-cream-deep ring-2 transition-[box-shadow] sm:size-20",
-                  i === index ? "ring-ink" : "ring-transparent hover:ring-line",
+                  "relative block size-16 overflow-hidden rounded-2xl bg-raised ring-2 transition-[box-shadow] sm:size-20",
+                  i === index ? "ring-fg" : "ring-transparent hover:ring-line",
                 )}
               >
                 <Image src={img.src} alt="" fill sizes="80px" className="object-cover" />

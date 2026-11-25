@@ -9,7 +9,7 @@ import { IconSearch, IconSpinner } from "@/components/ui/icons";
 
 const chevron = {
   backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a9ba' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
 };
 
 /** Onglets de statut (avec compteurs), recherche, période et export, synchronisés avec l'URL. */
@@ -60,11 +60,11 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors",
-                active ? "bg-ink text-cream" : "bg-white text-ink shadow-soft hover:bg-ink/5",
+                active ? "bg-accent text-on-accent" : "bg-surface text-fg shadow-soft hover:bg-fg/5",
               )}
             >
               {tab.label}
-              <span className={cn("tabular-nums", active ? "text-cream/60" : "text-muted")}>{tab.count}</span>
+              <span className={cn("tabular-nums", active ? "text-on-accent" : "text-muted")}>{tab.count}</span>
             </Link>
           );
         })}
@@ -86,7 +86,7 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
               const value = e.target.value.trim();
               timer.current = setTimeout(() => update({ q: value || null }), 300);
             }}
-            className="h-11 w-full rounded-full border border-line bg-white ps-11 pe-4 text-[1rem] outline-none placeholder:text-ink/40 focus:border-ink focus:ring-4 focus:ring-accent/25"
+            className="h-11 w-full rounded-full border border-line bg-surface ps-11 pe-4 text-[1rem] outline-none placeholder:text-fg/40 focus:border-accent focus:ring-4 focus:ring-accent/25"
           />
         </label>
         <div className="flex gap-2">
@@ -95,7 +95,7 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
             value={params.get("periode") ?? ""}
             onChange={(e) => update({ periode: e.target.value || null })}
             style={chevron}
-            className="h-11 min-w-0 flex-1 appearance-none rounded-full border border-line bg-white bg-[length:14px] bg-[position:right_0.9rem_center] bg-no-repeat ps-4 pe-9 text-sm font-semibold outline-none focus:border-ink focus:ring-4 focus:ring-accent/25 sm:flex-none"
+            className="h-11 min-w-0 flex-1 appearance-none rounded-full border border-line bg-surface bg-[length:14px] bg-[position:right_0.9rem_center] bg-no-repeat ps-4 pe-9 text-sm font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 sm:flex-none"
           >
             <option value="">Toutes les dates</option>
             {Object.entries(periods).map(([value, label]) => (
@@ -107,7 +107,7 @@ export function OrderFilters({ counts }: { counts: Record<OrderStatus, number> }
           <a
             href={`/admin/commandes/export${exportParams.size ? `?${exportParams}` : ""}`}
             download
-            className="flex h-11 shrink-0 items-center rounded-full bg-white px-4 text-sm font-semibold shadow-soft hover:bg-ink/5"
+            className="flex h-11 shrink-0 items-center rounded-full bg-surface px-4 text-sm font-semibold shadow-soft hover:bg-fg/5"
           >
             Export CSV
           </a>

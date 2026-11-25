@@ -2,6 +2,8 @@ import { exportOrders } from "@/lib/admin/orders";
 import {
   deliveryLabel,
   formatCsvDate,
+  formatPhone,
+  paymentLabel,
   orderStatuses,
   periods,
   statusLabels,
@@ -13,7 +15,7 @@ import { getAdmin } from "@/lib/auth";
 
 /**
  * Export CSV des commandes (mêmes filtres statut / période que la liste).
- * Format Excel français : séparateur « ; », BOM UTF-8, montants sans unité.
+ * Format Excel français : séparateur « ; », BOM UTF-8, montants en FCFA sans unité.
  */
 export async function GET(request: Request) {
   if (!(await getAdmin())) return new Response("Non autorisé", { status: 401 });
@@ -27,19 +29,20 @@ export async function GET(request: Request) {
   });
 
   const header = [
-    "Numéro", "Date", "Statut", "Client", "Téléphone", "Gouvernorat", "Ville", "Adresse",
-    "Livraison", "Articles", "Quantité", "Sous-total", "Frais de livraison", "Total", "Note",
+    "Numéro", "Date", "Statut", "Client", "Téléphone", "Région / commune", "Quartier / ville", "Adresse",
+    "Livraison", "Paiement", "Articles", "Quantité", "Sous-total", "Frais de livraison", "Total", "Note",
   ];
   const rows = orders.map((o) => [
     o.number,
     formatCsvDate(o.created_at),
     statusLabels[o.status],
     o.customer_name,
-    o.phone,
-    o.governorate,
+    formatPhone(o.phone), // « 76 12 34 56 » : texte, jamais interprété comme formule
+    o.region,
     o.city,
     o.address,
     deliveryLabel(o.delivery_method),
+    paymentLabel(o.payment_method),
     o.items.map((i) => `${i.qty} × ${i.name}${variantLabel(i) ? ` (${variantLabel(i)})` : ""}`).join(" | "),
     o.items.reduce((n, i) => n + i.qty, 0),
     o.subtotal,

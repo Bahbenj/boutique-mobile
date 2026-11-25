@@ -26,7 +26,7 @@ export function SectionHeading({
   return (
     <div className={cn("flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="max-w-3xl">
-        <Badge index={index} tone={dark ? "glass" : "light"}>
+        <Badge index={index} tone={dark ? "glass" : "neutral"}>
           {kicker}
         </Badge>
         <h2
@@ -36,14 +36,14 @@ export function SectionHeading({
           {typeof title === "string" && title.endsWith(".") ? (
             <>
               {title.slice(0, -1)}
-              <span className="text-accent">.</span>
+              <span className="text-gold">.</span>
             </>
           ) : (
             title
           )}
         </h2>
         {lead && (
-          <p className={cn("mt-4 max-w-xl text-base leading-relaxed sm:text-lg", dark ? "text-cream/70" : "text-muted")}>
+          <p className={cn("mt-4 max-w-xl text-base leading-relaxed sm:text-lg", dark ? "text-white/75" : "text-muted")}>
             {lead}
           </p>
         )}

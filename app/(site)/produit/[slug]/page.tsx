@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
+import { money } from "@/lib/meta-pixel";
 import { products } from "@/data/products";
 import { t } from "@/i18n";
 import { getCategory, getProductBySlug } from "@/lib/catalog";
@@ -9,6 +10,7 @@ import { Container } from "@/components/ui/Container";
 import { IconCash, IconShield, IconTruck } from "@/components/ui/icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
+import { TrackViewContent } from "@/components/layout/MetaPixel";
 
 export function generateStaticParams() {
   return products.filter((p) => p.isActive).map((p) => ({ slug: p.slug }));
@@ -39,24 +41,34 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
 
   return (
     <Container className="pt-24 pb-20 sm:pt-32 sm:pb-28">
+      <TrackViewContent
+        key={product.slug}
+        params={{
+          content_ids: [product.slug],
+          content_name: product.name,
+          content_category: category?.title,
+          content_type: "product",
+          ...money(product.price),
+        }}
+      />
       <nav aria-label="Fil d'Ariane" className="mb-6 text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/boutique" className="hover:text-ink">
+            <Link href="/boutique" className="hover:text-fg">
               {t.product.back}
             </Link>
           </li>
           {category && (
             <li className="flex items-center gap-1.5">
               <span aria-hidden="true">/</span>
-              <Link href={`/boutique/${category.slug}`} className="hover:text-ink">
+              <Link href={`/boutique/${category.slug}`} className="hover:text-fg">
                 {category.label}
               </Link>
             </li>
           )}
           <li className="flex items-center gap-1.5">
             <span aria-hidden="true">/</span>
-            <span aria-current="page" className="text-ink">
+            <span aria-current="page" className="text-fg">
               {product.name}
             </span>
           </li>
@@ -77,7 +89,7 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
             <ProductPurchase product={product} />
           </div>
 
-          <ul className="mt-8 grid gap-3 rounded-card bg-white p-5 shadow-soft">
+          <ul className="mt-8 grid gap-3 rounded-card bg-surface p-5 shadow-soft [&_svg]:text-accent">
             {perks.map(({ Icon, text }) => (
               <li key={text} className="flex items-center gap-3 text-sm font-medium">
                 <Icon size={20} />
@@ -89,7 +101,7 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
           {product.highlights.length > 0 && (
             <ul className="mt-8 flex flex-wrap gap-2">
               {product.highlights.map((h) => (
-                <li key={h} className="rounded-full bg-cream-deep px-3.5 py-1.5 text-sm font-medium">
+                <li key={h} className="rounded-full bg-raised px-3.5 py-1.5 text-sm font-medium">
                   {h}
                 </li>
               ))}

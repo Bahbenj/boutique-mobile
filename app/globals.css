@@ -1,37 +1,88 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Les 4 couleurs de marque sont surchargées au runtime par
- * config/site.ts (voir app/layout.tsx) : changer la charte = changer site.ts.
+ * Design tokens · thème sombre « tech » (noir, anthracite, bleu électrique,
+ * rose doré). Les couleurs de marque sont surchargées au runtime par
+ * config/site.ts → theme (voir app/layout.tsx) : changer la charte = changer
+ * site.ts. Contrastes vérifiés AA (≥ 4,5:1) pour chaque texte sur chaque fond.
+ * Charte : aucun rouge ni jaune, y compris pour les alertes (lavande) et les
+ * succès (turquoise).
  */
 :root {
-  --cream: #f4f1ea;
-  --ink: #141414;
-  --accent: #ff7a1a;
-  --accent-ink: #141414;
+  /* Fonds */
+  --canvas: #07080c; /* fond de page (noir) */
+  --surface: #12141b; /* cartes (anthracite) */
+  --raised: #1b1e27; /* éléments posés sur une carte, emplacements d'image */
+  /* Texte */
+  --fg: #eef1f6; /* texte principal (17:1 sur le fond) */
+  --muted: #a1a9ba; /* texte secondaire (7:1 sur les cartes) */
+  /* Accents */
+  --accent: #3d8bff; /* bleu électrique : boutons, liens, focus */
+  --on-accent: #07080c; /* texte posé sur l'accent (6:1) */
+  --gold: #b76e79; /* rose doré : badges, soulignements, détails */
+  --on-gold: #07080c; /* texte posé sur le rose doré (5,3:1) */
+  /* États (jamais de rouge ni de jaune) */
+  --danger: #b8a2ff; /* erreurs, suppression : lavande */
+  --success: #3ddbc3; /* succès, en stock : turquoise */
 
-  /* Dérivées : calculées depuis les couleurs de marque */
-  --cream-deep: color-mix(in oklab, var(--cream), var(--ink) 6%);
-  --line: color-mix(in oklab, var(--cream), var(--ink) 12%);
-  --muted: color-mix(in oklab, var(--ink), var(--cream) 42%);
-  --ink-soft: color-mix(in oklab, var(--ink), white 12%);
-  --accent-hover: color-mix(in oklab, var(--accent), var(--ink) 12%);
-  --accent-soft: color-mix(in oklab, var(--accent), var(--cream) 82%);
-
+  color-scheme: dark;
   --nav-h: 4rem;
 }
 
+/* Dérivées : calculées depuis les couleurs ci-dessus (recalculées pour chaque thème) */
+:root,
+[data-theme] {
+  --line: color-mix(in oklab, var(--fg) 13%, var(--surface));
+  --fg-soft: color-mix(in oklab, var(--fg), var(--canvas) 12%);
+  --accent-hover: color-mix(in oklab, var(--accent), white 14%);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface));
+  --gold-text: color-mix(in oklab, var(--gold), white 32%); /* rose doré lisible en texte (7:1) */
+  --gold-soft: color-mix(in oklab, var(--gold) 18%, var(--surface));
+  --danger-soft: color-mix(in oklab, var(--danger) 14%, var(--surface));
+  --success-soft: color-mix(in oklab, var(--success) 14%, var(--surface));
+}
+
+/*
+ * Thème clair : réservé aux documents imprimés (bon de livraison). Même noms
+ * de variables, valeurs inversées : les composants n'ont rien à changer.
+ */
+[data-theme="light"] {
+  --canvas: #ffffff;
+  --surface: #ffffff;
+  --raised: #f1f2f5;
+  --fg: #0b0c10;
+  --muted: #4b5262;
+  --accent: #1d5fd6;
+  --on-accent: #ffffff;
+  --gold: #8f4b56;
+  --on-gold: #ffffff;
+  --danger: #5b3fc4;
+  --success: #0f766e;
+  --line: #d9dce3;
+  --gold-text: #8f4b56;
+  color-scheme: light;
+}
+
 @theme inline {
-  --color-cream: var(--cream);
-  --color-cream-deep: var(--cream-deep);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
-  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-gold: var(--gold);
+  --color-gold-text: var(--gold-text);
+  --color-gold-soft: var(--gold-soft);
+  --color-on-gold: var(--on-gold);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-whatsapp: #25d366;
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
@@ -39,9 +90,10 @@
   --radius-card: 1.75rem; /* 28px */
   --radius-card-lg: 2rem; /* 32px */
 
-  --shadow-soft: 0 1px 2px rgb(20 20 20 / 0.04), 0 8px 24px -8px rgb(20 20 20 / 0.08);
-  --shadow-lift: 0 2px 4px rgb(20 20 20 / 0.04), 0 24px 48px -16px rgb(20 20 20 / 0.18);
-  --shadow-pill: 0 1px 1px rgb(20 20 20 / 0.04), 0 10px 30px -10px rgb(20 20 20 / 0.25);
+  /* Sur fond noir, l'ombre seule ne se voit pas : liseré clair + ombre profonde */
+  --shadow-soft: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 24px -8px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 0 0 1px rgb(255 255 255 / 0.1), 0 24px 48px -16px rgb(0 0 0 / 0.8), 0 0 40px -12px color-mix(in oklab, var(--accent), transparent 70%);
+  --shadow-pill: 0 0 0 1px rgb(255 255 255 / 0.08), 0 10px 30px -10px rgb(0 0 0 / 0.8);
 
   --tracking-tightest: -0.045em;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -60,12 +112,12 @@
     }
   }
   body {
-    background: var(--cream);
-    color: var(--ink);
+    background: var(--canvas);
+    color: var(--fg);
   }
   ::selection {
     background: var(--accent);
-    color: var(--accent-ink);
+    color: var(--on-accent);
   }
   /* Focus visible homogène sur tout le site */
   :focus-visible {
@@ -100,7 +152,7 @@
   }
   /* Squelettes de chargement */
   .skeleton {
-    background: linear-gradient(90deg, var(--cream-deep) 0%, color-mix(in oklab, var(--cream-deep), white 55%) 50%, var(--cream-deep) 100%);
+    background: linear-gradient(90deg, var(--raised) 0%, color-mix(in oklab, var(--raised), white 7%) 50%, var(--raised) 100%);
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.4s ease-in-out infinite;
   }

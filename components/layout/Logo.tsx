@@ -17,11 +17,11 @@ export function Logo({ className, onDark = false }: { className?: string; onDark
         <>
           <span
             aria-hidden="true"
-            className="grid size-8 place-items-center rounded-full bg-ink text-[0.7rem] font-extrabold tracking-tight text-accent"
+            className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-accent to-gold text-on-accent text-[0.7rem] font-extrabold tracking-tight"
           >
             {siteConfig.shortName}
           </span>
-          <span className={cn("text-[0.95rem] leading-none", onDark ? "text-cream" : "text-ink")}>
+          <span className={cn("text-[0.95rem] leading-none", onDark ? "text-white" : "text-fg")}>
             {siteConfig.name}
           </span>
         </>

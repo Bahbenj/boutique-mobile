@@ -1,17 +1,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { siteConfig } from "@/config/site";
+import { siteConfig, storeAddress, telHref } from "@/config/site";
 import { t } from "@/i18n";
+import { cn } from "@/lib/utils";
 import { Container } from "@/components/ui/Container";
-import { IconFacebook, IconInstagram, IconTiktok } from "@/components/ui/icons";
+import { IconFacebook, IconMail, IconTiktok } from "@/components/ui/icons";
 import { CurrentYear } from "./CurrentYear";
 import { Logo } from "./Logo";
 import { navLinks } from "./nav-links";
 
 const socials = [
-  { href: siteConfig.social.instagram, label: "Instagram", Icon: IconInstagram },
   { href: siteConfig.social.facebook, label: "Facebook", Icon: IconFacebook },
-  { href: siteConfig.social.tiktok, label: "TikTok", Icon: IconTiktok },
+  { href: siteConfig.social.tiktok, label: `TikTok ${siteConfig.social.tiktokHandle}`, Icon: IconTiktok },
+  { href: `mailto:${siteConfig.email}`, label: `E-mail : ${siteConfig.email}`, Icon: IconMail },
 ];
 
 const infoLinks = [
@@ -21,18 +22,20 @@ const infoLinks = [
   { href: "/cgv", label: t.footer.terms },
 ];
 
-const linkClass = "text-[0.9375rem] text-ink/70 transition-colors hover:text-ink";
+const linkClass = "text-[0.9375rem] text-fg/70 transition-colors hover:text-fg";
 
-/** Footer clair en colonnes + mention légale. */
+/** Footer en colonnes + mention légale. */
 export function Footer() {
-  const { address } = siteConfig;
   return (
-    <footer className="mt-auto border-t border-line bg-cream pt-16 pb-28 md:pb-10">
+    <footer className="mt-auto border-t border-line bg-canvas pt-16 pb-28 md:pb-10">
       <Container>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div className="max-w-xs">
             <Logo />
-            <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted">{siteConfig.description}</p>
+            <p className="mt-4 text-[0.9375rem] font-semibold text-gold-text">{siteConfig.slogan}</p>
+            <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
+              {t.home.since(siteConfig.since)} à {siteConfig.address.district}. Smartphones, accessoires et service après-vente.
+            </p>
             <ul className="mt-6 flex gap-2">
               {socials.map(({ href, label, Icon }) => (
                 <li key={label}>
@@ -41,7 +44,7 @@ export function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="grid size-10 place-items-center rounded-full bg-white text-ink shadow-soft transition-colors hover:bg-ink hover:text-cream"
+                    className="grid size-10 place-items-center rounded-full bg-surface text-fg shadow-soft transition-colors hover:bg-accent hover:text-on-accent"
                   >
                     <Icon size={18} />
                   </a>
@@ -71,17 +74,17 @@ export function Footer() {
           </FooterCol>
 
           <FooterCol title={t.footer.contact}>
-            <li className="text-[0.9375rem] text-ink/70">
-              {address.street}, {address.postalCode} {address.city}
-            </li>
-            <li>
-              <a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`} className={linkClass}>
-                {siteConfig.phone}
-              </a>
-            </li>
+            <li className="text-[0.9375rem] text-fg/70">{storeAddress}</li>
+            {siteConfig.phones.map((p) => (
+              <li key={p}>
+                <a href={telHref(p)} className={cn(linkClass, "tabular-nums")}>
+                  {p}
+                </a>
+              </li>
+            ))}
             {siteConfig.hours.map((h) => (
-              <li key={h.days} className="text-[0.9375rem] text-ink/70">
-                <span className="text-ink">{h.days}</span> · {h.time}
+              <li key={h.days} className="text-[0.9375rem] text-fg/70">
+                <span className="text-fg">{h.days}</span> · {h.time}
               </li>
             ))}
           </FooterCol>
@@ -91,7 +94,7 @@ export function Footer() {
           <p>
             © <CurrentYear /> {siteConfig.name}. {t.footer.rights}
           </p>
-          <p>Paiement à la livraison · Livraison dans les 24 gouvernorats</p>
+          <p>{t.footer.tagline}</p>
         </div>
       </Container>
     </footer>
@@ -101,7 +104,7 @@ export function Footer() {
 function FooterCol({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <h2 className="text-sm font-bold tracking-tight text-ink">{title}</h2>
+      <h2 className="text-sm font-bold tracking-tight text-fg">{title}</h2>
       <ul className="mt-4 space-y-3">{children}</ul>
     </div>
   );

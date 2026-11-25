@@ -2,7 +2,7 @@
 -- 7 · Tableau de bord : statistiques des commandes
 -- =============================================================================
 -- Calculées en base (une requête au lieu de rapatrier toutes les commandes),
--- à l'heure de Tunis pour que « aujourd'hui » corresponde à la journée du magasin.
+-- à l'heure de Bamako (GMT) pour que « aujourd'hui » corresponde à la journée du magasin.
 --
 -- security invoker : s'exécute avec les droits de l'appelant, donc soumise à la
 -- RLS des commandes ; un non-admin est en plus refusé explicitement.
@@ -18,7 +18,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  v_now timestamp := now() at time zone 'Africa/Tunis';
+  v_now timestamp := now() at time zone 'Africa/Bamako';
   v_day timestamp := date_trunc('day', v_now);
   v_week timestamp := date_trunc('week', v_now);
   v_month timestamp := date_trunc('month', v_now);
@@ -29,10 +29,10 @@ begin
   end if;
 
   with o as (
-    select status, total, created_at at time zone 'Africa/Tunis' as local_at
+    select status, total, created_at at time zone 'Africa/Bamako' as local_at
     from public.orders
     -- commandes du mois + toutes celles encore à traiter (quelle que soit leur date)
-    where created_at >= (v_month at time zone 'Africa/Tunis')
+    where created_at >= (v_month at time zone 'Africa/Bamako')
        or status in ('nouvelle', 'confirmee', 'expediee')
   )
   select jsonb_build_object(

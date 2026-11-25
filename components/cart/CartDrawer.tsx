@@ -39,7 +39,7 @@ export function CartDrawer() {
       {open && (
         <div className="fixed inset-0 z-[70] flex justify-end">
           <motion.div
-            className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -53,7 +53,7 @@ export function CartDrawer() {
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="relative flex h-full w-full max-w-md flex-col bg-cream shadow-lift outline-none sm:m-3 sm:h-[calc(100%-1.5rem)] sm:rounded-card-lg"
+            className="relative flex h-full w-full max-w-md flex-col bg-canvas shadow-lift outline-none sm:m-3 sm:h-[calc(100%-1.5rem)] sm:rounded-card-lg"
             initial={reduce ? { opacity: 0 } : { x: "100%" }}
             animate={reduce ? { opacity: 1 } : { x: 0 }}
             exit={reduce ? { opacity: 0 } : { x: "100%" }}
@@ -68,7 +68,7 @@ export function CartDrawer() {
                 type="button"
                 onClick={close}
                 aria-label={t.nav.close}
-                className="grid size-10 place-items-center rounded-full bg-white text-ink shadow-soft hover:bg-cream-deep"
+                className="grid size-10 place-items-center rounded-full bg-surface text-fg shadow-soft hover:bg-raised"
               >
                 <IconClose size={18} />
               </button>
@@ -86,13 +86,13 @@ export function CartDrawer() {
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="overflow-hidden"
                   >
-                    <span className="mx-5 mb-3 flex items-center gap-2.5 rounded-2xl bg-ink px-3.5 py-3 text-sm text-cream">
-                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-accent-ink">
+                    <span className="mx-5 mb-3 flex items-center gap-2.5 rounded-2xl bg-accent-soft px-3.5 py-3 text-sm text-fg ring-1 ring-accent/30">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-on-accent">
                         <IconCheck size={14} strokeWidth={2.5} />
                       </span>
                       <span className="min-w-0 truncate">
                         <span className="font-bold">{toast.title}</span>
-                        {toast.text && <span className="text-cream/70"> · {toast.text}</span>}
+                        {toast.text && <span className="text-muted"> · {toast.text}</span>}
                       </span>
                     </span>
                   </motion.p>
@@ -102,7 +102,7 @@ export function CartDrawer() {
 
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
-                <span className="grid size-16 place-items-center rounded-full bg-white shadow-soft">
+                <span className="grid size-16 place-items-center rounded-full bg-surface shadow-soft">
                   <IconBag size={26} />
                 </span>
                 <p className="text-lg font-semibold">{t.cart.empty}</p>
@@ -113,12 +113,12 @@ export function CartDrawer() {
             ) : (
               <>
                 {/* Progression vers la livraison offerte */}
-                <div className="mx-5 rounded-2xl bg-white p-3.5 shadow-soft">
+                <div className="mx-5 rounded-2xl bg-surface p-3.5 shadow-soft">
                   <p className="flex items-center gap-2 text-sm font-semibold">
                     <IconTruck size={18} className="shrink-0 text-muted" />
                     {left > 0 ? t.cart.freeDeliveryLeft(formatPrice(left)) : t.cart.freeDeliveryReached}
                   </p>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-cream-deep">
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-raised">
                     <div
                       className="h-full origin-left rounded-full bg-accent transition-transform duration-500 ease-out-expo rtl:origin-right"
                       style={{ transform: `scaleX(${Math.min(1, subtotal / freeFrom)})` }}
@@ -132,7 +132,7 @@ export function CartDrawer() {
                       <Link
                         href={`/produit/${item.slug}`}
                         onClick={close}
-                        className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-cream-deep"
+                        className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-raised"
                       >
                         <Image src={item.image} alt="" fill sizes="80px" className="object-cover" />
                       </Link>
@@ -151,7 +151,7 @@ export function CartDrawer() {
                           <button
                             type="button"
                             onClick={() => remove(item.key)}
-                            className="text-sm font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
+                            className="text-sm font-medium text-muted underline-offset-4 hover:text-fg hover:underline"
                           >
                             {t.cart.remove}
                           </button>
@@ -178,7 +178,7 @@ export function CartDrawer() {
                   <button
                     type="button"
                     onClick={close}
-                    className="mt-2 h-11 w-full rounded-full text-sm font-semibold text-ink/70 hover:bg-ink/5 hover:text-ink"
+                    className="mt-2 h-11 w-full rounded-full text-sm font-semibold text-fg/70 hover:bg-fg/5 hover:text-fg"
                   >
                     {t.cart.continue}
                   </button>

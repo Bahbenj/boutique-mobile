@@ -1,22 +1,23 @@
 import { siteConfig } from "@/config/site";
-import { reviews } from "@/data/home";
+import { getPublishedReviews } from "@/lib/storefront";
 import { HeroScroll } from "@/components/sections/HeroScroll";
 import { CategoryBento } from "@/components/sections/home/CategoryBento";
 import { Faq } from "@/components/sections/home/Faq";
 import { FeaturedProducts } from "@/components/sections/home/FeaturedProducts";
 import { OrderSteps } from "@/components/sections/home/OrderSteps";
 import { Promises } from "@/components/sections/home/Promises";
-import { RepairSection } from "@/components/sections/home/RepairSection";
 import { Reviews } from "@/components/sections/home/Reviews";
+import { Services } from "@/components/sections/home/Services";
 import { StoreVisit } from "@/components/sections/home/StoreVisit";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const reviews = await getPublishedReviews();
   // Numérotation des badges « 01 · … » : les sections désactivées ne créent pas de trou
   const order = [
     "rayons",
     "selection",
     "commander",
-    siteConfig.features.repair && "reparation",
+    siteConfig.features.services && "services",
     reviews.length > 0 && "avis",
     "faq",
     "magasin",
@@ -30,8 +31,8 @@ export default function HomePage() {
       <CategoryBento index={n("rayons")} />
       <FeaturedProducts index={n("selection")} />
       <OrderSteps index={n("commander")} />
-      <RepairSection index={n("reparation")} />
-      <Reviews index={n("avis")} />
+      <Services index={n("services")} />
+      <Reviews index={n("avis")} reviews={reviews} />
       <Faq index={n("faq")} />
       <StoreVisit index={n("magasin")} />
     </>

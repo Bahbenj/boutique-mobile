@@ -32,7 +32,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         {orders.length ? (
           <OrderList orders={orders} />
         ) : (
-          <p className="rounded-card bg-white p-8 text-center font-semibold shadow-soft">
+          <p className="rounded-card bg-surface p-8 text-center font-semibold shadow-soft">
             {filtered ? "Aucune commande ne correspond à ces filtres." : "Aucune commande pour l'instant."}
           </p>
         )}

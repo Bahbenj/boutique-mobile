@@ -76,11 +76,11 @@ export function ImageManager({
     <div>
       <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
         {images.map((url, i) => (
-          <li key={url} className="group relative aspect-square overflow-hidden rounded-2xl bg-cream-deep">
+          <li key={url} className="group relative aspect-square overflow-hidden rounded-2xl bg-raised">
             <Image src={url} alt={`Photo ${i + 1}`} fill sizes="(min-width: 1024px) 160px, 33vw" className="object-cover" />
             {i === 0 && (
               // En bas à gauche : la flèche « gauche » y est masquée pour la 1re photo
-              <span className="pointer-events-none absolute start-1.5 bottom-2.5 rounded-full bg-ink px-2 py-0.5 text-[0.65rem] font-bold text-cream">
+              <span className="pointer-events-none absolute start-1.5 bottom-2.5 rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-bold text-on-accent">
                 Principale
               </span>
             )}
@@ -88,7 +88,7 @@ export function ImageManager({
               type="button"
               onClick={() => remove(url)}
               aria-label={`Retirer la photo ${i + 1}`}
-              className="absolute end-1.5 top-1.5 grid size-8 place-items-center rounded-full bg-white/90 text-ink shadow-soft hover:bg-white"
+              className="absolute end-1.5 top-1.5 grid size-8 place-items-center rounded-full bg-canvas/85 text-fg shadow-soft hover:bg-surface"
             >
               <IconClose size={14} />
             </button>
@@ -99,7 +99,7 @@ export function ImageManager({
                   onClick={() => move(i, i - 1)}
                   disabled={i === 0}
                   aria-label={`Déplacer la photo ${i + 1} vers la gauche`}
-                  className="grid size-8 place-items-center rounded-full bg-white/90 shadow-soft disabled:invisible"
+                  className="grid size-8 place-items-center rounded-full bg-canvas/85 shadow-soft disabled:invisible"
                 >
                   <IconChevron dir="left" size={16} />
                 </button>
@@ -108,7 +108,7 @@ export function ImageManager({
                   onClick={() => move(i, i + 1)}
                   disabled={i === images.length - 1}
                   aria-label={`Déplacer la photo ${i + 1} vers la droite`}
-                  className="grid size-8 place-items-center rounded-full bg-white/90 shadow-soft disabled:invisible"
+                  className="grid size-8 place-items-center rounded-full bg-canvas/85 shadow-soft disabled:invisible"
                 >
                   <IconChevron dir="right" size={16} />
                 </button>
@@ -122,7 +122,7 @@ export function ImageManager({
             key={p.id}
             className={cn(
               "relative grid aspect-square place-items-center rounded-2xl p-2 text-center text-xs",
-              p.error ? "bg-red-50 text-red-800" : "skeleton text-muted",
+              p.error ? "bg-danger-soft text-danger" : "skeleton text-muted",
             )}
           >
             {p.error ? (
@@ -147,7 +147,7 @@ export function ImageManager({
             <button
               type="button"
               onClick={() => input.current?.click()}
-              className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line text-sm font-semibold text-muted transition-colors hover:border-ink/40 hover:text-ink"
+              className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line text-sm font-semibold text-muted transition-colors hover:border-fg/40 hover:text-fg"
             >
               {images.length ? <IconPlus size={20} /> : <IconImage size={22} />}
               {images.length ? "Ajouter" : "Ajouter des photos"}
@@ -165,7 +165,7 @@ export function ImageManager({
         aria-hidden="true"
         onChange={(e) => addFiles(e.target.files)}
       />
-      <p className={cn("mt-2 text-xs", error ? "font-medium text-red-700" : "text-muted")}>
+      <p className={cn("mt-2 text-xs", error ? "font-medium text-danger" : "text-muted")}>
         {error ?? `La 1re photo est la photo principale. ${MAX_IMAGES} maximum, compressées automatiquement.`}
       </p>
     </div>

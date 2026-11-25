@@ -1,19 +1,25 @@
-import { siteConfig, type DeliveryOptionId } from "@/config/site";
+import { paymentLabel, type DeliveryZone, type PaymentMethod } from "@/config/site";
+import { formatMlPhoneIntl } from "./phone";
 import { formatPrice } from "./utils";
 
-/** Frais de livraison : offerts au-delà du seuil, sauf option payante explicite (express). */
-export function deliveryFee(optionId: DeliveryOptionId, subtotal: number) {
-  const option = siteConfig.delivery.options.find((o) => o.id === optionId);
-  if (!option) return 0;
-  if (optionId === "home" && subtotal >= siteConfig.delivery.freeFrom) return 0;
-  return option.price;
+export type DeliveryMode = "home" | "pickup";
+
+/**
+ * Frais de livraison : ceux de la zone, offerts au-delà du seuil ; retrait
+ * gratuit. Calcul d'AFFICHAGE : le montant facturé est recalculé en base
+ * (place_order) à partir des zones et réglages enregistrés.
+ */
+export function deliveryFee(mode: DeliveryMode, zone: Pick<DeliveryZone, "fee"> | undefined, subtotal: number, freeFrom: number | null) {
+  if (mode === "pickup" || !zone) return 0;
+  if (freeFrom != null && subtotal >= freeFrom) return 0;
+  return zone.fee;
 }
 
 export type OrderLine = { name: string; variant?: string; qty: number; price: number };
 export type OrderCustomer = {
   name: string;
-  phone: string;
-  governorate: string;
+  phone: string; // 8 chiffres
+  region: string; // nom de la zone (« Bamako – Commune IV »)
   city: string;
   address: string;
   note?: string;
@@ -25,6 +31,7 @@ export function orderWhatsappMessage({
   lines,
   customer,
   delivery,
+  payment,
   subtotal,
   fee,
 }: {
@@ -32,6 +39,7 @@ export function orderWhatsappMessage({
   lines: OrderLine[];
   customer: OrderCustomer;
   delivery: string;
+  payment: PaymentMethod["id"];
   subtotal: number;
   fee: number;
 }) {
@@ -43,17 +51,12 @@ export function orderWhatsappMessage({
     "",
     `Sous-total : ${formatPrice(subtotal)}`,
     `Livraison (${delivery}) : ${fee ? formatPrice(fee) : "offerte"}`,
-    `Total à payer à la livraison : ${formatPrice(subtotal + fee)}`,
+    `Total : ${formatPrice(subtotal + fee)}`,
+    `Paiement : ${paymentLabel(payment)}`,
     "",
     `Nom : ${customer.name}`,
-    `Téléphone : ${customer.phone}`,
-    `Adresse : ${customer.address}, ${customer.city}, ${customer.governorate}`,
+    `Téléphone : ${formatMlPhoneIntl(customer.phone)}`,
+    `Adresse : ${[customer.address, customer.city, customer.region].filter(Boolean).join(", ")}`,
     ...(customer.note ? [`Note : ${customer.note}`] : []),
   ].join("\n");
-}
-
-/** Numéro tunisien : 8 chiffres, éventuellement précédé de +216 / 00216. */
-export function normalizeTnPhone(raw: string) {
-  const digits = raw.replace(/\D/g, "").replace(/^(00)?216/, "");
-  return /^[2-9]\d{7}$/.test(digits) ? digits : null;
 }

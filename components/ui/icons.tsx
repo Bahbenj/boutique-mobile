@@ -231,3 +231,41 @@ export const IconSpinner = (p: IconProps) => (
     <path d="M12 3a9 9 0 1 0 9 9" />
   </Svg>
 );
+
+// --- Services ----------------------------------------------------------------
+export const IconUnlock = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 7.5-2" />
+  </Svg>
+);
+export const IconTransfer = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 8h13l-3-3M20 16H7l3 3" />
+  </Svg>
+);
+export const IconSmartphone = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="M10.5 18.5h3" />
+  </Svg>
+);
+export const IconRefresh = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" />
+  </Svg>
+);
+export const IconHeadset = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+    <rect x="3" y="14" width="4" height="6" rx="1.5" />
+    <rect x="17" y="14" width="4" height="6" rx="1.5" />
+    <path d="M19 20a3 3 0 0 1-3 2h-2" />
+  </Svg>
+);
+export const IconMail = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m4 7 8 6 8-6" />
+  </Svg>
+);

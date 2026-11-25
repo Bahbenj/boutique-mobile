@@ -2,9 +2,9 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const control =
-  "w-full rounded-2xl border border-line bg-white px-4 text-[1rem] text-ink placeholder:text-ink/35 " +
-  "transition-[border-color,box-shadow] outline-none focus:border-ink focus:ring-4 focus:ring-accent/25 " +
-  "aria-[invalid=true]:border-red-600";
+  "w-full rounded-2xl border border-line bg-raised px-4 text-[1rem] text-fg placeholder:text-fg/45 " +
+  "transition-[border-color,box-shadow] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 " +
+  "aria-[invalid=true]:border-danger";
 
 type FieldProps = { label: string; error?: string; hint?: ReactNode; className?: string };
 
@@ -13,7 +13,7 @@ export function Field({ label, error, hint, className, ...input }: FieldProps & 
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-fg">
         {label}
       </label>
       <input
@@ -25,7 +25,7 @@ export function Field({ label, error, hint, className, ...input }: FieldProps & 
       />
       {hint && !error && <p className="mt-1.5 text-xs text-muted">{hint}</p>}
       {error && (
-        <p id={`${id}-err`} className="mt-1.5 text-xs font-medium text-red-700">
+        <p id={`${id}-err`} className="mt-1.5 text-xs font-medium text-danger">
           {error}
         </p>
       )}
@@ -43,7 +43,7 @@ export function SelectField({
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-fg">
         {label}
       </label>
       <select
@@ -53,14 +53,14 @@ export function SelectField({
         className={cn(control, "h-12 appearance-none bg-[length:16px] bg-[position:right_1rem_center] bg-no-repeat pe-10")}
         style={{
           backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a9ba' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
         }}
         {...select}
       >
         {children}
       </select>
       {error && (
-        <p id={`${id}-err`} className="mt-1.5 text-xs font-medium text-red-700">
+        <p id={`${id}-err`} className="mt-1.5 text-xs font-medium text-danger">
           {error}
         </p>
       )}
@@ -72,7 +72,7 @@ export function TextareaField({ label, className, ...props }: FieldProps & Compo
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-fg">
         {label}
       </label>
       <textarea id={id} className={cn(control, "min-h-24 py-3")} {...props} />

@@ -18,15 +18,29 @@ export function slugify(value: string) {
     .slice(0, 120);
 }
 
-/** « 1 299,5 » / « 1299.5 » → 1299.5 ; vide → null ; invalide → NaN */
+/**
+ * Montant en FCFA (entier, sans décimales) : « 750 000 », « 750.000 »,
+ * « 750000 FCFA » → 750000 ; vide → null ; invalide → NaN.
+ * Espaces et points ne sont acceptés que comme séparateurs de milliers
+ * (groupes de 3 chiffres) : « 10.5 » ou « 75 00 » sont refusés, jamais lus 105 ou 7500.
+ */
 export function parseAmount(raw: string): number | null {
-  const s = raw.replace(/\s| |DT/gi, "").replace(",", ".");
+  const s = raw
+    .replace(/[\u00a0\u202f]/g, " ")
+    .replace(/\s*F\s?CFA\s*$/i, "")
+    .trim();
   if (!s) return null;
-  return /^\d+(\.\d{1,3})?$/.test(s) ? Number(s) : NaN;
+  if (/^\d{1,10}$/.test(s)) return Number(s);
+  if (/^\d{1,3}([ .]\d{3})+$/.test(s)) return Number(s.replace(/[ .]/g, ""));
+  return NaN;
 }
 
 const amount = (label: string) =>
-  z.number({ error: `${label} : montant invalide.` }).min(0, `${label} : montant invalide.`).max(1_000_000, `${label} : montant trop élevé.`);
+  z
+    .number({ error: `${label} : montant invalide (nombre entier en FCFA).` })
+    .int(`${label} : le franc CFA n'a pas de décimales.`)
+    .min(0, `${label} : montant invalide.`)
+    .max(100_000_000, `${label} : montant trop élevé.`);
 
 const text = (max: number) => z.string().trim().max(max, `${max} caractères maximum.`);
 

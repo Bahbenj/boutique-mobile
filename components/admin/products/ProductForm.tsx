@@ -200,15 +200,15 @@ export function ProductForm({
 
           <FormSection
             title="Prix et stock"
-            description={hasStorage ? "Le prix affiché « dès » est celui de la première capacité." : "Montants en dinars (DT)."}
+            description={hasStorage ? "Le prix affiché « dès » est celui de la première capacité." : "Montants en francs CFA (FCFA), sans décimales."}
           >
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {!hasStorage && (
                 <>
-                  <Field label="Prix (DT)" inputMode="decimal" value={price} onChange={(ev) => touch(setPrice)(ev.target.value)} error={e("price")} required />
+                  <Field label="Prix (FCFA)" inputMode="numeric" value={price} onChange={(ev) => touch(setPrice)(ev.target.value)} error={e("price")} required />
                   <Field
-                    label="Ancien prix (DT)"
-                    inputMode="decimal"
+                    label="Ancien prix (FCFA)"
+                    inputMode="numeric"
                     value={oldPrice}
                     onChange={(ev) => touch(setOldPrice)(ev.target.value)}
                     error={e("old_price")}
@@ -240,7 +240,7 @@ export function ProductForm({
                     placeholder="Titane noir"
                     onChange={(ev) => touch(setColors)(colors.map((x) => (x.key === c.key ? { ...x, a: ev.target.value } : x)))}
                     aria-invalid={Boolean(e(`variants.colors.${i}.name`)) || undefined}
-                    className="h-11 min-w-0 flex-1 rounded-2xl border border-line px-4 text-[1rem] outline-none focus:border-ink focus:ring-4 focus:ring-accent/25 aria-[invalid=true]:border-red-600"
+                    className="h-11 min-w-0 flex-1 rounded-2xl border border-line bg-raised px-4 text-[1rem] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 aria-[invalid=true]:border-danger"
                   />
                   <IconButton label={`Retirer la couleur ${i + 1}`} onClick={() => touch(setColors)(colors.filter((x) => x.key !== c.key))}>
                     <IconClose size={16} />
@@ -256,7 +256,7 @@ export function ProductForm({
             <h3 className="mt-6 text-sm font-bold">Capacités</h3>
             <ul className="mt-2 space-y-3">
               {storage.map((s, i) => (
-                <li key={s.key} className="rounded-2xl bg-cream/60 p-3">
+                <li key={s.key} className="rounded-2xl bg-canvas/60 p-3">
                   <div className="grid grid-cols-[1fr_1fr] gap-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
                     <Field
                       label="Capacité"
@@ -267,15 +267,15 @@ export function ProductForm({
                       className="col-span-2 sm:col-span-1"
                     />
                     <Field
-                      label="Prix (DT)"
-                      inputMode="decimal"
+                      label="Prix (FCFA)"
+                      inputMode="numeric"
                       value={s.b}
                       onChange={(ev) => touch(setStorage)(storage.map((x) => (x.key === s.key ? { ...x, b: ev.target.value } : x)))}
                       error={e(`variants.storage.${i}.price`)}
                     />
                     <Field
                       label="Ancien prix"
-                      inputMode="decimal"
+                      inputMode="numeric"
                       value={s.c}
                       onChange={(ev) => touch(setStorage)(storage.map((x) => (x.key === s.key ? { ...x, c: ev.target.value } : x)))}
                       error={e(`variants.storage.${i}.old_price`)}
@@ -383,7 +383,7 @@ export function ProductForm({
             <Button type="submit" size="lg" disabled={pending}>
               {pending ? "Enregistrement…" : product ? "Enregistrer" : "Créer le produit"}
             </Button>
-            <Link href="/admin/produits" className="py-2 text-center text-sm font-semibold text-muted hover:text-ink">
+            <Link href="/admin/produits" className="py-2 text-center text-sm font-semibold text-muted hover:text-fg">
               Retour à la liste
             </Link>
           </div>
@@ -391,9 +391,9 @@ export function ProductForm({
       </div>
 
       {/* Mobile : barre d'enregistrement fixée au-dessus des onglets */}
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line bg-cream/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="flex items-center gap-3">
-          <p className={cn("flex-1 text-xs", dirty ? "font-semibold text-ink" : "text-muted")}>{dirty ? "Modifications non enregistrées" : "À jour"}</p>
+          <p className={cn("flex-1 text-xs", dirty ? "font-semibold text-fg" : "text-muted")}>{dirty ? "Modifications non enregistrées" : "À jour"}</p>
           <Button type="submit" disabled={pending}>
             {pending ? "Enregistrement…" : product ? "Enregistrer" : "Créer"}
           </Button>

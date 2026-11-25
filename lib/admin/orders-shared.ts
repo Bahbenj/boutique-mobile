@@ -1,4 +1,5 @@
-import { siteConfig } from "@/config/site";
+import { paymentLabel, paymentMethods, siteConfig } from "@/config/site";
+import { formatMlPhone, waNumber } from "@/lib/phone";
 import { formatPrice } from "@/lib/utils";
 
 /** Commandes : types, statuts et messages, partagés navigateur / serveur. */
@@ -37,10 +38,11 @@ export type DbOrder = {
   number: string;
   customer_name: string;
   phone: string;
-  governorate: string;
+  region: string; // zone de livraison (« Bamako – Commune IV ») ou « Retrait en magasin »
   city: string;
   address: string;
   delivery_method: string;
+  payment_method: string;
   items: OrderItem[];
   subtotal: number;
   delivery_fee: number;
@@ -53,16 +55,18 @@ export type DbOrder = {
 
 export const variantLabel = (i: Pick<OrderItem, "color" | "storage">) => [i.color, i.storage].filter(Boolean).join(" · ");
 
-export const deliveryLabel = (id: string) => siteConfig.delivery.options.find((o) => o.id === id)?.label ?? id;
+export const deliveryLabel = (id: string) => (id === "pickup" ? siteConfig.delivery.pickup.label : "Livraison à domicile");
+
+export { paymentLabel };
 
 export const itemCount = (o: Pick<DbOrder, "items">) => o.items.reduce((n, i) => n + i.qty, 0);
 
-/** « 22123456 » → « 22 123 456 » */
-export const formatPhone = (p: string) => p.replace(/^(\d{2})(\d{3})(\d{3})$/, "$1 $2 $3");
+/** « 76123456 » → « 76 12 34 56 » */
+export const formatPhone = formatMlPhone;
 
 // --- Dates : toujours à l'heure du magasin -----------------------------------------
 
-export const SHOP_TZ = "Africa/Tunis";
+export const SHOP_TZ = siteConfig.timeZone; // Africa/Bamako (GMT)
 
 const dateTimeFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: SHOP_TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const fullDateFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: SHOP_TZ, dateStyle: "long", timeStyle: "short" });
@@ -75,23 +79,30 @@ export const formatCsvDate = (iso: string) => csvDateFmt.format(new Date(iso));
 
 // --- WhatsApp : message au client selon le statut ----------------------------------
 
-export function customerMessage(o: Pick<DbOrder, "number" | "customer_name" | "total" | "status" | "address" | "city" | "governorate" | "delivery_method">) {
+export function customerMessage(
+  o: Pick<DbOrder, "number" | "customer_name" | "total" | "status" | "address" | "city" | "region" | "delivery_method" | "payment_method">,
+) {
   const firstName = o.customer_name.trim().split(/\s+/)[0];
   const total = formatPrice(Number(o.total));
   const hello = `Bonjour ${firstName}, ici ${siteConfig.name}.`;
   const pickup = o.delivery_method === "pickup";
-  const where = [o.address, o.city, o.governorate].filter(Boolean).join(", ");
+  const where = [o.address, o.city, o.region].filter(Boolean).join(", ");
+  // Mobile Money / virement : instructions de paiement du magasin
+  const method = paymentMethods.find((m) => m.id === o.payment_method);
+  const payNow = method && method.id !== "cod"
+    ? ` Paiement par ${method.label} : ${method.account ? `envoyez ${total} au ${method.account}` : method.instructions}${method.account ? " en indiquant le n° " + o.number : ""}.`
+    : "";
   switch (o.status) {
     case "nouvelle":
       return pickup
         ? `${hello} Nous avons bien reçu votre commande ${o.number} (${total}), à retirer en magasin. Pouvez-vous nous confirmer votre passage ?`
-        : `${hello} Nous avons bien reçu votre commande ${o.number} (${total}). Pouvez-vous confirmer l'adresse de livraison : ${where} ?`;
+        : `${hello} Nous avons bien reçu votre commande ${o.number} (${total}). Pouvez-vous confirmer l'adresse de livraison : ${where} ?${payNow}`;
     case "confirmee":
       return pickup
         ? `${hello} Votre commande ${o.number} est prête : vous pouvez la retirer en magasin. Total à régler : ${total}.`
-        : `${hello} Votre commande ${o.number} est confirmée et sera expédiée très bientôt. Total à régler à la livraison : ${total}.`;
+        : `${hello} Votre commande ${o.number} est confirmée et sera expédiée très bientôt.${payNow || ` Total à régler à la livraison : ${total}.`}`;
     case "expediee":
-      return `${hello} Votre commande ${o.number} est en route. Prévoyez ${total} en espèces pour le livreur.`;
+      return `${hello} Votre commande ${o.number} est en route.${o.payment_method === "cod" ? ` Prévoyez ${total} en espèces pour le livreur.` : ""}`;
     case "livree":
       return `${hello} Merci pour votre achat (commande ${o.number}) ! N'hésitez pas à nous écrire pour toute question.`;
     case "annulee":
@@ -99,16 +110,16 @@ export function customerMessage(o: Pick<DbOrder, "number" | "customer_name" | "t
   }
 }
 
-/** Lien wa.me vers le client (numéro tunisien à 8 chiffres). */
+/** Lien wa.me vers le client (numéro malien à 8 chiffres, indicatif 223 ajouté). */
 export const customerWhatsapp = (o: Parameters<typeof customerMessage>[0] & { phone: string }) =>
-  `https://wa.me/216${o.phone}?text=${encodeURIComponent(customerMessage(o))}`;
+  `https://wa.me/${waNumber(o.phone)}?text=${encodeURIComponent(customerMessage(o))}`;
 
 // --- Périodes de la liste -----------------------------------------------------------
 
 export const periods = { jour: "Aujourd'hui", semaine: "Cette semaine", mois: "Ce mois-ci" } as const;
 export type Period = keyof typeof periods;
 
-/** Début de la période à l'heure de Tunis, en instant UTC (ISO). */
+/** Début de la période à l'heure du magasin (Bamako), en instant UTC (ISO). */
 export function periodStart(period: Period, now = new Date()) {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-US", { timeZone: SHOP_TZ, year: "numeric", month: "numeric", day: "numeric", weekday: "short", timeZoneName: "longOffset" })

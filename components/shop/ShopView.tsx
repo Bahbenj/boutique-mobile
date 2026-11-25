@@ -42,11 +42,11 @@ export function CategoryChips({ chips, active }: { chips: Chip[]; active?: Categ
             aria-current={current ? "page" : undefined}
             className={cn(
               "flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors",
-              current ? "bg-ink text-cream" : "bg-white text-ink shadow-soft hover:bg-ink/5",
+              current ? "bg-accent text-on-accent" : "bg-surface text-fg shadow-soft hover:bg-fg/5",
             )}
           >
             {c.label}
-            <span className={cn("tabular-nums", current ? "text-cream/60" : "text-muted")}>{c.count}</span>
+            <span className={cn("tabular-nums", current ? "text-on-accent" : "text-muted")}>{c.count}</span>
           </Link>
         );
       })}

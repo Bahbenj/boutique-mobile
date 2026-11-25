@@ -1,15 +1,30 @@
 import type { Metadata } from "next";
-import { requireAdmin } from "@/lib/auth";
+import { getAdminSettings } from "@/lib/admin/settings";
 import { AdminPage } from "@/components/admin/AdminPage";
+import { DeliverySettingsForm, PaymentSettingsForm } from "@/components/admin/settings/SettingsForms";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
-/** Emplacement réservé : construit à l'étape 3 de l'administration. */
-export default async function Page() {
-  await requireAdmin();
+/** Paramètres de la boutique : zones et frais de livraison, retrait, modes de paiement. */
+export default async function AdminSettingsPage() {
+  const settings = await getAdminSettings();
+
+  if (!settings.ok) {
+    return (
+      <AdminPage title="Paramètres">
+        <p role="alert" className="rounded-card bg-danger-soft p-5 text-danger">
+          Paramètres illisibles : {settings.error}. Les migrations (supabase/all-in-one.sql) ont-elles été exécutées ?
+        </p>
+      </AdminPage>
+    );
+  }
+
   return (
-    <AdminPage title="Paramètres">
-      <p className="rounded-card bg-white p-6 text-muted shadow-soft">Cette section arrive à l&apos;étape 3.</p>
+    <AdminPage title="Paramètres" description="Livraison et paiement, appliqués immédiatement à la page Commande du site.">
+      <div className="space-y-6">
+        <DeliverySettingsForm initial={settings.delivery} />
+        <PaymentSettingsForm initial={settings.payment} />
+      </div>
     </AdminPage>
   );
 }

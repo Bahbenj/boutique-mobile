@@ -18,7 +18,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       title={product.name}
       description={
         product.is_active ? (
-          <a href={`/produit/${product.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-ink hover:underline">
+          <a href={`/produit/${product.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-fg hover:underline">
             Voir sur le site <IconExternal size={14} />
           </a>
         ) : (
@@ -26,7 +26,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         )
       }
       actions={
-        <Link href="/admin/produits" className="text-sm font-semibold text-muted hover:text-ink">
+        <Link href="/admin/produits" className="text-sm font-semibold text-muted hover:text-fg">
           ← Produits
         </Link>
       }

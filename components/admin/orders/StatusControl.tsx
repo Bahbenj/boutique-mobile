@@ -32,7 +32,7 @@ export function StatusControl({ id, number, status }: { id: string; number: stri
         </Button>
       )}
       {status === "annulee" && (
-        <p className="rounded-2xl bg-cream-deep p-3 text-sm text-muted">
+        <p className="rounded-2xl bg-raised p-3 text-sm text-muted">
           Commande annulée : les articles ont été remis en stock. La réactiver reprend le stock.
         </p>
       )}
@@ -47,7 +47,7 @@ export function StatusControl({ id, number, status }: { id: string; number: stri
             if (to === "annulee") setConfirmCancel(true);
             else change(to);
           }}
-          className="h-11 w-full rounded-2xl border border-line bg-white px-3 text-[0.9375rem] font-semibold outline-none focus:border-ink focus:ring-4 focus:ring-accent/25"
+          className="h-11 w-full rounded-2xl border border-line bg-surface px-3 text-[0.9375rem] font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/25"
         >
           {orderStatuses.map((s) => (
             <option key={s} value={s}>
@@ -62,7 +62,7 @@ export function StatusControl({ id, number, status }: { id: string; number: stri
           type="button"
           onClick={() => setConfirmCancel(true)}
           disabled={pending}
-          className="h-10 w-full rounded-full text-sm font-semibold text-red-700 hover:bg-red-50"
+          className="h-10 w-full rounded-full text-sm font-semibold text-danger hover:bg-danger-soft"
         >
           Annuler la commande
         </button>

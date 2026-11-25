@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   applicationName: siteConfig.name,
   openGraph: {
     type: "website",
-    locale: "fr_TN",
+    locale: "fr_FR",
     siteName: siteConfig.name,
     url: "/",
   },
@@ -29,17 +29,26 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: siteConfig.colors.cream,
+  themeColor: siteConfig.theme.canvas,
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
 };
 
-/** Couleurs de marque injectées depuis config/site.ts. */
+/** Couleurs de marque injectées depuis config/site.ts → theme. */
+const { theme } = siteConfig;
 const brandVars = {
-  "--cream": siteConfig.colors.cream,
-  "--ink": siteConfig.colors.ink,
-  "--accent": siteConfig.colors.accent,
-  "--accent-ink": siteConfig.colors.accentInk,
+  "--canvas": theme.canvas,
+  "--surface": theme.surface,
+  "--raised": theme.raised,
+  "--fg": theme.fg,
+  "--muted": theme.muted,
+  "--accent": theme.accent,
+  "--on-accent": theme.onAccent,
+  "--gold": theme.gold,
+  "--on-gold": theme.onGold,
+  "--danger": theme.danger,
+  "--success": theme.success,
 } as CSSProperties;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

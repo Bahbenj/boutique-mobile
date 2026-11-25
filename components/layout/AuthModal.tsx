@@ -41,7 +41,7 @@ export function AuthModal() {
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          placeholder="+216 XX XXX XXX"
+          placeholder="+223 76 12 34 56"
           required
           data-autofocus={isLogin ? true : undefined}
         />
@@ -54,7 +54,7 @@ export function AuthModal() {
         />
 
         {notice && (
-          <p role="status" className="rounded-2xl bg-accent-soft px-4 py-3 text-sm text-ink">
+          <p role="status" className="rounded-2xl bg-accent-soft px-4 py-3 text-sm text-fg">
             {t.auth.soon}
           </p>
         )}
@@ -72,7 +72,7 @@ export function AuthModal() {
             setNotice(false);
             setAuthMode(isLogin ? "signup" : "login");
           }}
-          className="font-semibold text-ink underline decoration-accent decoration-2 underline-offset-4"
+          className="font-semibold text-fg underline decoration-accent decoration-2 underline-offset-4"
         >
           {isLogin ? t.auth.signupLink : t.auth.loginLink}
         </button>

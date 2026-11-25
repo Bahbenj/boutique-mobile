@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { getOrder } from "@/lib/admin/orders";
-import { deliveryLabel, formatOrderDateLong, formatPhone, itemCount, variantLabel } from "@/lib/admin/orders-shared";
+import { deliveryLabel, formatOrderDateLong, formatPhone, itemCount, paymentLabel, variantLabel } from "@/lib/admin/orders-shared";
 import { formatPrice } from "@/lib/utils";
 import { PrintButton } from "@/components/admin/orders/PrintButton";
 
@@ -19,18 +19,18 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
   return (
     <>
       <div className="mx-auto flex max-w-[21cm] items-center justify-between gap-3 px-4 py-4 print:hidden">
-        <Link href={`/admin/commandes/${order.id}`} className="text-sm font-semibold text-muted hover:text-ink">
+        <Link href={`/admin/commandes/${order.id}`} className="text-sm font-semibold text-muted hover:text-fg">
           ← Commande {order.number}
         </Link>
         <PrintButton />
       </div>
 
-      <article className="delivery-note mx-auto max-w-[21cm] bg-white p-6 text-[13px] leading-snug text-black shadow-soft sm:p-10 print:max-w-none print:p-0 print:shadow-none">
+      <article className="delivery-note mx-auto max-w-[21cm] bg-surface p-6 text-[13px] leading-snug text-black shadow-soft sm:p-10 print:max-w-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-6 border-b-2 border-black pb-4">
           <div>
             <p className="text-xl font-extrabold">{siteConfig.name}</p>
             <p>
-              {address.street}, {address.postalCode} {address.city}
+              {address.street}, {address.district}, {address.city}
             </p>
             <p>Tél. {phone}</p>
           </div>
@@ -51,7 +51,7 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
             <h2 className="mb-1 text-xs font-bold tracking-wide uppercase">{pickup ? "Retrait" : "Livraison"}</h2>
             <p className="font-semibold">{deliveryLabel(order.delivery_method)}</p>
             {!pickup && <p>{[order.address, order.city].filter(Boolean).join(", ")}</p>}
-            <p>{order.governorate}</p>
+            <p>{order.region}</p>
           </div>
         </section>
 
@@ -98,14 +98,17 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
             </tr>
             <tr className="text-lg font-extrabold">
               <td colSpan={3} className="pt-2 text-end">
-                À encaisser
+                {order.payment_method === "cod" ? "À encaisser" : "Total"}
               </td>
               <td className="border-2 border-black px-2 pt-2 text-end whitespace-nowrap">{formatPrice(order.total)}</td>
             </tr>
           </tfoot>
         </table>
 
-        <p className="mt-4 text-xs">Paiement à la livraison. Vérifiez le colis en présence du livreur avant de payer.</p>
+        <p className="mt-4 text-xs">
+          Paiement : <strong>{paymentLabel(order.payment_method)}</strong>.{" "}
+          {order.payment_method === "cod" ? "Vérifiez le colis en présence du livreur avant de payer." : "Vérifiez la réception du paiement avant de remettre le colis."}
+        </p>
 
         <section className="mt-10 grid grid-cols-2 gap-6">
           <div className="h-24 border border-black p-2 text-xs">Remis le : ____ / ____ / ________</div>

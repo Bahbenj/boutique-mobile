@@ -33,7 +33,7 @@ export function Modal({ open, onClose, title, description, children, className, 
       {open && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center p-3 sm:items-center sm:p-6">
           <motion.div
-            className="absolute inset-0 bg-ink/40 backdrop-blur-md"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -49,7 +49,7 @@ export function Modal({ open, onClose, title, description, children, className, 
             aria-describedby={description ? descId : undefined}
             tabIndex={-1}
             className={cn(
-              "relative w-full max-w-md rounded-card-lg bg-white p-6 shadow-lift outline-none sm:p-8",
+              "relative w-full max-w-md rounded-card-lg bg-surface p-6 shadow-lift outline-none sm:p-8",
               className,
             )}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.97 }}
@@ -61,7 +61,7 @@ export function Modal({ open, onClose, title, description, children, className, 
               type="button"
               onClick={onClose}
               aria-label={closeLabel}
-              className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-cream text-ink transition-colors hover:bg-cream-deep"
+              className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-canvas text-fg transition-colors hover:bg-raised"
             >
               <IconClose size={18} />
             </button>

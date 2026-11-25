@@ -12,8 +12,8 @@ export async function AccountMenu({ compact = false }: { compact?: boolean }) {
         type="submit"
         className={
           compact
-            ? "grid size-10 place-items-center rounded-full bg-white text-ink shadow-soft"
-            : "flex h-10 w-full items-center gap-3 rounded-full px-3 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
+            ? "grid size-10 place-items-center rounded-full bg-surface text-fg shadow-soft"
+            : "flex h-10 w-full items-center gap-3 rounded-full px-3 text-sm font-medium text-fg/70 hover:bg-fg/5 hover:text-fg"
         }
         aria-label={compact ? "Se déconnecter" : undefined}
       >

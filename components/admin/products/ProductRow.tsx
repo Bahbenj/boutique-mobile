@@ -73,13 +73,13 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
     });
   };
 
-  const stockTone = stock === 0 ? "text-red-700" : stock <= 3 ? "text-accent-hover" : "text-ink";
+  const stockTone = stock === 0 ? "text-danger" : stock <= 3 ? "text-gold-text" : "text-fg";
 
   return (
-    <li className={cn("rounded-card bg-white p-3 shadow-soft transition-opacity sm:p-4 lg:rounded-none lg:p-0 lg:shadow-none", pendingDelete && "opacity-40")}>
+    <li className={cn("rounded-card bg-surface p-3 shadow-soft transition-opacity sm:p-4 lg:rounded-none lg:p-0 lg:shadow-none", pendingDelete && "opacity-40")}>
       <div className="grid grid-cols-[3.5rem_1fr_auto] gap-x-3 gap-y-3 lg:grid-cols-[3.5rem_minmax(0,1fr)_9.5rem_9.5rem_5.5rem_7.5rem] lg:items-center lg:gap-4 lg:px-4 lg:py-3">
         {/* Photo */}
-        <Link href={`/admin/produits/${p.id}`} className="relative size-14 overflow-hidden rounded-2xl bg-cream-deep" tabIndex={-1} aria-hidden="true">
+        <Link href={`/admin/produits/${p.id}`} className="relative size-14 overflow-hidden rounded-2xl bg-raised" tabIndex={-1} aria-hidden="true">
           {p.images[0] ? (
             <Image src={p.images[0]} alt="" fill sizes="56px" className={cn("object-cover", !active && "opacity-50 grayscale")} />
           ) : (
@@ -98,8 +98,8 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
             {[categoryName ?? "Sans catégorie", p.brand, p.condition !== "neuf" && conditionLabels[p.condition]].filter(Boolean).join(" · ")}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {!active && <Badge tone="cream">Hors ligne</Badge>}
-            {stock === 0 && <Badge tone="dark">Rupture</Badge>}
+            {!active && <Badge tone="subtle">Hors ligne</Badge>}
+            {stock === 0 && <Badge tone="inverse">Rupture</Badge>}
             {p.is_featured && <Badge tone="accent">Vedette</Badge>}
           </div>
         </div>
@@ -121,7 +121,7 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
               <label className="relative block">
                 <span className="sr-only">Prix de {p.name} en dinars</span>
                 <input
-                  inputMode="decimal"
+                  inputMode="numeric"
                   value={price}
                   onChange={(e) => {
                     setPrice(e.target.value);
@@ -130,11 +130,11 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
                   onBlur={savePrice}
                   onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
                   aria-invalid={priceState === "error" || undefined}
-                  className="h-11 w-full rounded-full border border-line bg-cream/60 ps-4 pe-14 text-[1rem] font-semibold tabular-nums outline-none focus:border-ink focus:bg-white focus:ring-4 focus:ring-accent/25 aria-[invalid=true]:border-red-600"
+                  className="h-11 w-full rounded-full border border-line bg-canvas/60 ps-4 pe-14 text-[1rem] font-semibold tabular-nums outline-none focus:border-accent focus:bg-surface focus:ring-4 focus:ring-accent/25 aria-[invalid=true]:border-danger"
                 />
                 <span className="pointer-events-none absolute end-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-xs font-semibold text-muted">
                   <SaveIcon state={priceState} />
-                  DT
+                  FCFA
                 </span>
               </label>
             )}
@@ -143,8 +143,8 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
           {/* Stock */}
           <div>
             <span className="mb-1 block text-xs font-semibold text-muted lg:sr-only">Stock</span>
-            <div className="flex h-11 items-center rounded-full border border-line bg-cream/60 p-0.5">
-              <button type="button" onClick={() => changeStock(stock - 1)} disabled={stock <= 0} aria-label={`Retirer 1 au stock de ${p.name}`} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-white disabled:opacity-30">
+            <div className="flex h-11 items-center rounded-full border border-line bg-canvas/60 p-0.5">
+              <button type="button" onClick={() => changeStock(stock - 1)} disabled={stock <= 0} aria-label={`Retirer 1 au stock de ${p.name}`} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-surface disabled:opacity-30">
                 <IconMinus size={14} />
               </button>
               <input
@@ -154,7 +154,7 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
                 aria-label={`Stock de ${p.name}`}
                 className={cn("w-full min-w-0 bg-transparent text-center text-[1rem] font-bold tabular-nums outline-none", stockTone)}
               />
-              <button type="button" onClick={() => changeStock(stock + 1)} aria-label={`Ajouter 1 au stock de ${p.name}`} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-white">
+              <button type="button" onClick={() => changeStock(stock + 1)} aria-label={`Ajouter 1 au stock de ${p.name}`} className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-surface">
                 <IconPlus size={14} />
               </button>
               <span className="w-5 shrink-0">
@@ -171,7 +171,7 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
 
         {/* Actions */}
         <div className="col-span-3 -mx-1 -mb-1 flex justify-end gap-1 lg:col-span-1 lg:m-0">
-          <Link href={`/admin/produits/${p.id}`} aria-label={`Modifier ${p.name}`} title="Modifier" className="grid size-10 place-items-center rounded-full text-ink/70 hover:bg-ink/5 hover:text-ink">
+          <Link href={`/admin/produits/${p.id}`} aria-label={`Modifier ${p.name}`} title="Modifier" className="grid size-10 place-items-center rounded-full text-fg/70 hover:bg-fg/5 hover:text-fg">
             <IconPencil size={18} />
           </Link>
           <IconButton label={`Dupliquer ${p.name}`} disabled={pendingDup} onClick={() => startDup(() => duplicateProduct(p.id))}>
@@ -198,7 +198,7 @@ export function ProductRow({ product: p, categoryName }: { product: DbProduct; c
         }
       >
         <p>
-          <strong className="text-ink">{p.name}</strong> et ses photos seront supprimés. Les commandes passées restent intactes.
+          <strong className="text-fg">{p.name}</strong> et ses photos seront supprimés. Les commandes passées restent intactes.
         </p>
         <p className="mt-2">Pour le retirer temporairement du site, préférez l&apos;interrupteur « en ligne ».</p>
       </ConfirmDialog>

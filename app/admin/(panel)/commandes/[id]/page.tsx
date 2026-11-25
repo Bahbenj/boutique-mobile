@@ -7,10 +7,11 @@ import {
   customerWhatsapp,
   deliveryLabel,
   formatOrderDateLong,
-  formatPhone,
   itemCount,
+  paymentLabel,
   variantLabel,
 } from "@/lib/admin/orders-shared";
+import { formatMlPhoneIntl, telLink } from "@/lib/phone";
 import { formatPrice } from "@/lib/utils";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { StatusBadge } from "@/components/admin/orders/StatusBadge";
@@ -36,7 +37,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
         </span>
       }
       actions={
-        <Link href="/admin/commandes" className="text-sm font-semibold text-muted hover:text-ink">
+        <Link href="/admin/commandes" className="text-sm font-semibold text-muted hover:text-fg">
           ← Commandes
         </Link>
       }
@@ -47,7 +48,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
           <IconWhatsApp size={18} />
           <span className="max-sm:sr-only">Contacter sur </span>WhatsApp
         </a>
-        <a href={`tel:+216${order.phone}`} className={buttonClasses("light", "md", "px-3 shadow-soft sm:px-5")}>
+        <a href={telLink(order.phone)} className={buttonClasses("light", "md", "px-3 shadow-soft sm:px-5")}>
           <IconPhone size={18} />
           Appeler
         </a>
@@ -65,7 +66,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
             <ul className="divide-y divide-line">
               {order.items.map((item, i) => (
                 <li key={`${item.product_id}-${i}`} className="flex items-center gap-3 py-3 first:pt-0">
-                  <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-cream-deep">
+                  <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-raised">
                     {item.image ? (
                       <Image src={item.image} alt="" fill sizes="56px" className="object-cover" />
                     ) : (
@@ -96,7 +97,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
                 <dd className="font-semibold tabular-nums">{order.delivery_fee ? formatPrice(order.delivery_fee) : "Offerte"}</dd>
               </div>
               <div className="flex items-baseline justify-between border-t border-line pt-2">
-                <dt className="font-bold">Total à encaisser</dt>
+                <dt className="font-bold">{order.payment_method === "cod" ? "Total à encaisser" : "Total"}</dt>
                 <dd className="text-2xl font-extrabold tracking-tight">{formatPrice(order.total)}</dd>
               </div>
             </dl>
@@ -111,8 +112,8 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
               <div>
                 <dt className="text-xs font-semibold text-muted">Téléphone</dt>
                 <dd>
-                  <a href={`tel:+216${order.phone}`} className="font-semibold tabular-nums hover:underline">
-                    {formatPhone(order.phone)}
+                  <a href={telLink(order.phone)} className="font-semibold tabular-nums hover:underline">
+                    {formatMlPhoneIntl(order.phone)}
                   </a>
                 </dd>
               </div>
@@ -120,7 +121,16 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/comma
                 <dt className="text-xs font-semibold text-muted">{pickup ? "Retrait" : "Adresse de livraison"}</dt>
                 <dd className="font-semibold">
                   {pickup ? "En magasin" : [order.address, order.city].filter(Boolean).join(", ")}
-                  <span className="block font-normal text-muted">{order.governorate}</span>
+                  <span className="block font-normal text-muted">{order.region}</span>
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs font-semibold text-muted">Paiement choisi</dt>
+                <dd className="font-semibold">
+                  {paymentLabel(order.payment_method)}
+                  {order.payment_method !== "cod" && (
+                    <span className="block text-sm font-normal text-muted">Vérifiez la réception du paiement avant d&apos;expédier.</span>
+                  )}
                 </dd>
               </div>
               {order.note && (

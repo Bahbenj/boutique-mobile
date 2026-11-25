@@ -1,4 +1,4 @@
-import { siteConfig } from "@/config/site";
+import { directionsUrl, siteConfig, storeAddress, telHref } from "@/config/site";
 import { t } from "@/i18n";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
@@ -10,9 +10,7 @@ import { IconClock, IconPhone, IconPin, IconWhatsApp } from "@/components/ui/ico
 
 /** Adresse, horaires et carte du magasin. Tout vient de config/site.ts. */
 export function StoreVisit({ index }: { index: number }) {
-  const { address, hours, phone } = siteConfig;
-  const fullAddress = `${address.street}, ${address.postalCode} ${address.city}`;
-  const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${fullAddress}, Tunisie`)}`;
+  const { hours, phones } = siteConfig;
 
   return (
     <section aria-labelledby="magasin-title" className="pb-20 sm:pb-28">
@@ -28,7 +26,7 @@ export function StoreVisit({ index }: { index: number }) {
                     <IconPin size={20} />
                     <span className="sr-only">Adresse</span>
                   </dt>
-                  <dd className="font-semibold">{fullAddress}</dd>
+                  <dd className="font-semibold">{storeAddress}</dd>
                 </div>
                 <div className="flex gap-3">
                   <dt className="mt-0.5 text-muted">
@@ -51,16 +49,18 @@ export function StoreVisit({ index }: { index: number }) {
                     <IconPhone size={20} />
                     <span className="sr-only">Téléphone</span>
                   </dt>
-                  <dd>
-                    <a href={`tel:${phone.replace(/\s/g, "")}`} className="font-semibold tabular-nums hover:underline">
-                      {phone}
-                    </a>
+                  <dd className="flex flex-wrap gap-x-4 gap-y-1">
+                    {phones.map((p) => (
+                      <a key={p} href={telHref(p)} className="font-semibold tabular-nums hover:text-accent hover:underline">
+                        {p}
+                      </a>
+                    ))}
                   </dd>
                 </div>
               </dl>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button href={directions} variant="dark">
+                <Button href={directionsUrl} variant="dark">
                   <IconPin size={18} />
                   {t.home.directions}
                 </Button>
@@ -77,7 +77,7 @@ export function StoreVisit({ index }: { index: number }) {
                 title={t.home.mapTitle}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="absolute inset-2 h-[calc(100%-1rem)] w-[calc(100%-1rem)] rounded-[1.25rem] border-0 bg-cream-deep"
+                className="absolute inset-2 h-[calc(100%-1rem)] w-[calc(100%-1rem)] rounded-[1.25rem] border-0 bg-raised"
               />
             </div>
           </Card>

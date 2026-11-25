@@ -49,7 +49,7 @@ export function ProductPurchase({ product: p }: { product: Product }) {
                 <span
                   aria-hidden="true"
                   title={c.name}
-                  className="block size-10 rounded-full ring-1 ring-ink/15 ring-offset-2 ring-offset-cream transition-shadow peer-checked:ring-2 peer-checked:ring-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-accent"
+                  className="block size-10 rounded-full ring-1 ring-fg/15 ring-offset-2 ring-offset-canvas transition-shadow peer-checked:ring-2 peer-checked:ring-fg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-accent"
                   style={{ background: c.hex }}
                 />
               </label>
@@ -75,7 +75,7 @@ export function ProductPurchase({ product: p }: { product: Product }) {
                 <span
                   className={cn(
                     "flex h-12 items-center rounded-full px-5 text-sm font-semibold ring-1 transition-colors",
-                    "bg-white ring-line hover:ring-ink/40 peer-checked:bg-ink peer-checked:text-cream peer-checked:ring-ink",
+                    "bg-surface ring-line hover:ring-fg/40 peer-checked:bg-accent peer-checked:text-on-accent peer-checked:ring-accent",
                     "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent",
                   )}
                 >
@@ -103,10 +103,10 @@ export function ProductPurchase({ product: p }: { product: Product }) {
         </Button>
       </div>
 
-      <p className={cn("mt-3 flex items-center gap-2 text-sm font-medium", stock === "low" ? "text-ink" : "text-muted")}>
+      <p className={cn("mt-3 flex items-center gap-2 text-sm font-medium", stock === "low" ? "text-fg" : "text-muted")}>
         <span
           aria-hidden="true"
-          className={cn("size-2 rounded-full", stock === "out" ? "bg-red-600" : stock === "low" ? "bg-accent" : "bg-whatsapp")}
+          className={cn("size-2 rounded-full", stock === "out" ? "bg-danger" : stock === "low" ? "bg-gold" : "bg-success")}
         />
         {soldOut ? t.product.outOfStock : stock === "low" ? t.product.lowStockHint(p.stock) : t.product.inStock}
       </p>

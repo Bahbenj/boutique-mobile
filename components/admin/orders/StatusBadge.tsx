@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
  * donc des tons neutres, toujours accompagnés du libellé.
  */
 const tones: Record<OrderStatus, { box: string; dot: string }> = {
-  nouvelle: { box: "bg-accent-soft text-ink", dot: "bg-accent" },
-  confirmee: { box: "bg-white text-ink ring-1 ring-line", dot: "bg-ink" },
-  expediee: { box: "bg-ink text-cream", dot: "bg-cream" },
-  livree: { box: "bg-cream-deep text-ink", dot: "bg-whatsapp" },
-  annulee: { box: "bg-cream-deep text-muted", dot: "bg-muted/50" },
+  nouvelle: { box: "bg-accent-soft text-fg", dot: "bg-accent" },
+  confirmee: { box: "bg-surface text-fg ring-1 ring-line", dot: "bg-fg" },
+  expediee: { box: "bg-fg text-canvas", dot: "bg-canvas" },
+  livree: { box: "bg-success-soft text-fg", dot: "bg-success" },
+  annulee: { box: "bg-raised text-muted", dot: "bg-muted/50" },
 };
 
 export function StatusBadge({ status, className }: { status: OrderStatus; className?: string }) {

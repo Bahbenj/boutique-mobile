@@ -49,7 +49,7 @@ export function LoginForm() {
         <div
           role="alert"
           data-kind={state.kind}
-          className={cn("rounded-2xl px-4 py-3 text-sm", serverSide ? "bg-accent-soft text-ink" : "bg-red-50 text-red-800")}
+          className={cn("rounded-2xl px-4 py-3 text-sm", serverSide ? "bg-accent-soft text-fg" : "bg-danger-soft text-danger")}
         >
           <p className="font-bold">{titles[state.kind]}</p>
           <p className="mt-0.5">{state.error}</p>

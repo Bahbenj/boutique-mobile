@@ -22,7 +22,7 @@ export default async function AdminDashboardPage() {
   if ("error" in data) {
     return (
       <AdminPage title="Tableau de bord">
-        <p role="alert" className="rounded-card bg-red-50 p-5 text-red-800">
+        <p role="alert" className="rounded-card bg-danger-soft p-5 text-danger">
           Statistiques indisponibles : {data.error?.message}. La migration du tableau de bord (supabase/all-in-one.sql) a-t-elle été exécutée ?
         </p>
       </AdminPage>
@@ -40,23 +40,23 @@ export default async function AdminDashboardPage() {
   return (
     <AdminPage title="Tableau de bord" description={`Connecté en tant que ${admin.email}`}>
       {/* Chiffre principal : ce qui attend une action */}
-      <section aria-labelledby="todo-title" className="rounded-card-lg bg-ink p-5 text-cream sm:p-7">
+      <section aria-labelledby="todo-title" className="rounded-card-lg bg-surface p-5 ring-1 ring-accent/30 sm:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 id="todo-title" className="text-sm font-semibold text-cream/70">
+            <h2 id="todo-title" className="text-sm font-semibold text-muted">
               Commandes à traiter
             </h2>
             <p className="mt-1 text-6xl leading-none font-extrabold tracking-tight">{toProcess}</p>
           </div>
           <Link
             href={toProcess ? "/admin/commandes?statut=nouvelle" : "/admin/commandes"}
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-on-accent hover:bg-accent-hover"
           >
             {stats.pending.nouvelle ? "Traiter les nouvelles" : "Voir les commandes"}
             <IconArrowRight size={16} />
           </Link>
         </div>
-        <ul className="mt-5 grid grid-cols-3 gap-2 border-t border-cream/15 pt-4 text-sm">
+        <ul className="mt-5 grid grid-cols-3 gap-2 border-t border-fg/12 pt-4 text-sm">
           {[
             { n: stats.pending.nouvelle, label: "à confirmer", statut: "nouvelle" },
             { n: stats.pending.confirmee, label: "à expédier", statut: "confirmee" },
@@ -65,7 +65,7 @@ export default async function AdminDashboardPage() {
             <li key={s.statut}>
               <Link href={`/admin/commandes?statut=${s.statut}`} className="block rounded-xl py-1 hover:text-accent">
                 <span className="block text-2xl font-bold">{s.n}</span>
-                <span className="text-cream/70">{s.label}</span>
+                <span className="text-muted">{s.label}</span>
               </Link>
             </li>
           ))}
@@ -80,7 +80,7 @@ export default async function AdminDashboardPage() {
         <ul className="grid gap-3 sm:grid-cols-3">
           {periodsList.map((p) => (
             <li key={p.label}>
-              <Link href={p.href} className="block h-full rounded-card bg-white p-5 shadow-soft transition-shadow hover:shadow-lift">
+              <Link href={p.href} className="block h-full rounded-card bg-surface p-5 shadow-soft transition-shadow hover:shadow-lift">
                 <p className="text-sm font-semibold text-muted">{p.label}</p>
                 <p className="mt-2 text-3xl font-bold tracking-tight">{formatPrice(p.revenue)}</p>
                 <p className="mt-1 text-sm text-muted">
@@ -99,12 +99,12 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {/* Dernières commandes */}
-        <section aria-labelledby="latest-title" className="rounded-card bg-white p-5 shadow-soft">
+        <section aria-labelledby="latest-title" className="rounded-card bg-surface p-5 shadow-soft">
           <div className="flex items-center justify-between">
             <h2 id="latest-title" className="text-lg font-extrabold">
               Dernières commandes
             </h2>
-            <Link href="/admin/commandes" className="text-sm font-semibold text-muted hover:text-ink">
+            <Link href="/admin/commandes" className="text-sm font-semibold text-muted hover:text-fg">
               Tout voir
             </Link>
           </div>
@@ -112,7 +112,7 @@ export default async function AdminDashboardPage() {
             <ul className="mt-3 divide-y divide-line">
               {latest.map((o) => (
                 <li key={o.id}>
-                  <Link href={`/admin/commandes/${o.id}`} className="flex items-center gap-3 py-3 hover:bg-cream/50">
+                  <Link href={`/admin/commandes/${o.id}`} className="flex items-center gap-3 py-3 hover:bg-canvas/50">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">
                         {o.number} · {o.customer_name}
@@ -133,13 +133,13 @@ export default async function AdminDashboardPage() {
         </section>
 
         {/* Stock à surveiller : seule vraie alerte de la page (icône + libellé) */}
-        <section aria-labelledby="stock-title" className="rounded-card bg-white p-5 shadow-soft">
+        <section aria-labelledby="stock-title" className="rounded-card bg-surface p-5 shadow-soft">
           <div className="flex items-center justify-between">
             <h2 id="stock-title" className="text-lg font-extrabold">
               Stock faible
             </h2>
             {lowStock.count > 0 && (
-              <Link href="/admin/produits?statut=faible&tri=stock" className="text-sm font-semibold text-muted hover:text-ink">
+              <Link href="/admin/produits?statut=faible&tri=stock" className="text-sm font-semibold text-muted hover:text-fg">
                 {lowStock.count > lowStock.items.length ? `Les ${lowStock.count}` : "Gérer"}
               </Link>
             )}
@@ -148,8 +148,8 @@ export default async function AdminDashboardPage() {
             <ul className="mt-3 divide-y divide-line">
               {lowStock.items.map((p) => (
                 <li key={p.id}>
-                  <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3 py-2.5 hover:bg-cream/50">
-                    <span className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-cream-deep">
+                  <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3 py-2.5 hover:bg-canvas/50">
+                    <span className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-raised">
                       {p.images[0] ? (
                         <Image src={p.images[0]} alt="" fill sizes="40px" className="object-cover" />
                       ) : (
@@ -160,11 +160,11 @@ export default async function AdminDashboardPage() {
                     </span>
                     <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                     {p.stock === 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-800">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-danger-soft px-2.5 py-1 text-xs font-bold text-danger">
                         <span aria-hidden="true">⦸</span> Rupture
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-ink">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-fg">
                         <span aria-hidden="true">!</span> {p.stock} restant{p.stock > 1 ? "s" : ""}
                       </span>
                     )}

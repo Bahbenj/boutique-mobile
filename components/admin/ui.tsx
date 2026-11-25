@@ -33,7 +33,7 @@ export function Switch({
         aria-hidden="true"
         className={cn(
           "relative h-6 w-10 shrink-0 rounded-full transition-colors duration-200",
-          checked ? "bg-whatsapp" : "bg-ink/20",
+          checked ? "bg-accent" : "bg-fg/25",
         )}
       >
         <span
@@ -57,7 +57,7 @@ export function IconButton({ label, className, tone = "light", ...props }: Compo
       title={label}
       className={cn(
         "grid size-10 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-40",
-        tone === "danger" ? "text-red-700 hover:bg-red-50" : "text-ink/70 hover:bg-ink/5 hover:text-ink",
+        tone === "danger" ? "text-danger hover:bg-danger-soft" : "text-fg/70 hover:bg-fg/5 hover:text-fg",
         className,
       )}
       {...props}
@@ -94,7 +94,7 @@ export function ConfirmDialog({
         <Button variant="light" className="ring-1 ring-line" onClick={onClose}>
           {cancelLabel}
         </Button>
-        <Button className="bg-red-700 text-white hover:bg-red-800" onClick={onConfirm} disabled={pending}>
+        <Button className="bg-danger text-canvas hover:brightness-110" onClick={onConfirm} disabled={pending}>
           {pending ? pendingLabel : confirmLabel}
         </Button>
       </div>
@@ -105,7 +105,7 @@ export function ConfirmDialog({
 /** Carte de section de formulaire. */
 export function FormSection({ title, description, children, className }: { title: string; description?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cn("rounded-card bg-white p-5 shadow-soft sm:p-6", className)}>
+    <section className={cn("rounded-card bg-surface p-5 shadow-soft sm:p-6", className)}>
       <h2 className="text-lg font-extrabold">{title}</h2>
       {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
       <div className="mt-4">{children}</div>
