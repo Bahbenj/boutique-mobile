@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
 import { createPortal } from "react-dom";
-import { siteConfig } from "@/config/site";
 import { t } from "@/i18n";
 import { cartCount, cartSubtotal, useCart } from "@/lib/cart-store";
 import { useDialog } from "@/lib/use-dialog";
@@ -16,8 +15,12 @@ import { buttonClasses } from "@/components/ui/Button";
 import { IconArrowRight, IconBag, IconCheck, IconClose, IconTruck } from "@/components/ui/icons";
 import { QtyStepper } from "./QtyStepper";
 
-/** Tiroir panier latéral (pleine hauteur, pleine largeur sur mobile). */
-export function CartDrawer() {
+/**
+ * Tiroir panier latéral (pleine hauteur, pleine largeur sur mobile).
+ * `freeFrom` : seuil de livraison offerte réglé dans l'admin (null = jamais) ;
+ * `onlyCod` : seul le paiement à la livraison est proposé.
+ */
+export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onlyCod: boolean }) {
   const open = useUI((s) => s.cartOpen);
   const close = useUI((s) => s.closeCart);
   const toast = useUI((s) => s.toast);
@@ -31,8 +34,7 @@ export function CartDrawer() {
 
   const count = cartCount(items);
   const subtotal = cartSubtotal(items);
-  const { freeFrom } = siteConfig.delivery;
-  const left = Math.max(0, freeFrom - subtotal);
+  const left = freeFrom == null ? 0 : Math.max(0, freeFrom - subtotal);
 
   return createPortal(
     <AnimatePresence>
@@ -112,19 +114,21 @@ export function CartDrawer() {
               </div>
             ) : (
               <>
-                {/* Progression vers la livraison offerte */}
-                <div className="mx-5 rounded-2xl bg-surface p-3.5 shadow-soft">
-                  <p className="flex items-center gap-2 text-sm font-semibold">
-                    <IconTruck size={18} className="shrink-0 text-muted" />
-                    {left > 0 ? t.cart.freeDeliveryLeft(formatPrice(left)) : t.cart.freeDeliveryReached}
-                  </p>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-raised">
-                    <div
-                      className="h-full origin-left rounded-full bg-accent transition-transform duration-500 ease-out-expo rtl:origin-right"
-                      style={{ transform: `scaleX(${Math.min(1, subtotal / freeFrom)})` }}
-                    />
+                {/* Progression vers la livraison offerte (masquée si jamais offerte) */}
+                {freeFrom != null && (
+                  <div className="mx-5 rounded-2xl bg-surface p-3.5 shadow-soft">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      <IconTruck size={18} className="shrink-0 text-muted" />
+                      {left > 0 ? t.cart.freeDeliveryLeft(formatPrice(left)) : t.cart.freeDeliveryReached}
+                    </p>
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-raised">
+                      <div
+                        className="h-full origin-left rounded-full bg-accent transition-transform duration-500 ease-out-expo rtl:origin-right"
+                        style={{ transform: `scaleX(${freeFrom > 0 ? Math.min(1, subtotal / freeFrom) : 1})` }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <ul className="mt-2 flex-1 divide-y divide-line overflow-y-auto overscroll-contain px-5">
                   {items.map((item) => (
@@ -166,7 +170,7 @@ export function CartDrawer() {
                     <span className="font-semibold">{t.cart.subtotal}</span>
                     <span className="text-2xl font-extrabold tracking-tight tabular-nums">{formatPrice(subtotal)}</span>
                   </p>
-                  <p className="mt-1 text-sm text-muted">{t.cart.codNote}</p>
+                  <p className="mt-1 text-sm text-muted">{onlyCod ? t.cart.codNote : t.cart.payNote}</p>
                   <Link
                     href="/commande"
                     onClick={close}

@@ -2,7 +2,7 @@
  * Contenu éditorial de la page d'accueil. Les images Unsplash sont des
  * placeholders : remplacer par les photos du magasin (dans /public/images).
  */
-import { deliveryZones, paymentMethods, siteConfig } from "@/config/site";
+import { siteConfig, type DeliveryZone, type PaymentMethod } from "@/config/site";
 import { formatPrice } from "@/lib/utils";
 
 export const unsplash = (id: string, w = 1600) =>
@@ -94,24 +94,27 @@ export const repairImage = {
 
 // --- Comment commander ------------------------------------------------------
 
-const onlyCod = paymentMethods.filter((m) => m.enabled).every((m) => m.id === "cod");
+/** Seul le paiement à la livraison est proposé (réglage admin ou config). */
+export const isOnlyCod = (payments: Pick<PaymentMethod, "id">[]) => payments.every((m) => m.id === "cod");
 
-export const orderSteps = [
-  {
-    title: "Choisissez",
-    text: "Ajoutez votre téléphone au panier et laissez votre nom, numéro et adresse. Aucun paiement en ligne.",
-  },
-  {
-    title: "On vous appelle",
-    text: "Un conseiller confirme la commande, la couleur et l'adresse par téléphone ou WhatsApp, en général dans l'heure.",
-  },
-  {
-    title: "Payez à la réception",
-    text: onlyCod
-      ? "Le livreur vous remet le colis : vous vérifiez, puis vous payez en espèces."
-      : "Le livreur vous remet le colis : vous vérifiez, puis vous payez en espèces. Ou réglez par Mobile Money.",
-  },
-];
+export function buildOrderSteps(payments: Pick<PaymentMethod, "id">[]) {
+  return [
+    {
+      title: "Choisissez",
+      text: "Ajoutez votre téléphone au panier et laissez votre nom, numéro et adresse. Aucun paiement en ligne.",
+    },
+    {
+      title: "On vous appelle",
+      text: "Un conseiller confirme la commande, la couleur et l'adresse par téléphone ou WhatsApp, en général dans l'heure.",
+    },
+    {
+      title: "Payez à la réception",
+      text: isOnlyCod(payments)
+        ? "Le livreur vous remet le colis : vous vérifiez, puis vous payez en espèces."
+        : "Le livreur vous remet le colis : vous vérifiez, puis vous payez en espèces. Ou réglez par Mobile Money.",
+    },
+  ];
+}
 
 // --- Avis clients -----------------------------------------------------------
 
@@ -157,36 +160,62 @@ export const reviews: Review[] = [
 
 export type Faq = { q: string; a: string };
 
-const { warrantyMonths, delivery } = siteConfig;
-const bamakoFees = deliveryZones.filter((z) => z.active && z.group === "bamako").map((z) => z.fee);
-const regionFees = deliveryZones.filter((z) => z.active && z.group === "region").map((z) => z.fee);
+/**
+ * Réglages dont dépendent la FAQ et les étapes de commande : ceux de l'admin
+ * (lib/storefront.ts → getCheckoutSettings), ou par défaut config/site.ts.
+ */
+export type ShopTerms = {
+  zones: Pick<DeliveryZone, "group" | "fee">[]; // zones actives
+  payments: Pick<PaymentMethod, "id">[]; // modes activés
+  freeFrom: number | null;
+  pickup: { enabled: boolean };
+};
+
+const minFee = (zones: ShopTerms["zones"], group: DeliveryZone["group"]) => {
+  const fees = zones.filter((z) => z.group === group).map((z) => z.fee);
+  return fees.length ? Math.min(...fees) : null;
+};
+
+function deliveryAnswer({ zones, freeFrom, pickup }: ShopTerms) {
+  const bamako = minFee(zones, "bamako");
+  const region = minFee(zones, "region");
+  return [
+    zones.length ? "Oui, dans tout le Mali. Les frais dépendent de la zone :" : "La livraison est momentanément suspendue.",
+    bamako != null ? `à Bamako, dès ${formatPrice(bamako)} selon la commune, livré en 24 h.` : "",
+    region != null ? `Dans les régions, dès ${formatPrice(region)}, en 2 à 7 jours selon la distance.` : "",
+    freeFrom != null && zones.length ? `La livraison est offerte dès ${formatPrice(freeFrom)} d'achat.` : "",
+    pickup.enabled ? `Le retrait au magasin de ${siteConfig.address.district} est gratuit.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 /** TODO client : valider la politique de retour (7 jours) et les délais. */
-export const faqs: Faq[] = [
-  {
-    q: "Comment puis-je payer ?",
-    a: onlyCod
-      ? "Vous ne payez rien en ligne : vous payez en espèces à la livraison, après avoir vérifié le téléphone devant le livreur."
-      : "Vous ne payez rien en ligne. Au choix : en espèces à la livraison (vous vérifiez le téléphone devant le livreur, puis vous payez), ou par Mobile Money : nous vous envoyons les instructions par WhatsApp après confirmation.",
-  },
-  {
-    q: "Livrez-vous partout au Mali ?",
-    a: `Oui, dans tout le Mali. Les frais dépendent de la zone : à Bamako, dès ${formatPrice(Math.min(...bamakoFees))} selon la commune, livré en 24 h. Dans les régions, dès ${formatPrice(Math.min(...regionFees))}, en 2 à 7 jours selon la distance. ${delivery.freeFrom != null ? `La livraison est offerte dès ${formatPrice(delivery.freeFrom)} d'achat. ` : ""}Le retrait au magasin de N'Tabacoro est gratuit.`,
-  },
-  {
-    q: "Que comprend le service après-vente ?",
-    a: "Après l'achat, vous gardez un interlocuteur sur WhatsApp. Diagnostic gratuit en magasin, prise en charge de la garantie, réparation, transfert de données, déblocage : nous nous occupons de tout.",
-  },
-  {
-    q: "Les téléphones d'occasion sont-ils fiables ?",
-    a: `Chaque appareil est testé sur 30 points (écran, batterie, caméras, réseau, Face ID / empreinte…), réinitialisé et nettoyé. L'état et la santé de la batterie sont indiqués sur chaque fiche. Garantie ${warrantyMonths.used} mois.`,
-  },
-  {
-    q: "Reprenez-vous mon ancien téléphone ?",
-    a: "Oui. Apportez-le en magasin : nous l'estimons sur place et le montant est déduit du prix de votre nouveau téléphone.",
-  },
-  {
-    q: "Puis-je échanger ou retourner un produit ?",
-    a: "Oui, sous 7 jours si le produit est dans son état d'origine, avec sa boîte et ses accessoires. Contactez-nous sur WhatsApp pour organiser l'échange.",
-  },
-];
+export function buildFaqs(terms: ShopTerms): Faq[] {
+  const { warrantyMonths } = siteConfig;
+  return [
+    {
+      q: "Comment puis-je payer ?",
+      a: isOnlyCod(terms.payments)
+        ? "Vous ne payez rien en ligne : vous payez en espèces à la livraison, après avoir vérifié le téléphone devant le livreur."
+        : "Vous ne payez rien en ligne. Au choix : en espèces à la livraison (vous vérifiez le téléphone devant le livreur, puis vous payez), ou par Mobile Money : nous vous envoyons les instructions par WhatsApp après confirmation.",
+    },
+    { q: "Livrez-vous partout au Mali ?", a: deliveryAnswer(terms) },
+    {
+      q: "Que comprend le service après-vente ?",
+      a: "Après l'achat, vous gardez un interlocuteur sur WhatsApp. Diagnostic gratuit en magasin, prise en charge de la garantie, réparation, transfert de données, déblocage : nous nous occupons de tout.",
+    },
+    {
+      q: "Les téléphones d'occasion sont-ils fiables ?",
+      a: `Chaque appareil est testé sur 30 points (écran, batterie, caméras, réseau, Face ID / empreinte…), réinitialisé et nettoyé. L'état et la santé de la batterie sont indiqués sur chaque fiche. Garantie ${warrantyMonths.used} mois.`,
+    },
+    {
+      q: "Reprenez-vous mon ancien téléphone ?",
+      a: "Oui. Apportez-le en magasin : nous l'estimons sur place et le montant est déduit du prix de votre nouveau téléphone.",
+    },
+    {
+      q: "Puis-je échanger ou retourner un produit ?",
+      a: "Oui, sous 7 jours si le produit est dans son état d'origine, avec sa boîte et ses accessoires. Contactez-nous sur WhatsApp pour organiser l'échange.",
+    },
+  ];
+}

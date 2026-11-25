@@ -6,10 +6,14 @@ import { MobileActionBar } from "@/components/layout/MobileActionBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "@/components/layout/Toaster";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
+import { isOnlyCod } from "@/data/home";
 import { META_PIXEL_ID, pixelEnabled } from "@/lib/meta-pixel";
+import { getCheckoutSettings } from "@/lib/storefront";
 
 /** Habillage du site public (l'admin a le sien, voir app/admin). */
-export default function SiteLayout({ children }: LayoutProps<"/">) {
+export default async function SiteLayout({ children }: LayoutProps<"/">) {
+  // Seuil de livraison offerte et paiements réglés dans l'admin (en cache, repli : config/site.ts)
+  const { freeFrom, payments } = await getCheckoutSettings();
   return (
     <>
       <a
@@ -25,7 +29,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <Footer />
       <WhatsAppFab />
       <MobileActionBar />
-      <CartDrawer />
+      <CartDrawer freeFrom={freeFrom} onlyCod={isOnlyCod(payments)} />
       <AuthModal />
       <Toaster />
       <MetaPixel />

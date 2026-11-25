@@ -17,7 +17,8 @@ Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, 
 - **Identité, contact, horaires, réseaux, couleurs** : `config/site.ts` (rien n'est codé en dur dans les composants). WhatsApp = premier numéro, **à confirmer par le client** (TODO).
 - **Produits et rayons d'exemple** : `data/products.ts` (9 produits, 6 catégories), puis `npm run seed:generate` et `npm run db:all-in-one`. Le site public lit encore ce fichier via `lib/catalog.ts` ; l'admin lit Supabase (branchement du catalogue public : étape 4).
 - **Textes de l'accueil** (hero, services, FAQ, avis d'exemple) : `data/home.ts` ; libellés d'interface : `i18n/fr.ts`.
-- **Zones, frais de livraison, retrait, modes de paiement** : réglés dans `/admin/parametres` (tables `delivery_zones` et `settings`), lus côté site par `lib/storefront.ts` (`"use cache"`, tag `settings`, invalidé par l'admin), avec repli sur `config/site.ts` sans base. Paiement à la livraison seul activé par défaut.
+- **Zones, frais de livraison, retrait, modes de paiement** : réglés dans `/admin/parametres` (tables `delivery_zones` et `settings`), lus côté site par `lib/storefront.ts` (`"use cache"`, tag `settings`, invalidé par l'admin), avec repli sur `config/site.ts` sans base. Paiement à la livraison seul activé par défaut. Les mêmes réglages alimentent le seuil « livraison offerte » du panier (`app/(site)/layout.tsx` → `CartDrawer`), la FAQ et les étapes de commande (`buildFaqs`, `buildOrderSteps` dans `data/home.ts`) : ne jamais y relire `siteConfig.delivery` ni `paymentMethods` directement.
+- **Page À propos** : `app/(site)/a-propos/page.tsx` (TODO client : compléter l'histoire et présenter l'équipe, sans rien inventer).
 - **Avis clients** : `/admin/avis` (table `reviews`, migration 9). Section masquée tant qu'aucun avis n'est publié ; les avis de `data/home.ts` ne servent que sans Supabase.
 
 ## Thème (sombre « tech »)

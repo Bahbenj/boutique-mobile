@@ -1,5 +1,6 @@
-import { orderSteps } from "@/data/home";
+import { buildOrderSteps } from "@/data/home";
 import { t } from "@/i18n";
+import { getCheckoutSettings } from "@/lib/storefront";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -8,7 +9,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconArrowRight, IconWhatsApp } from "@/components/ui/icons";
 
 /** Bloc sombre « comment commander » : rassure sur le paiement à la livraison. */
-export function OrderSteps({ index }: { index: number }) {
+export async function OrderSteps({ index }: { index: number }) {
+  const orderSteps = buildOrderSteps((await getCheckoutSettings()).payments);
   return (
     <section aria-labelledby="commander-title" className="px-3 sm:px-4">
       <div className="mx-auto max-w-[90rem] relative overflow-hidden rounded-card-lg bg-surface py-16 text-fg ring-1 ring-fg/8 sm:py-24">

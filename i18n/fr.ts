@@ -105,6 +105,7 @@ export const fr = {
     freeDeliveryLeft: (amount: string) => `Plus que ${amount} pour la livraison offerte`,
     freeDeliveryReached: "Livraison offerte",
     codNote: "Paiement à la livraison, rien à payer en ligne.",
+    payNote: "Paiement à la livraison ou par Mobile Money, rien à payer en ligne.",
     added: "Ajouté au panier",
     view: "Voir le panier",
     increase: "Augmenter la quantité",

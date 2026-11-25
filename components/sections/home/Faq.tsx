@@ -1,5 +1,6 @@
-import { faqs } from "@/data/home";
+import { buildFaqs } from "@/data/home";
 import { t } from "@/i18n";
+import { getCheckoutSettings } from "@/lib/storefront";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -7,8 +8,12 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconPlus, IconWhatsApp } from "@/components/ui/icons";
 
-/** FAQ en <details> natifs : accessibles, sans JS, contenu indexable. */
-export function Faq({ index }: { index: number }) {
+/**
+ * FAQ en <details> natifs : accessibles, sans JS, contenu indexable.
+ * Livraison et paiement suivent les réglages de l'admin (repli : config/site.ts).
+ */
+export async function Faq({ index }: { index: number }) {
+  const faqs = buildFaqs(await getCheckoutSettings());
   return (
     <section aria-labelledby="faq-title" className="pb-20 sm:pb-28">
       <Container className="grid gap-10 lg:grid-cols-[1fr_1.35fr] lg:gap-16">
