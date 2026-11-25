@@ -2,7 +2,7 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const control =
-  "w-full rounded-2xl border border-line bg-raised px-4 text-[1rem] text-fg placeholder:text-fg/45 " +
+  "w-full min-w-0 rounded-2xl border border-line bg-raised px-4 text-[1rem] text-fg placeholder:text-fg/45 " +
   "transition-[border-color,box-shadow] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 " +
   "aria-[invalid=true]:border-danger";
 

@@ -14,6 +14,8 @@ const toOrder = (row: Record<string, unknown>) =>
   ({
     ...row,
     subtotal: Number(row.subtotal),
+    discount: Number(row.discount ?? 0),
+    promo_code: (row.promo_code as string | null) ?? null,
     delivery_fee: Number(row.delivery_fee),
     total: Number(row.total),
     items: ((row.items as DbOrder["items"]) ?? []).map((i) => ({ ...i, price: Number(i.price), qty: Number(i.qty) })),

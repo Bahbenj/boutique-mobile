@@ -90,6 +90,14 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
               </td>
               <td className="pt-3 text-end whitespace-nowrap">{formatPrice(order.subtotal)}</td>
             </tr>
+            {order.discount > 0 && (
+              <tr>
+                <td colSpan={3} className="text-end">
+                  Code promo {order.promo_code}
+                </td>
+                <td className="text-end whitespace-nowrap">−{formatPrice(order.discount)}</td>
+              </tr>
+            )}
             <tr>
               <td colSpan={3} className="text-end">
                 Livraison

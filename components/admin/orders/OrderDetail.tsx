@@ -94,6 +94,12 @@ export function OrderDetail({ order, history }: { order: DbOrder; history: Order
                 <dt className="text-muted">Sous-total</dt>
                 <dd className="font-semibold tabular-nums">{formatPrice(order.subtotal)}</dd>
               </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Code promo {order.promo_code}</dt>
+                  <dd className="font-semibold text-success tabular-nums">−{formatPrice(order.discount)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted">{deliveryLabel(order.delivery_method)}</dt>
                 <dd className="font-semibold tabular-nums">{order.delivery_fee ? formatPrice(order.delivery_fee) : "Offerte"}</dd>

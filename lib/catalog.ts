@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { categories as staticCategories, products as staticProducts, type Category, type Product } from "@/data/products";
+import { campaignPrice, type Campaign } from "@/lib/promo-shared";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/env";
 
 // Utilitaires purs, aussi utilisés par les composants client (lib/product-helpers.ts)
@@ -52,6 +53,7 @@ type DbRow = {
   tag: string | null;
   free_delivery: boolean | null;
   image_bg: string | null;
+  category_id: string | null;
   category: { slug: string } | null;
 };
 
@@ -61,9 +63,17 @@ const promoActive = (r: Pick<DbRow, "promo_price" | "promo_starts_at" | "promo_e
   (!r.promo_starts_at || Date.parse(r.promo_starts_at) <= now) &&
   (!r.promo_ends_at || Date.parse(r.promo_ends_at) > now);
 
-function toProduct(r: DbRow, now: number): Product {
+/**
+ * Prix affiché (même règle que place_order) : le plus bas entre la promo du
+ * produit et la meilleure promotion en cours (produit, catégorie, tout le site),
+ * le prix normal barré s'il y a une remise. Capacités : chacune remisée à part.
+ */
+function toProduct(r: DbRow, now: number, campaigns: Campaign[]): Product {
   const categorySlug = r.category?.slug ?? "";
-  const promo = promoActive(r, now) && !r.variants?.storage?.length;
+  const target = { id: r.id, categoryId: r.category_id };
+  const base = Number(r.price);
+  const own = promoActive(r, now) && !r.variants?.storage?.length ? Number(r.promo_price) : base;
+  const price = base > 0 ? Math.min(own, campaignPrice(base, target, campaigns, now)) : base;
   const images = (r.images ?? []).filter(Boolean);
   return {
     id: r.id,
@@ -72,9 +82,9 @@ function toProduct(r: DbRow, now: number): Product {
     brand: r.brand ?? "",
     category: categorySlug,
     condition: r.condition,
-    // Promo en cours : prix promo affiché, prix normal barré
-    price: promo ? Number(r.promo_price) : Number(r.price),
-    ...(promo ? { oldPrice: Number(r.price) } : r.old_price != null ? { oldPrice: Number(r.old_price) } : {}),
+    // Remise en cours : prix remisé affiché, prix normal barré
+    price,
+    ...(price < base ? { oldPrice: base } : r.old_price != null ? { oldPrice: Number(r.old_price) } : {}),
     images: (images.length ? images : [placeholderFor(categorySlug)]).map((src, i) => ({
       src,
       alt: images.length ? (i === 0 ? r.name : `${r.name}, photo ${i + 1}`) : `${r.name} (visuel provisoire)`,
@@ -82,11 +92,14 @@ function toProduct(r: DbRow, now: number): Product {
     ...(r.variants?.colors?.length ? { colors: r.variants.colors } : {}),
     ...(r.variants?.storage?.length
       ? {
-          storage: r.variants.storage.map((s) => ({
-            label: s.label,
-            price: Number(s.price),
-            ...(s.old_price != null ? { oldPrice: Number(s.old_price) } : {}),
-          })),
+          storage: r.variants.storage.map((s) => {
+            const sPrice = campaignPrice(Number(s.price), target, campaigns, now);
+            return {
+              label: s.label,
+              price: sPrice,
+              ...(sPrice < Number(s.price) ? { oldPrice: Number(s.price) } : s.old_price != null ? { oldPrice: Number(s.old_price) } : {}),
+            };
+          }),
         }
       : {}),
     stock: r.stock,
@@ -116,16 +129,18 @@ export async function getCatalog(): Promise<Catalog> {
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const [cats, prods] = await Promise.all([
+  const [cats, prods, promos] = await Promise.all([
     supabase.from("categories").select("id, name, slug, description, image, position").order("position").order("name"),
     supabase
       .from("products")
       .select(
-        "id, name, slug, description, brand, price, old_price, promo_price, promo_starts_at, promo_ends_at, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs, tag, free_delivery, image_bg, created_at, category:categories(slug)",
+        "id, name, slug, description, brand, price, old_price, promo_price, promo_starts_at, promo_ends_at, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs, tag, free_delivery, image_bg, created_at, category_id, category:categories(slug)",
       )
       .eq("is_active", true)
       .gt("price", 0) // « Prix à renseigner » : jamais affiché
       .order("created_at", { ascending: true }),
+    // Promotions actives (la RLS ne montre que celles-ci) ; table absente = aucune promotion
+    supabase.from("promotions").select("kind, value, scope, category_id, product_id, starts_at, ends_at").eq("is_active", true),
   ]);
 
   const error = cats.error ?? prods.error;
@@ -140,13 +155,13 @@ export async function getCatalog(): Promise<Catalog> {
   const now = Date.now();
   // Invalidé immédiatement par l'admin (updateTag). Sinon relu toutes les heures,
   // ou dès le prochain début / fin de promo pour que le prix affiché change à l'heure dite.
-  const boundaries = rows
-    .flatMap((r) => [r.promo_starts_at, r.promo_ends_at])
+  const campaigns = (promos.error ? [] : (promos.data ?? [])) as Campaign[];
+  const boundaries = [...rows.flatMap((r) => [r.promo_starts_at, r.promo_ends_at]), ...campaigns.flatMap((c) => [c.starts_at, c.ends_at])]
     .map((d) => (d ? Date.parse(d) : NaN))
     .filter((t) => t > now);
   const nextChange = boundaries.length ? Math.ceil((Math.min(...boundaries) - now) / 1000) : 3600;
   cacheLife({ stale: 60, revalidate: Math.max(60, Math.min(3600, nextChange)), expire: 86_400 });
-  const products = rows.map((r) => toProduct(r, now));
+  const products = rows.map((r) => toProduct(r, now, campaigns));
   const firstImage = (slug: string) => products.find((p) => p.category === slug && !p.images[0].src.includes("/provisoire/"))?.images[0].src;
   const categories: Category[] = (cats.data ?? []).map((c) => ({
     slug: c.slug,

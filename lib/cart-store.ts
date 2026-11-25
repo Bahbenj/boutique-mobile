@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { AppliedCode } from "@/lib/promo-shared";
 
 /** Ligne de panier : autonome (snapshot du prix au moment de l'ajout). */
 export type CartItem = {
@@ -27,6 +28,9 @@ type CartState = {
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   clear: () => void;
+  /** Code promo vérifié par le serveur (revérifié à la commande). */
+  promo: AppliedCode | null;
+  setPromo: (promo: AppliedCode | null) => void;
 };
 
 export const useCart = create<CartState>()(
@@ -52,7 +56,9 @@ export const useCart = create<CartState>()(
             .filter((i) => i.qty > 0),
         })),
       remove: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key) })),
-      clear: () => set({ items: [] }),
+      clear: () => set({ items: [], promo: null }),
+      promo: null,
+      setPromo: (promo) => set({ promo }),
     }),
     { name: "cart-v3" }, // v3 : catalogue en base (identifiants uuid), les anciens paniers sont oubliés
   ),

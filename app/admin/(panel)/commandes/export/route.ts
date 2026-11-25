@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const header = [
     "Numéro", "Date", "Statut", "Client", "Téléphone", "Région / commune", "Quartier / ville", "Adresse",
-    "Livraison", "Paiement", "Articles", "Quantité", "Sous-total", "Frais de livraison", "Total", "Note",
+    "Livraison", "Paiement", "Articles", "Quantité", "Sous-total", "Code promo", "Remise", "Frais de livraison", "Total", "Note",
   ];
   const rows = orders.map((o) => [
     o.number,
@@ -46,6 +46,8 @@ export async function GET(request: Request) {
     o.items.map((i) => `${i.qty} × ${i.name}${variantLabel(i) ? ` (${variantLabel(i)})` : ""}`).join(" | "),
     o.items.reduce((n, i) => n + i.qty, 0),
     o.subtotal,
+    o.promo_code ?? "",
+    o.discount,
     o.delivery_fee,
     o.total,
     o.note ?? "",

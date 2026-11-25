@@ -5,6 +5,7 @@ import { z } from "zod";
 import { paymentMethodIds } from "@/config/site";
 import { CATALOG_TAG } from "@/lib/catalog";
 import { normalizeMlPhone } from "@/lib/phone";
+import type { AppliedCode } from "@/lib/promo-shared";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -25,6 +26,7 @@ const orderSchema = z.object({
     city: z.string().trim().max(80),
     address: z.string().trim().max(200),
     note: z.string().trim().max(500).optional(),
+    promo_code: z.string().trim().max(30).optional(),
   }),
   items: z
     .array(
@@ -48,7 +50,7 @@ export type PlaceOrderInput = z.input<typeof orderSchema>;
 export type PlacedLine = { name: string; variant?: string; qty: number; price: number };
 
 export type PlaceOrderResult =
-  | { ok: true; number: string; subtotal: number; fee: number; total: number; region: string; lines: PlacedLine[] }
+  | { ok: true; number: string; subtotal: number; discount: number; promoCode: string | null; fee: number; total: number; region: string; lines: PlacedLine[] }
   /** fallback : enregistrement impossible (base absente ou injoignable) → envoi WhatsApp sans numéro */
   | { ok: false; error: string; fallback?: boolean };
 
@@ -61,6 +63,10 @@ const messages: Record<string, string> = {
   invalid_delivery: "Ce mode de livraison n'est plus proposé.",
   invalid_zone: "Cette zone de livraison n'est plus desservie. Choisissez-en une autre.",
   invalid_payment: "Ce mode de paiement n'est plus proposé. Choisissez-en un autre.",
+  promo_code_invalid: "Ce code promo n'existe pas ou n'est plus valable. Retirez-le pour commander.",
+  promo_code_expired: "Ce code promo a expiré. Retirez-le pour commander.",
+  promo_code_used_up: "Ce code promo a déjà été utilisé le nombre de fois prévu. Retirez-le pour commander.",
+  promo_code_min_order: "Le montant minimum pour ce code promo n'est pas atteint.",
 };
 
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
@@ -90,7 +96,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     if (error) {
       const code = Object.keys(messages).find((k) => error.message.includes(k));
       if (code) {
-        const detail = code === "insufficient_stock" && error.details ? ` pour « ${error.details} ».` : code === "insufficient_stock" ? "." : "";
+        const detail =
+          code === "insufficient_stock"
+            ? error.details
+              ? ` pour « ${error.details} ».`
+              : "."
+            : code === "promo_code_min_order" && error.details
+              ? ` (${new Intl.NumberFormat("fr-FR").format(Number(error.details))} FCFA d'articles au moins).`
+              : "";
         return { ok: false, error: messages[code] + detail };
       }
       console.error("[commande] place_order a échoué", { code: error.code, message: error.message });
@@ -103,7 +116,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     // Récapitulatif tel qu'enregistré (prix et frais recalculés en base)
     const { data: order } = await supabase
       .from("orders")
-      .select("number, subtotal, delivery_fee, total, region, items")
+      .select("*") // colonnes promo_code et discount absentes avant la migration 17 : lues si présentes
       .eq("id", placed.order_id)
       .single();
 
@@ -116,6 +129,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       ok: true,
       number: placed.order_number,
       subtotal: Number(order?.subtotal ?? 0),
+      discount: Number(order?.discount ?? 0),
+      promoCode: order?.promo_code ?? null,
       fee: Number(order?.delivery_fee ?? 0),
       total: Number(order?.total ?? 0),
       region: order?.region ?? "",
@@ -124,5 +139,36 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   } catch (err) {
     console.error("[commande] Supabase injoignable", err);
     return { ok: false, fallback: true, error: "Enregistrement impossible pour le moment." };
+  }
+}
+
+// --- Code promo saisi dans le panier ---------------------------------------------------
+
+export type PromoCheck = { ok: true; code: AppliedCode } | { ok: false; error: string };
+
+const codeReasons: Record<string, string> = {
+  invalid: "Ce code n'existe pas ou n'est plus valable. Vérifiez l'orthographe.",
+  expired: "Ce code a expiré.",
+  used_up: "Ce code a déjà été utilisé le nombre de fois prévu.",
+};
+
+/**
+ * Vérifie un code promo (clé de service : la table des codes n'est jamais lisible
+ * par le public). Renvoie seulement le type, la valeur et le minimum ; la remise
+ * est recalculée et le code revérifié par place_order au moment de la commande.
+ */
+export async function checkPromoCode(raw: string): Promise<PromoCheck> {
+  const code = String(raw ?? "").trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return { ok: false, error: codeReasons.invalid };
+  if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, error: "Les codes promo ne sont pas disponibles pour le moment." };
+  try {
+    const { data, error } = await createServiceClient().rpc("check_promo_code", { p_code: code });
+    if (error) throw error;
+    const r = data as { ok: boolean; reason?: string; code?: string; kind?: "percent" | "amount"; value?: number; min_order?: number };
+    if (!r?.ok || !r.code || !r.kind) return { ok: false, error: codeReasons[r?.reason ?? "invalid"] ?? codeReasons.invalid };
+    return { ok: true, code: { code: r.code, kind: r.kind, value: Number(r.value), minOrder: Number(r.min_order ?? 0) } };
+  } catch (err) {
+    console.error("[code promo] vérification impossible", err);
+    return { ok: false, error: "Vérification impossible pour le moment. Réessayez." };
   }
 }

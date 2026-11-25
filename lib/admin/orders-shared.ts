@@ -45,6 +45,9 @@ export type DbOrder = {
   payment_method: string;
   items: OrderItem[];
   subtotal: number;
+  /** Remise du code promo (migration 17 ; 0 sans code). */
+  discount: number;
+  promo_code: string | null;
   delivery_fee: number;
   total: number;
   status: OrderStatus;

@@ -6,6 +6,8 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { PaymentMethod } from "@/config/site";
 import { t } from "@/i18n";
 import { cartSubtotal, useCart } from "@/lib/cart-store";
+import { codeDiscount } from "@/lib/promo-shared";
+import { PromoCodeField } from "@/components/cart/PromoCodeField";
 import { money, newEventId, track } from "@/lib/meta-pixel";
 import { deliveryFee, orderWhatsappMessage, type DeliveryMode } from "@/lib/order";
 import { placeOrder, type PlaceOrderResult } from "@/app/(site)/commande/actions";
@@ -30,7 +32,7 @@ type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", s
 export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
   const { zones, payments, freeFrom, pickup } = settings;
   const mounted = useMounted();
-  const { items, clear } = useCart();
+  const { items, clear, promo } = useCart();
   const [mode, setMode] = useState<DeliveryMode>(zones.length || !pickup.enabled ? "home" : "pickup");
   const [zoneId, setZoneId] = useState("");
   const [payment, setPayment] = useState<PaymentMethod["id"]>(payments[0]?.id ?? "cod");
@@ -86,7 +88,8 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
 
   const zone = zones.find((z) => z.id === zoneId);
   const offered = items.some((i) => i.freeDelivery);
-  const fee = deliveryFee(mode, zone, subtotal, freeFrom, offered);
+  const discount = codeDiscount(subtotal, promo);
+  const fee = deliveryFee(mode, zone, subtotal - discount, freeFrom, offered);
   const selectedPayment = payments.find((m) => m.id === payment);
   const zoneGroups = [
     { label: "District de Bamako", zones: zones.filter((z) => z.group === "bamako") },
@@ -128,7 +131,15 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
     let result: PlaceOrderResult;
     try {
       result = await placeOrder({
-        customer: { name: customer.name, phone, zone_id: mode === "home" ? zone?.id : undefined, city: customer.city, address: customer.address, note: customer.note },
+        customer: {
+          name: customer.name,
+          phone,
+          zone_id: mode === "home" ? zone?.id : undefined,
+          city: customer.city,
+          address: customer.address,
+          note: customer.note,
+          promo_code: discount > 0 && promo ? promo.code : undefined,
+        },
         items: items.map((i) => ({ product_id: i.productId, qty: i.qty, color: i.color, storage: i.storage })),
         delivery: mode,
         payment,
@@ -155,6 +166,8 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
       delivery: mode === "pickup" ? pickup.label : `livraison, ${zone?.delay}`,
       payment,
       subtotal: placed?.subtotal ?? subtotal,
+      discount: placed ? placed.discount : 0,
+      promoCode: placed?.promoCode,
       fee: placed?.fee ?? fee,
     });
 
@@ -189,7 +202,7 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
     );
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
+    <form onSubmit={onSubmit} noValidate className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
       <div className="space-y-8">
         <fieldset className="rounded-card bg-surface p-5 shadow-soft sm:p-7">
           <legend className="sr-only">{t.checkout.contact}</legend>
@@ -336,6 +349,12 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
               <dt className="text-muted">{t.cart.subtotal}</dt>
               <dd className="font-semibold whitespace-nowrap">{formatPrice(subtotal)}</dd>
             </div>
+            {discount > 0 && promo && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Code {promo.code}</dt>
+                <dd className="font-semibold whitespace-nowrap text-success">−{formatPrice(discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t.checkout.delivery}</dt>
               <dd className="font-semibold whitespace-nowrap">
@@ -344,9 +363,10 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
             </div>
             <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
               <dt className="font-bold">{t.checkout.total}</dt>
-              <dd className="text-2xl font-extrabold tracking-tight whitespace-nowrap">{formatPrice(subtotal + fee)}</dd>
+              <dd className="text-2xl font-extrabold tracking-tight whitespace-nowrap">{formatPrice(subtotal - discount + fee)}</dd>
             </div>
           </dl>
+          <PromoCodeField subtotal={subtotal} className="mt-4" />
           {serverError && (
             <p id="checkout-error" tabIndex={-1} role="alert" className="mt-5 rounded-2xl bg-danger-soft p-3 text-sm font-medium text-danger outline-none">
               {serverError}

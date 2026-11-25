@@ -49,7 +49,7 @@ export function Modal({ open, onClose, title, description, children, className, 
             aria-describedby={description ? descId : undefined}
             tabIndex={-1}
             className={cn(
-              "relative w-full max-w-md rounded-card-lg bg-surface p-6 shadow-lift outline-none sm:p-8",
+              "relative max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-x-hidden overflow-y-auto overscroll-contain rounded-card-lg bg-surface p-5 shadow-lift outline-none sm:max-h-[calc(100dvh-3rem)] sm:p-8",
               className,
             )}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.97 }}

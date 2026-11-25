@@ -40,6 +40,8 @@ export function orderWhatsappMessage({
   delivery,
   payment,
   subtotal,
+  discount = 0,
+  promoCode,
   fee,
 }: {
   number?: string;
@@ -48,6 +50,8 @@ export function orderWhatsappMessage({
   delivery: string;
   payment: PaymentMethod["id"];
   subtotal: number;
+  discount?: number;
+  promoCode?: string | null;
   fee: number;
 }) {
   const rows = lines.map((l) => `• ${l.qty} × ${l.name}${l.variant ? ` (${l.variant})` : ""} : ${formatPrice(l.price * l.qty)}`);
@@ -57,8 +61,9 @@ export function orderWhatsappMessage({
     ...rows,
     "",
     `Sous-total : ${formatPrice(subtotal)}`,
+    ...(discount > 0 ? [`Code promo${promoCode ? ` ${promoCode}` : ""} : −${formatPrice(discount)}`] : []),
     `Livraison (${delivery}) : ${fee ? formatPrice(fee) : "offerte"}`,
-    `Total : ${formatPrice(subtotal + fee)}`,
+    `Total : ${formatPrice(subtotal - discount + fee)}`,
     `Paiement : ${paymentLabel(payment)}`,
     "",
     `Nom : ${customer.name}`,

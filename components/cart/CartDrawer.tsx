@@ -10,9 +10,11 @@ import { cartCount, cartSubtotal, useCart } from "@/lib/cart-store";
 import { useDialog } from "@/lib/use-dialog";
 import { useMounted } from "@/lib/use-mounted";
 import { useUI } from "@/lib/ui-store";
+import { codeDiscount } from "@/lib/promo-shared";
 import { formatPrice } from "@/lib/utils";
 import { buttonClasses } from "@/components/ui/Button";
 import { IconArrowRight, IconBag, IconCheck, IconClose, IconTruck } from "@/components/ui/icons";
+import { PromoCodeField } from "./PromoCodeField";
 import { QtyStepper } from "./QtyStepper";
 
 /**
@@ -24,7 +26,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
   const open = useUI((s) => s.cartOpen);
   const close = useUI((s) => s.closeCart);
   const toast = useUI((s) => s.toast);
-  const { items, setQty, remove } = useCart();
+  const { items, setQty, remove, promo } = useCart();
   const mounted = useMounted();
   const reduce = useReducedMotion();
   const panelRef = useDialog<HTMLDivElement>(open, close);
@@ -35,7 +37,9 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
   const count = cartCount(items);
   const subtotal = cartSubtotal(items);
   const offered = items.some((i) => i.freeDelivery);
-  const left = freeFrom == null || offered ? 0 : Math.max(0, freeFrom - subtotal);
+  const discount = codeDiscount(subtotal, promo);
+  // Même règle que place_order : le seuil porte sur le montant après remise
+  const left = freeFrom == null || offered ? 0 : Math.max(0, freeFrom - (subtotal - discount));
 
   return createPortal(
     <AnimatePresence>
@@ -125,7 +129,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
                     <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-raised">
                       <div
                         className="h-full origin-left rounded-full bg-accent transition-transform duration-500 ease-out-expo rtl:origin-right"
-                        style={{ transform: `scaleX(${!offered && freeFrom ? Math.min(1, subtotal / freeFrom) : 1})` }}
+                        style={{ transform: `scaleX(${!offered && freeFrom ? Math.min(1, (subtotal - discount) / freeFrom) : 1})` }}
                       />
                     </div>
                   </div>
@@ -166,10 +170,17 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
                   ))}
                 </ul>
 
-                <footer className="border-t border-line px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                <footer className="border-t border-line px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                  <PromoCodeField subtotal={subtotal} className="mb-3" />
+                  {discount > 0 && (
+                    <p className="flex items-baseline justify-between text-sm text-muted">
+                      <span>{t.cart.subtotal}</span>
+                      <span className="tabular-nums line-through">{formatPrice(subtotal)}</span>
+                    </p>
+                  )}
                   <p className="flex items-baseline justify-between">
-                    <span className="font-semibold">{t.cart.subtotal}</span>
-                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{formatPrice(subtotal)}</span>
+                    <span className="font-semibold">{discount > 0 ? "Après remise" : t.cart.subtotal}</span>
+                    <span className="text-2xl font-extrabold tracking-tight tabular-nums">{formatPrice(subtotal - discount)}</span>
                   </p>
                   <p className="mt-1 text-sm text-muted">{onlyCod ? t.cart.codNote : t.cart.payNote}</p>
                   <Link
