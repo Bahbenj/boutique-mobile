@@ -146,7 +146,7 @@ export function Dashboard({ email, data }: { email: string; data: DashboardData 
         <Panel
           id="stock-title"
           title="Stock faible"
-          href={lowStock.count > 0 ? "/admin/produits?statut=faible&tri=stock" : undefined}
+          href={lowStock.count > 0 ? "/admin/stock" : undefined}
           linkLabel={lowStock.count > lowStock.items.length ? `Les ${lowStock.count}` : "Gérer"}
         >
           {lowStock.items.length ? (

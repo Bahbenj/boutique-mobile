@@ -1,7 +1,7 @@
 import "server-only";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { LOW_STOCK_ADMIN } from "./catalog";
+import { getLowStockThreshold } from "./stock";
 import type { DbRepair } from "./repairs-shared";
 import { orderStatuses, periodStart, type DbOrder, type OrderHistoryEntry, type OrderStatus, type Period, type Sort } from "./orders-shared";
 
@@ -111,6 +111,7 @@ export type DashboardData = {
 export async function getDashboard(): Promise<DashboardData | { error: { message: string } }> {
   await requireAdmin();
   const supabase = await createClient();
+  const threshold = await getLowStockThreshold();
   const [stats, latest, lowStock, repairs] = await Promise.all([
     supabase.rpc("admin_dashboard_stats"),
     supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(6),
@@ -118,7 +119,7 @@ export async function getDashboard(): Promise<DashboardData | { error: { message
       .from("products")
       .select("id, name, stock, images", { count: "exact" })
       .eq("is_active", true)
-      .lte("stock", LOW_STOCK_ADMIN)
+      .lte("stock", threshold)
       .order("stock")
       .order("name")
       .limit(8),

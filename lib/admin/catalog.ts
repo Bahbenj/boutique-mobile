@@ -13,13 +13,13 @@ export type ProductFilters = {
   tri?: "recent" | "nom" | "stock" | "prix";
 };
 
-import { LOW_STOCK_ADMIN } from "./stock-shared";
-export { LOW_STOCK_ADMIN };
+import { getLowStockThreshold } from "./stock";
 
 
 export async function listProducts(filters: ProductFilters) {
   await requireAdmin();
   const supabase = await createClient();
+  const lowStock = await getLowStockThreshold();
   let query = supabase.from("products").select("*", { count: "exact" });
 
   // Recherche : retire les caractères qui ont un sens dans la syntaxe PostgREST
@@ -48,7 +48,7 @@ export async function listProducts(filters: ProductFilters) {
       query = query.eq("stock", 0);
       break;
     case "faible":
-      query = query.gt("stock", 0).lte("stock", LOW_STOCK_ADMIN);
+      query = query.gt("stock", 0).lte("stock", lowStock);
       break;
     case "vedettes":
       query = query.eq("is_featured", true);
@@ -72,7 +72,7 @@ export async function listProducts(filters: ProductFilters) {
   const { data, count, error } = await query.limit(300);
   if (error) throw new Error(error.message);
   // now : heure de lecture, pour savoir quelles promos sont en cours (pas d'horloge au rendu)
-  return { products: (data ?? []) as DbProduct[], count: count ?? 0, now: Date.now() };
+  return { products: (data ?? []) as DbProduct[], count: count ?? 0, now: Date.now(), lowStock };
 }
 
 export async function getProduct(id: string) {

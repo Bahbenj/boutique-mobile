@@ -21,7 +21,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
     statut: pick(sp.statut, statuses),
     tri: pick(sp.tri, ["recent", "nom", "stock", "prix"] as const),
   };
-  const [{ products, count, now }, categories] = await Promise.all([listProducts(filters), listCategories()]);
+  const [{ products, count, now, lowStock }, categories] = await Promise.all([listProducts(filters), listCategories()]);
   const filtered = Boolean(filters.q || filters.categorie || filters.statut);
 
   return (
@@ -56,7 +56,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
             )}
           </div>
         ) : (
-          <ProductList products={products} categories={categoryOptions(categories)} now={now} />
+          <ProductList products={products} categories={categoryOptions(categories)} now={now} lowStock={lowStock} />
         )}
       </div>
       <AddProductFab />

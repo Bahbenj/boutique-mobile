@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useTransition } from "react";
 import { bulkUpdateProducts, duplicateProduct, quickUpdateProduct, type QuickPatch } from "@/app/admin/(panel)/produits/actions";
-import { LOW_STOCK_ADMIN } from "@/lib/admin/stock-shared";
+import { DEFAULT_LOW_STOCK } from "@/lib/admin/stock-shared";
 import { parseAmount, type BulkInput, type DbProduct } from "@/lib/admin/schema";
 import { useUI } from "@/lib/ui-store";
 import { cn, formatAmount, formatPrice } from "@/lib/utils";
@@ -32,7 +32,20 @@ const percentOff = (price: number, promo: number) => Math.round((1 - promo / pri
  * « Annuler », et sélection multiple pour les actions groupées.
  */
 /** `now` : heure de lecture des données (fournie par la page serveur, pas d'horloge au rendu). */
-export function ProductList({ products, categories, now }: { products: DbProduct[]; categories: Category[]; now: number }) {
+/** Seuil « stock faible » réglé par le commerçant (page Stock). */
+const LowStock = createContext(DEFAULT_LOW_STOCK);
+
+export function ProductList({
+  products,
+  categories,
+  now,
+  lowStock = DEFAULT_LOW_STOCK,
+}: {
+  products: DbProduct[];
+  categories: Category[];
+  now: number;
+  lowStock?: number;
+}) {
   const names = new Map(categories.map((c) => [c.id, c.name]));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggle = (id: string) =>
@@ -52,48 +65,50 @@ export function ProductList({ products, categories, now }: { products: DbProduct
   const allSelected = products.length > 0 && selected.size === products.length;
 
   return (
-    <div className={cn(selected.size > 0 && "pb-36 lg:pb-24")}>
-      <div className="mb-2 flex items-center justify-between gap-3 px-1">
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold text-muted">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={() => setSelected(allSelected ? new Set() : new Set(products.map((p) => p.id)))}
-            className="size-5 accent-[var(--accent)]"
-          />
-          {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
-        </label>
-      </div>
-
-      <div className="lg:overflow-hidden lg:rounded-card lg:bg-surface lg:shadow-soft">
-        <div
-          aria-hidden="true"
-          className="hidden grid-cols-[2.75rem_4rem_minmax(0,1fr)_10rem_9.5rem_8.5rem_8.5rem] items-center gap-3 border-b border-line px-4 py-3 text-xs font-semibold text-muted lg:grid"
-        >
-          <span />
-          <span />
-          <span>Produit</span>
-          <span>Prix</span>
-          <span>Stock</span>
-          <span>En vente</span>
-          <span className="text-end">Actions</span>
-        </div>
-        <ul className="space-y-3 lg:space-y-0 lg:divide-y lg:divide-line">
-          {products.map((p) => (
-            <ProductItem
-              key={p.id}
-              product={p}
-              categoryName={p.category_id ? names.get(p.category_id) : undefined}
-              selected={selected.has(p.id)}
-              onSelect={() => toggle(p.id)}
-              now={now}
+    <LowStock.Provider value={lowStock}>
+      <div className={cn(selected.size > 0 && "pb-36 lg:pb-24")}>
+        <div className="mb-2 flex items-center justify-between gap-3 px-1">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold text-muted">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={() => setSelected(allSelected ? new Set() : new Set(products.map((p) => p.id)))}
+              className="size-5 accent-[var(--accent)]"
             />
-          ))}
-        </ul>
-      </div>
+            {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
+          </label>
+        </div>
 
-      {selected.size > 0 && <BulkBar ids={[...selected]} categories={categories} onDone={() => setSelected(new Set())} />}
-    </div>
+        <div className="lg:overflow-hidden lg:rounded-card lg:bg-surface lg:shadow-soft">
+          <div
+            aria-hidden="true"
+            className="hidden grid-cols-[2.75rem_4rem_minmax(0,1fr)_10rem_9.5rem_8.5rem_8.5rem] items-center gap-3 border-b border-line px-4 py-3 text-xs font-semibold text-muted lg:grid"
+          >
+            <span />
+            <span />
+            <span>Produit</span>
+            <span>Prix</span>
+            <span>Stock</span>
+            <span>En vente</span>
+            <span className="text-end">Actions</span>
+          </div>
+          <ul className="space-y-3 lg:space-y-0 lg:divide-y lg:divide-line">
+            {products.map((p) => (
+              <ProductItem
+                key={p.id}
+                product={p}
+                categoryName={p.category_id ? names.get(p.category_id) : undefined}
+                selected={selected.has(p.id)}
+                onSelect={() => toggle(p.id)}
+                now={now}
+              />
+            ))}
+          </ul>
+        </div>
+
+        {selected.size > 0 && <BulkBar ids={[...selected]} categories={categories} onDone={() => setSelected(new Set())} />}
+      </div>
+    </LowStock.Provider>
   );
 }
 
@@ -178,6 +193,7 @@ function ProductItem({
     });
   };
 
+  const lowStock = useContext(LowStock);
   const labels = [
     !local.is_active && {
       text: "Masqué",
@@ -186,7 +202,7 @@ function ProductItem({
     noPrice && { text: "Prix à renseigner", cls: "bg-danger-soft text-danger" },
     local.stock === 0 && { text: "Rupture", cls: "bg-danger-soft text-danger" },
     local.stock > 0 &&
-      local.stock <= LOW_STOCK_ADMIN && {
+      local.stock <= lowStock && {
         text: "Stock faible",
         cls: "bg-gold-soft text-gold-text",
       },
@@ -478,6 +494,7 @@ function StockEditor({ name, stock, onSave }: { name: string; stock: number; onS
     clearTimeout(timer.current);
     timer.current = setTimeout(() => next !== stock && onSave(next), 700);
   };
+  const lowStock = useContext(LowStock);
   const current = Number(value) || 0;
   const commit = () => {
     clearTimeout(timer.current);
@@ -507,7 +524,7 @@ function StockEditor({ name, stock, onSave }: { name: string; stock: number; onS
           onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
           className={cn(
             "w-full bg-transparent text-center text-[1rem] font-bold tabular-nums outline-none",
-            current === 0 ? "text-danger" : current <= LOW_STOCK_ADMIN && "text-gold-text",
+            current === 0 ? "text-danger" : current <= lowStock && "text-gold-text",
           )}
         />
       </label>

@@ -33,6 +33,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 15. `20261125001500_products_admin.sql` (prix promo avec dates de début et de fin facultatives ; les anciens prix barrés deviennent des promos ; `place_order` facture le prix promo en cours et refuse un produit sans prix)
 16. `20261125001600_categories_admin.sql` (catégories masquables : une catégorie masquée disparaît du site avec ses produits et ne peut plus être commandée ; une catégorie qui contient des produits ne peut plus être supprimée)
 17. `20261125001700_promotions.sql` (promotions datées sur un produit, une catégorie ou tout le site ; codes promo avec minimum, nombre d'utilisations et expiration, appliqués par `place_order` ; la commande garde le code et la remise)
+18. `20261125001800_stock.sql` (seuil « stock faible » réglable ; historique des mouvements de stock écrit par la base : ventes, annulations, ajustements avec motif, qui et quand)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -70,7 +71,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 17) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 17, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 18) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 18, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -139,6 +140,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'promo datée', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'promo_ends_at')
    union all select 'catégories masquables', exists (select 1 from information_schema.columns where table_name = 'categories' and column_name = 'is_active')
    union all select 'promotions et codes promo', to_regclass('public.promo_codes') is not null
+   union all select 'historique du stock', to_regclass('public.stock_movements') is not null
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -194,6 +196,12 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 20 h. Passez une 2e commande avec `TEST10`, puis essayez une 3e : « Ce code a déjà été utilisé le nombre de fois prévu ». Annulez une des deux commandes dans l'admin : le code redevient utilisable (« 1 utilisation sur 2 » dans Promotions).
 20 i. Avec seulement un article à moins de 20 000 FCFA dans le panier, le code affiche « Encore … FCFA d'articles pour profiter de ce code » et n'est pas déduit. Supprimez ensuite la promotion et le code de test.
 
+### F quater. Stock
+
+20 j. **Admin → Plus → Stock** : réglez l'alerte « stock faible » à 5 → **Enregistrer** : le filtre « Stock faible » et le tableau de bord comptent les produits à 5 ou moins. Remettez 3.
+20 k. Sur la ligne de la loupe d'écran, **+** deux fois, motif « Arrivage », **Enregistrer** : message « Stock : 10 → 12 » avec **Annuler**. Onglet **Historique** : « +2 Ajustement », votre e-mail, « « Arrivage » ». Touchez **Annuler** : une ligne « −2 » s'ajoute.
+20 l. Après une commande sur le site (étape C), l'historique montre « Vente » (Commande en ligne) ; après son annulation dans l'admin, « Commande annulée » avec votre e-mail.
+
 ### G. Sécurité (depuis un ordinateur, PowerShell)
 
 21. Remplacez `<URL>` par `NEXT_PUBLIC_SUPABASE_URL` et `<CLE_PUBLIQUE>` par `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jamais la clé secrète) :
@@ -201,9 +209,10 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
     curl.exe -s "<URL>/rest/v1/orders?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/repair_requests?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/promo_codes?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/stock_movements?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
-    Attendu pour les quatre : une erreur « permission denied » (code 42501), **jamais** de données.
+    Attendu pour les cinq : une erreur « permission denied » (code 42501), **jamais** de données.
 
 ### H. Nettoyage des essais
 
