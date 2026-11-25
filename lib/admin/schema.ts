@@ -52,6 +52,18 @@ export const conditionLabels: Record<(typeof conditions)[number], string> = {
 };
 export const grades = ["Comme neuf", "Très bon état", "Bon état"] as const;
 
+/** Filtres de statut de la liste (« actifs » / « inactifs » : anciens liens, toujours acceptés). */
+export const productStatusFilters = {
+  "en-vente": "En vente",
+  masques: "Masqués",
+  faible: "Stock faible",
+  rupture: "Rupture",
+  promo: "En promo",
+  "sans-prix": "Prix à renseigner",
+  vedettes: "Mis en avant",
+} as const;
+export type ProductStatusFilter = keyof typeof productStatusFilters | "actifs" | "inactifs";
+
 export const MAX_IMAGES = 10;
 
 /** URL https (Supabase Storage, Unsplash) ou fichier du site (/photos/…, /brand/…). */
@@ -78,12 +90,16 @@ export const productSchema = z
     name: z.string().trim().min(1, "Nom requis.").max(120, "120 caractères maximum."),
     slug: z.string().trim().regex(SLUG_RE, "Lettres minuscules, chiffres et tirets uniquement.").max(120),
     brand: text(60),
-    category_id: z.uuid().nullable(),
+    category_id: z.uuid({ error: "Choisissez une catégorie." }),
     condition: z.enum(conditions),
     grade: text(40).nullable(),
     battery: z.number().int().min(0, "Entre 0 et 100.").max(100, "Entre 0 et 100.").nullable(),
     price: amount("Prix"),
     old_price: amount("Ancien prix").nullable(),
+    /** Prix pendant la promotion (inférieur au prix), dates facultatives. */
+    promo_price: amount("Prix promo").nullable(),
+    promo_starts_at: z.iso.datetime({ offset: true, error: "Date de début invalide." }).nullable(),
+    promo_ends_at: z.iso.datetime({ offset: true, error: "Date de fin invalide." }).nullable(),
     stock: z.number({ error: "Stock invalide." }).int("Stock invalide.").min(0, "Stock invalide.").max(100_000),
     is_new: z.boolean(),
     is_featured: z.boolean(),
@@ -104,7 +120,7 @@ export const productSchema = z
     description: text(5000),
     highlights: z.array(z.string().trim().min(1).max(80)).max(12, "12 points forts maximum."),
     specs: z.array(z.tuple([z.string().trim().min(1).max(60), z.string().trim().min(1).max(200)])).max(30),
-    images: z.array(imageUrl).max(MAX_IMAGES, `${MAX_IMAGES} photos maximum.`),
+    images: z.array(imageUrl).min(1, "Ajoutez au moins une photo.").max(MAX_IMAGES, `${MAX_IMAGES} photos maximum.`),
     variants: z.object({
       colors: z.array(colorSchema).max(12).optional(),
       storage: z.array(storageSchema).max(8).optional(),
@@ -114,10 +130,20 @@ export const productSchema = z
     message: "L'ancien prix doit être supérieur au prix.",
     path: ["old_price"],
   })
+  .refine((p) => (p.variants.storage?.length ?? 0) > 0 || p.price > 0, { message: "Indiquez le prix.", path: ["price"] })
+  .refine((p) => p.promo_price == null || p.promo_price < p.price, {
+    message: "Le prix promo doit être inférieur au prix normal.",
+    path: ["promo_price"],
+  })
+  .refine((p) => !p.promo_starts_at || !p.promo_ends_at || new Date(p.promo_ends_at) > new Date(p.promo_starts_at), {
+    message: "La fin de la promo doit être après le début.",
+    path: ["promo_ends_at"],
+  })
   // Avec des capacités, le prix affiché « dès » est celui de la première
   .transform((p) => {
     const first = p.variants.storage?.[0];
-    return first ? { ...p, price: first.price, old_price: first.old_price ?? null } : p;
+    // Promo réservée au prix unique : avec des capacités, chaque capacité a son ancien prix
+    return first ? { ...p, price: first.price, old_price: first.old_price ?? null, promo_price: null, promo_starts_at: null, promo_ends_at: null } : p;
   });
 
 export type ProductInput = z.input<typeof productSchema>;
@@ -126,8 +152,26 @@ export type ProductData = z.output<typeof productSchema>;
 export const quickUpdateSchema = z.object({
   id: z.uuid(),
   price: amount("Prix").optional(),
-  stock: z.number().int().min(0).max(100_000).optional(),
+  stock: z.number().int().min(0, "Le stock ne peut pas être négatif.").max(100_000, "Stock trop élevé.").optional(),
+  is_active: z.boolean().optional(),
+  is_featured: z.boolean().optional(),
 });
+
+/** Actions groupées de la liste des produits. */
+export const bulkSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("hide"), ids: z.array(z.uuid()).min(1).max(200) }),
+  z.object({ action: z.literal("show"), ids: z.array(z.uuid()).min(1).max(200) }),
+  z.object({ action: z.literal("category"), ids: z.array(z.uuid()).min(1).max(200), category_id: z.uuid({ error: "Choisissez une catégorie." }) }),
+  z.object({
+    action: z.literal("discount"),
+    ids: z.array(z.uuid()).min(1).max(200),
+    percent: z.number({ error: "Remise invalide." }).int("Remise en pourcentage entier.").min(1, "Entre 1 et 90 %.").max(90, "Entre 1 et 90 %."),
+    promo_starts_at: z.iso.datetime({ offset: true }).nullable(),
+    promo_ends_at: z.iso.datetime({ offset: true }).nullable(),
+  }),
+  z.object({ action: z.literal("end-promo"), ids: z.array(z.uuid()).min(1).max(200) }),
+]);
+export type BulkInput = z.input<typeof bulkSchema>;
 
 export const categorySchema = z.object({
   id: z.uuid().optional(),
@@ -166,6 +210,9 @@ export type DbProduct = {
   is_new: boolean;
   is_featured: boolean;
   is_active: boolean;
+  promo_price: number | null;
+  promo_starts_at: string | null;
+  promo_ends_at: string | null;
   tag: string | null;
   free_delivery: boolean;
   image_bg: string | null;

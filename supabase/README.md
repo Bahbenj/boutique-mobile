@@ -30,6 +30,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 12. `20261125001200_order_history.sql` (historique des statuts de commande : qui et quand, lecture admin uniquement)
 13. `20261125001300_repair_requests.sql` (demandes de réparation du formulaire de /reparation : création par le serveur seul, 3 demandes par heure et par numéro au plus ; l'admin ne modifie que le statut, le devis et les notes)
 14. `20261125001400_dashboard_repairs.sql` (tableau de bord : statistiques des commandes et des demandes de réparation)
+15. `20261125001500_products_admin.sql` (prix promo avec dates de début et de fin facultatives ; les anciens prix barrés deviennent des promos ; `place_order` facture le prix promo en cours et refuse un produit sans prix)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -67,7 +68,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 14) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 14, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 15) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 15, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -132,7 +133,8 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'avis', to_regclass('public.reviews') is not null
    union all select 'historique des commandes', to_regclass('public.order_status_history') is not null
    union all select 'demandes de réparation', to_regclass('public.repair_requests') is not null
-   union all select 'colonne promo', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'free_delivery')
+   union all select 'livraison offerte par produit', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'free_delivery')
+   union all select 'promo datée', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'promo_ends_at')
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -164,9 +166,18 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 
 14. **Admin → Tableau de bord** : « Réparations à traiter » compte les demandes encore « Nouvelle », « Dernières commandes » et « Dernières demandes » affichent vos essais, la commande annulée n'est pas comptée dans le chiffre d'affaires du jour.
 
-### F. Sécurité (depuis un ordinateur, PowerShell)
+### F. Gestion des produits (sur le téléphone)
 
-15. Remplacez `<URL>` par `NEXT_PUBLIC_SUPABASE_URL` et `<CLE_PUBLIQUE>` par `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jamais la clé secrète) :
+15. **Admin → Produits** : chaque produit est une carte avec prix, stock et interrupteur « En vente ». Touchez le prix de la loupe d'écran, tapez 7500, ✓ : un message « Prix : 7 500 FCFA » apparaît avec **Annuler** ; touchez **Annuler**, le prix revient à 7 000.
+16. Sur la même carte, **+** puis **−** sur le stock, puis l'interrupteur → « Masqué » : la loupe disparaît de `/boutique` (rechargez). Remettez-la **En vente**. L'étoile la met en avant sur l'accueil (retirez-la ensuite).
+17. Cochez deux produits → barre du bas **Remise %…** → 10 % sans dates → **Appliquer** : leur carte affiche « Promo −10 % » et la boutique montre l'ancien prix barré. Recochez-les → **Remise %…** → **Arrêter les promos**.
+18. Bouton **+ Ajouter un produit** : touchez **Ajouter** sans rien remplir, le message liste ce qui manque (photo, nom, catégorie, prix). Ajoutez une photo (appareil photo ou galerie), un nom « Test », une catégorie, un prix de 1 000 ; quittez la page sans enregistrer puis revenez : le brouillon est proposé (« Reprendre »). Enregistrez avec **Masqué** coché.
+19. Dans la liste, sur la carte « Test », bouton **Dupliquer** (deux carrés) : une copie « Test (copie) » masquée s'ouvre. Sur chacune : **Retirer ce produit du site** → cochez la confirmation → **Supprimer définitivement**.
+20. Ouvrez le **Casque Bluetooth Super Bass** : **Prix promo** 8 000 → **Enregistrer** : la boutique affiche 8 000 et 10 000 barré, « −20 % ». Mettez une **date de fin** d'hier et enregistrez : la boutique revient à 10 000 sans prix barré. Videz le prix promo et enregistrez.
+
+### G. Sécurité (depuis un ordinateur, PowerShell)
+
+21. Remplacez `<URL>` par `NEXT_PUBLIC_SUPABASE_URL` et `<CLE_PUBLIQUE>` par `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jamais la clé secrète) :
     ```powershell
     curl.exe -s "<URL>/rest/v1/orders?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/repair_requests?select=*" -H "apikey: <CLE_PUBLIQUE>"
@@ -174,9 +185,9 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
     ```
     Attendu pour les trois : une erreur « permission denied » (code 42501), **jamais** de données.
 
-### G. Nettoyage des essais
+### H. Nettoyage des essais
 
-16. Une fois la recette terminée, supprimez les essais (commandes **annulées d'abord** dans l'admin, pour remettre le stock) :
+22. Une fois la recette terminée, supprimez les essais (commandes **annulées d'abord** dans l'admin, pour remettre le stock) :
     ```sql
     delete from public.orders where status = 'annulee' and phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';
     delete from public.repair_requests where phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';

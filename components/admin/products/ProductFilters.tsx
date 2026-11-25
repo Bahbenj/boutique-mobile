@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { productStatusFilters } from "@/lib/admin/schema";
 import { cn } from "@/lib/utils";
 import { IconSearch, IconSpinner } from "@/components/ui/icons";
 
@@ -40,19 +41,19 @@ export function ProductFilters({ categories }: { categories: { id: string; name:
         <input
           type="search"
           value={q}
-          placeholder="Rechercher (nom, marque)…"
+          placeholder="Rechercher un produit…"
           onChange={(e) => {
             setQ(e.target.value);
             clearTimeout(timer.current);
             const value = e.target.value.trim();
-            timer.current = setTimeout(() => update("q", value), 300);
+            timer.current = setTimeout(() => update("q", value), 200);
           }}
           className="h-11 w-full rounded-full border border-line bg-surface ps-11 pe-4 text-[1rem] outline-none placeholder:text-fg/40 focus:border-accent focus:ring-4 focus:ring-accent/25"
         />
       </label>
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         <select aria-label="Catégorie" className={cn(selectClass, "shrink-0")} style={chevron} value={params.get("categorie") ?? ""} onChange={(e) => update("categorie", e.target.value)}>
-          <option value="">Toutes catégories</option>
+          <option value="">Toutes les catégories</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -61,18 +62,18 @@ export function ProductFilters({ categories }: { categories: { id: string; name:
           <option value="aucune">Sans catégorie</option>
         </select>
         <select aria-label="Statut" className={cn(selectClass, "shrink-0")} style={chevron} value={params.get("statut") ?? ""} onChange={(e) => update("statut", e.target.value)}>
-          <option value="">Tous statuts</option>
-          <option value="actifs">En ligne</option>
-          <option value="inactifs">Hors ligne</option>
-          <option value="faible">Stock faible</option>
-          <option value="rupture">Rupture</option>
-          <option value="vedettes">Vedettes</option>
+          <option value="">Tous les produits</option>
+          {Object.entries(productStatusFilters).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
         <select aria-label="Trier par" className={cn(selectClass, "shrink-0")} style={chevron} value={params.get("tri") ?? ""} onChange={(e) => update("tri", e.target.value)}>
           <option value="">Plus récents</option>
           <option value="nom">Nom A → Z</option>
-          <option value="stock">Stock croissant</option>
-          <option value="prix">Prix décroissant</option>
+          <option value="stock">Stock le plus bas</option>
+          <option value="prix">Prix le plus haut</option>
         </select>
       </div>
     </div>

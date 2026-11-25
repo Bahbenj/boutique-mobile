@@ -46,14 +46,24 @@ type DbRow = {
   variants: { colors?: { name: string; hex: string }[]; storage?: { label: string; price: number; old_price?: number | null }[] } | null;
   highlights: string[];
   specs: [string, string][];
+  promo_price: number | null;
+  promo_starts_at: string | null;
+  promo_ends_at: string | null;
   tag: string | null;
   free_delivery: boolean | null;
   image_bg: string | null;
   category: { slug: string } | null;
 };
 
-function toProduct(r: DbRow): Product {
+/** Promo en cours à l'instant `now` (mêmes règles que product_current_price en base). */
+const promoActive = (r: Pick<DbRow, "promo_price" | "promo_starts_at" | "promo_ends_at">, now: number) =>
+  r.promo_price != null &&
+  (!r.promo_starts_at || Date.parse(r.promo_starts_at) <= now) &&
+  (!r.promo_ends_at || Date.parse(r.promo_ends_at) > now);
+
+function toProduct(r: DbRow, now: number): Product {
   const categorySlug = r.category?.slug ?? "";
+  const promo = promoActive(r, now) && !r.variants?.storage?.length;
   const images = (r.images ?? []).filter(Boolean);
   return {
     id: r.id,
@@ -62,8 +72,9 @@ function toProduct(r: DbRow): Product {
     brand: r.brand ?? "",
     category: categorySlug,
     condition: r.condition,
-    price: Number(r.price),
-    ...(r.old_price != null ? { oldPrice: Number(r.old_price) } : {}),
+    // Promo en cours : prix promo affiché, prix normal barré
+    price: promo ? Number(r.promo_price) : Number(r.price),
+    ...(promo ? { oldPrice: Number(r.price) } : r.old_price != null ? { oldPrice: Number(r.old_price) } : {}),
     images: (images.length ? images : [placeholderFor(categorySlug)]).map((src, i) => ({
       src,
       alt: images.length ? (i === 0 ? r.name : `${r.name}, photo ${i + 1}`) : `${r.name} (visuel provisoire)`,
@@ -110,9 +121,10 @@ export async function getCatalog(): Promise<Catalog> {
     supabase
       .from("products")
       .select(
-        "id, name, slug, description, brand, price, old_price, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs, tag, free_delivery, image_bg, created_at, category:categories(slug)",
+        "id, name, slug, description, brand, price, old_price, promo_price, promo_starts_at, promo_ends_at, stock, condition, grade, battery, is_new, is_featured, is_active, images, variants, highlights, specs, tag, free_delivery, image_bg, created_at, category:categories(slug)",
       )
       .eq("is_active", true)
+      .gt("price", 0) // « Prix à renseigner » : jamais affiché
       .order("created_at", { ascending: true }),
   ]);
 
@@ -124,8 +136,17 @@ export async function getCatalog(): Promise<Catalog> {
     return staticCatalog();
   }
 
-  cacheLife("hours"); // invalidé immédiatement par l'admin (updateTag), sinon relu au moins chaque jour
-  const products = (prods.data as unknown as DbRow[]).map(toProduct);
+  const rows = prods.data as unknown as DbRow[];
+  const now = Date.now();
+  // Invalidé immédiatement par l'admin (updateTag). Sinon relu toutes les heures,
+  // ou dès le prochain début / fin de promo pour que le prix affiché change à l'heure dite.
+  const boundaries = rows
+    .flatMap((r) => [r.promo_starts_at, r.promo_ends_at])
+    .map((d) => (d ? Date.parse(d) : NaN))
+    .filter((t) => t > now);
+  const nextChange = boundaries.length ? Math.ceil((Math.min(...boundaries) - now) / 1000) : 3600;
+  cacheLife({ stale: 60, revalidate: Math.max(60, Math.min(3600, nextChange)), expire: 86_400 });
+  const products = rows.map((r) => toProduct(r, now));
   const firstImage = (slug: string) => products.find((p) => p.category === slug && !p.images[0].src.includes("/provisoire/"))?.images[0].src;
   const categories: Category[] = (cats.data ?? []).map((c) => ({
     slug: c.slug,

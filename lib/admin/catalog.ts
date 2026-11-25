@@ -2,18 +2,20 @@ import "server-only";
 import { requireAdmin } from "@/lib/auth";
 import { supabaseUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import type { DbCategory, DbProduct } from "./schema";
+import type { DbCategory, DbProduct, ProductStatusFilter } from "./schema";
 
 /** Lectures du catalogue pour l'admin (session admin, soumises à la RLS). */
 
 export type ProductFilters = {
   q?: string;
   categorie?: string; // id, ou "aucune"
-  statut?: "actifs" | "inactifs" | "rupture" | "faible" | "vedettes";
+  statut?: ProductStatusFilter;
   tri?: "recent" | "nom" | "stock" | "prix";
 };
 
-export const LOW_STOCK_ADMIN = 3;
+import { LOW_STOCK_ADMIN } from "./stock-shared";
+export { LOW_STOCK_ADMIN };
+
 
 export async function listProducts(filters: ProductFilters) {
   await requireAdmin();
@@ -29,10 +31,18 @@ export async function listProducts(filters: ProductFilters) {
 
   switch (filters.statut) {
     case "actifs":
+    case "en-vente":
       query = query.eq("is_active", true);
       break;
     case "inactifs":
+    case "masques":
       query = query.eq("is_active", false);
+      break;
+    case "promo":
+      query = query.not("promo_price", "is", null);
+      break;
+    case "sans-prix":
+      query = query.lte("price", 0);
       break;
     case "rupture":
       query = query.eq("stock", 0);
@@ -61,7 +71,8 @@ export async function listProducts(filters: ProductFilters) {
 
   const { data, count, error } = await query.limit(300);
   if (error) throw new Error(error.message);
-  return { products: (data ?? []) as DbProduct[], count: count ?? 0 };
+  // now : heure de lecture, pour savoir quelles promos sont en cours (pas d'horloge au rendu)
+  return { products: (data ?? []) as DbProduct[], count: count ?? 0, now: Date.now() };
 }
 
 export async function getProduct(id: string) {

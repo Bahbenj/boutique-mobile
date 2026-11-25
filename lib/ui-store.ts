@@ -2,7 +2,16 @@
 
 import { create } from "zustand";
 
-export type Toast = { id: number; title: string; text?: string; image?: string };
+export type Toast = {
+  id: number;
+  title: string;
+  text?: string;
+  image?: string;
+  /** Erreur : icône et couleur distinctes du succès. */
+  tone?: "success" | "error";
+  /** Bouton d'action (ex. « Annuler » juste après une modification). */
+  action?: { label: string; onClick: () => void };
+};
 
 /** État d'interface global (non persisté) : modales, tiroirs, notifications. */
 type UIState = {
