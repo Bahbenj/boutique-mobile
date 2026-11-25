@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { IconBox, IconFlash, IconGrid, IconReceipt, IconSettings, IconSliders, IconStar, IconTag, IconWrench } from "@/components/ui/icons";
+import { IconBox, IconFlash, IconGrid, IconReceipt, IconSettings, IconSliders, IconStar, IconTag, IconUser, IconWrench } from "@/components/ui/icons";
 
 export type AdminNavItem = {
   href: string;
@@ -19,6 +19,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/categories", label: "Catégories", short: "Rayons", Icon: IconTag },
   { href: "/admin/promotions", label: "Promotions", short: "Promos", Icon: IconFlash },
   { href: "/admin/stock", label: "Stock", short: "Stock", Icon: IconSliders },
+  { href: "/admin/clients", label: "Clients", short: "Clients", Icon: IconUser },
   { href: "/admin/avis", label: "Avis clients", short: "Avis", Icon: IconStar },
   { href: "/admin/parametres", label: "Paramètres", short: "Réglages", Icon: IconSettings },
 ];

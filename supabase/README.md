@@ -34,6 +34,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 16. `20261125001600_categories_admin.sql` (catégories masquables : une catégorie masquée disparaît du site avec ses produits et ne peut plus être commandée ; une catégorie qui contient des produits ne peut plus être supprimée)
 17. `20261125001700_promotions.sql` (promotions datées sur un produit, une catégorie ou tout le site ; codes promo avec minimum, nombre d'utilisations et expiration, appliqués par `place_order` ; la commande garde le code et la remise)
 18. `20261125001800_stock.sql` (seuil « stock faible » réglable ; historique des mouvements de stock écrit par la base : ventes, annulations, ajustements avec motif, qui et quand)
+19. `20261125001900_customers.sql` (liste des clients calculée à partir des commandes et des demandes de réparation, recherche par téléphone ou par nom, réservée à l'admin)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -71,7 +72,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 18) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 18, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 19) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 19, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -141,6 +142,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'catégories masquables', exists (select 1 from information_schema.columns where table_name = 'categories' and column_name = 'is_active')
    union all select 'promotions et codes promo', to_regclass('public.promo_codes') is not null
    union all select 'historique du stock', to_regclass('public.stock_movements') is not null
+   union all select 'liste des clients', to_regprocedure('public.admin_customers(text, text, integer)') is not null
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -201,6 +203,10 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 20 j. **Admin → Plus → Stock** : réglez l'alerte « stock faible » à 5 → **Enregistrer** : le filtre « Stock faible » et le tableau de bord comptent les produits à 5 ou moins. Remettez 3.
 20 k. Sur la ligne de la loupe d'écran, **+** deux fois, motif « Arrivage », **Enregistrer** : message « Stock : 10 → 12 » avec **Annuler**. Onglet **Historique** : « +2 Ajustement », votre e-mail, « « Arrivage » ». Touchez **Annuler** : une ligne « −2 » s'ajoute.
 20 l. Après une commande sur le site (étape C), l'historique montre « Vente » (Commande en ligne) ; après son annulation dans l'admin, « Commande annulée » avec votre e-mail.
+
+### F quinquies. Clients
+
+20 m. **Admin → Plus → Clients** : votre numéro de test apparaît avec ses commandes (hors annulées), le total dépensé et ses demandes de réparation. Tapez les 4 derniers chiffres de votre numéro dans la recherche : seul votre client reste. Touchez « N commandes » : la liste des commandes s'ouvre filtrée sur ce numéro. Le bouton **WhatsApp** ouvre une conversation « Bonjour … ».
 
 ### G. Sécurité (depuis un ordinateur, PowerShell)
 
