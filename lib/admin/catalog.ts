@@ -88,7 +88,7 @@ export async function listCategories() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, slug, description, image, position, products(count)")
+    .select("id, name, slug, description, image, position, is_active, products(count)")
     .order("position")
     .order("name");
   if (error) throw new Error(error.message);
@@ -96,6 +96,11 @@ export async function listCategories() {
     ...(c as DbCategory),
     productCount: (products as unknown as { count: number }[])[0]?.count ?? 0,
   }));
+}
+
+/** Choix de catégorie (fiche produit, filtres, sélection multiple) : les masquées sont signalées. */
+export function categoryOptions(categories: { id: string; name: string; is_active: boolean }[]) {
+  return categories.map((c) => ({ id: c.id, name: c.is_active ? c.name : `${c.name} (masquée)` }));
 }
 
 // --- Photos ----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listCategories, listProducts, type ProductFilters as Filters } from "@/lib/admin/catalog";
+import { categoryOptions, listCategories, listProducts, type ProductFilters as Filters } from "@/lib/admin/catalog";
 import { productStatusFilters, type ProductStatusFilter } from "@/lib/admin/schema";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { ProductFilters } from "@/components/admin/products/ProductFilters";
@@ -35,7 +35,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
         </Link>
       }
     >
-      <ProductFilters categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
+      <ProductFilters categories={categoryOptions(categories)} />
 
       <div className="mt-4">
         {products.length === 0 ? (
@@ -56,7 +56,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
             )}
           </div>
         ) : (
-          <ProductList products={products} categories={categories.map((c) => ({ id: c.id, name: c.name }))} now={now} />
+          <ProductList products={products} categories={categoryOptions(categories)} now={now} />
         )}
       </div>
       <AddProductFab />

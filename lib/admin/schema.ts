@@ -231,6 +231,7 @@ export type DbCategory = {
   description: string;
   image: string | null;
   position: number;
+  is_active: boolean;
 };
 
 /** Résultat standard d'une Server Action admin. */

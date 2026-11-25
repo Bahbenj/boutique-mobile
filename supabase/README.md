@@ -31,6 +31,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 13. `20261125001300_repair_requests.sql` (demandes de réparation du formulaire de /reparation : création par le serveur seul, 3 demandes par heure et par numéro au plus ; l'admin ne modifie que le statut, le devis et les notes)
 14. `20261125001400_dashboard_repairs.sql` (tableau de bord : statistiques des commandes et des demandes de réparation)
 15. `20261125001500_products_admin.sql` (prix promo avec dates de début et de fin facultatives ; les anciens prix barrés deviennent des promos ; `place_order` facture le prix promo en cours et refuse un produit sans prix)
+16. `20261125001600_categories_admin.sql` (catégories masquables : une catégorie masquée disparaît du site avec ses produits et ne peut plus être commandée ; une catégorie qui contient des produits ne peut plus être supprimée)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -68,7 +69,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 15) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 15, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 16) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 16, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -135,6 +136,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'demandes de réparation', to_regclass('public.repair_requests') is not null
    union all select 'livraison offerte par produit', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'free_delivery')
    union all select 'promo datée', exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'promo_ends_at')
+   union all select 'catégories masquables', exists (select 1 from information_schema.columns where table_name = 'categories' and column_name = 'is_active')
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -174,6 +176,13 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 18. Bouton **+ Ajouter un produit** : touchez **Ajouter** sans rien remplir, le message liste ce qui manque (photo, nom, catégorie, prix). Ajoutez une photo (appareil photo ou galerie), un nom « Test », une catégorie, un prix de 1 000 ; quittez la page sans enregistrer puis revenez : le brouillon est proposé (« Reprendre »). Enregistrez avec **Masqué** coché.
 19. Dans la liste, sur la carte « Test », bouton **Dupliquer** (deux carrés) : une copie « Test (copie) » masquée s'ouvre. Sur chacune : **Retirer ce produit du site** → cochez la confirmation → **Supprimer définitivement**.
 20. Ouvrez le **Casque Bluetooth Super Bass** : **Prix promo** 8 000 → **Enregistrer** : la boutique affiche 8 000 et 10 000 barré, « −20 % ». Mettez une **date de fin** d'hier et enregistrez : la boutique revient à 10 000 sans prix barré. Videz le prix promo et enregistrez.
+
+### F bis. Catégories
+
+20 a. **Admin → Catégories** : glissez la poignée ⠿ de « Gadgets » tout en haut, rechargez : l'ordre est gardé, et le menu de `/boutique` suit le même ordre. Remettez-la à sa place.
+20 b. Interrupteur de « Gadgets » → **Masquée** : sur `/boutique`, la catégorie et la loupe d'écran disparaissent (rechargez) ; dans l'admin, la loupe reste visible, catégorie « Gadgets (masquée) ». Touchez **Annuler** dans le message (ou remettez l'interrupteur) : tout revient.
+20 c. Corbeille de « Smartphones » : une fenêtre explique qu'elle contient des produits, avec **Voir ses produits** et **Masquer la catégorie** ; rien n'est supprimé.
+20 d. **Nouvelle catégorie** « Test », **Créer la catégorie**, puis sa corbeille → **Supprimer** : elle disparaît.
 
 ### G. Sécurité (depuis un ordinateur, PowerShell)
 

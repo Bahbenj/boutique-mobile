@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProduct, listCategories } from "@/lib/admin/catalog";
+import { categoryOptions, getProduct, listCategories } from "@/lib/admin/catalog";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { ProductForm } from "@/components/admin/products/ProductForm";
 import { IconExternal } from "@/components/ui/icons";
@@ -32,7 +32,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       }
     >
       {/* key : réinitialise le formulaire si l'on passe d'un produit à sa copie */}
-      <ProductForm key={product.id} product={product} categories={categories.map((c) => ({ id: c.id, name: c.name }))} isCopy={sp.copie === "1"} />
+      <ProductForm key={product.id} product={product} categories={categoryOptions(categories)} isCopy={sp.copie === "1"} />
     </AdminPage>
   );
 }

@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { CATALOG_TAG } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/server";
 
-/** Actions catégories : création, modification, suppression, ordre d'affichage. */
+/** Actions catégories : création, modification, masquage, suppression (si vide), ordre d'affichage. */
 
 function done() {
   updateTag(CATALOG_TAG); // site public : rayons et grille de l'accueil
@@ -38,24 +38,47 @@ export async function saveCategory(input: CategoryInput): Promise<ActionResult> 
     ({ error } = await supabase.from("categories").insert({ ...data, position: (last?.position ?? -1) + 1 }));
   }
   if (error) {
-    if (error.code === "23505") return { ok: false, error: "Ce lien est déjà utilisé.", fields: { slug: "Déjà utilisé par une autre catégorie." } };
-    return { ok: false, error: "Enregistrement impossible : " + error.message };
+    if (error.code === "23505") return { ok: false, error: "Ce nom de page est déjà pris.", fields: { slug: "Déjà utilisé par une autre catégorie : changez-le." } };
+    return { ok: false, error: "L'enregistrement n'a pas abouti. Réessayez." };
   }
   done();
   return { ok: true };
 }
 
-/** Les produits de la catégorie ne sont pas supprimés : ils deviennent « sans catégorie ». */
+/** Masque (ou réaffiche) une catégorie : ses produits disparaissent aussi du site. */
+export async function setCategoryActive(id: string, active: boolean): Promise<ActionResult> {
+  await requireAdmin();
+  if (!/^[0-9a-f-]{36}$/i.test(id) || typeof active !== "boolean") return { ok: false, error: "Catégorie introuvable." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("categories").update({ is_active: active }).eq("id", id).select("id").maybeSingle();
+  if (error) return { ok: false, error: "Le changement n'a pas été enregistré. Réessayez." };
+  if (!data) return { ok: false, error: "Catégorie introuvable." };
+  done();
+  return { ok: true };
+}
+
+/**
+ * Suppression d'une catégorie vide uniquement. Une catégorie qui contient des
+ * produits est refusée (ici avec un message clair, et en base par la contrainte
+ * « on delete restrict ») : il faut d'abord déplacer ses produits, ou la masquer.
+ */
 export async function deleteCategory(id: string): Promise<ActionResult> {
   await requireAdmin();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "Catégorie introuvable." };
   const supabase = await createClient();
+  const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("category_id", id);
+  if (count) return { ok: false, error: notEmpty(count) };
   const { data: deleted, error } = await supabase.from("categories").delete().eq("id", id).select("image").maybeSingle();
-  if (error) return { ok: false, error: "Suppression impossible : " + error.message };
+  if (error) return { ok: false, error: error.code === "23503" ? notEmpty() : "La suppression n'a pas abouti. Réessayez." };
   if (!deleted) return { ok: false, error: "Catégorie introuvable." };
   await removeImage(supabase, deleted.image);
   done();
   return { ok: true };
+}
+
+function notEmpty(count?: number) {
+  const n = count ? `${count} produit${count > 1 ? "s" : ""}` : "des produits";
+  return `Cette catégorie contient encore ${n}. Déplacez-les d'abord dans une autre catégorie, ou masquez simplement la catégorie.`;
 }
 
 /** Enregistre l'ordre d'affichage complet (liste des id dans l'ordre voulu). */
@@ -66,7 +89,7 @@ export async function reorderCategories(ids: string[]): Promise<ActionResult> {
   const supabase = await createClient();
   const results = await Promise.all(ids.map((id, position) => supabase.from("categories").update({ position }).eq("id", id)));
   const failed = results.find((r) => r.error);
-  if (failed?.error) return { ok: false, error: "Ordre non enregistré : " + failed.error.message };
+  if (failed?.error) return { ok: false, error: "Le nouvel ordre n'a pas été enregistré. Réessayez." };
   done();
   return { ok: true };
 }
