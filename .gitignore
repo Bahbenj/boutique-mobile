@@ -43,4 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Photos originales du client (non publiées, optimisées par npm run photos:optimize)
-/public/photos/originaux/
+/photos-originaux/
+
+# Affiches et visuels de référence du client : jamais publiés (hors de public/)
+/reference-client/

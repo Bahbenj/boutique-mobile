@@ -20,7 +20,7 @@
   /* Accents */
   --gold: #c8956c; /* or / bronze rosé du logo : boutons principaux, détails (7,6:1) */
   --on-gold: #060709; /* texte posé sur l'or */
-  --accent: #3d8bff; /* bleu électrique : liens, états actifs, focus, hexagones */
+  --accent: #1a8fe6; /* bleu du logo : liens, états actifs, focus, hexagones */
   --on-accent: #060709; /* texte posé sur le bleu (6:1) */
   /* États (jamais de rouge ni de jaune) */
   --danger: #b8a2ff; /* erreurs, suppression : lavande */

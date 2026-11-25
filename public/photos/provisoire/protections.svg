@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="1200" height="1500">
 <defs>
 <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a3a"/><stop offset="1" stop-color="#060709"/></linearGradient>
-<pattern id="hx" width="56" height="100" patternUnits="userSpaceOnUse"><path d="M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34" fill="none" stroke="#3d8bff" stroke-opacity=".16" stroke-width="1.2"/></pattern>
+<pattern id="hx" width="56" height="100" patternUnits="userSpaceOnUse"><path d="M28 66L0 50V16L28 0l28 16v34L28 66zm0 0v34" fill="none" stroke="#1a8fe6" stroke-opacity=".16" stroke-width="1.2"/></pattern>
 </defs>
 <rect width="400" height="500" fill="url(#bg)"/><rect width="400" height="500" fill="url(#hx)"/>
 <g transform="translate(200 240)">

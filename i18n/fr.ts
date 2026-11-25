@@ -48,7 +48,7 @@ export const fr = {
     faqMore: "Une autre question ?",
     visitKicker: "Magasin",
     visitTitle: "Passez nous voir.",
-    visitLead: "Essayez les téléphones, faites poser votre verre trempé ou déposez votre appareil en réparation.",
+    visitLead: "Venez voir nos téléphones et accessoires, ou déposez votre appareil en réparation.",
     contactUs: "Nous contacter",
     directions: "Itinéraire",
     call: "Appeler",
@@ -88,7 +88,7 @@ export const fr = {
   },
   shop: {
     title: "Boutique",
-    lead: "Smartphones neufs et d'occasion, AirPods, casques, coques et chargeurs. Livraison dans tout le Mali, paiement à la livraison.",
+    lead: "Smartphones, écouteurs, casques, montres connectées et accessoires. Livraison dans tout le Mali, paiement à la livraison.",
     all: "Tout",
     count: (n: number) => `${n} produit${n > 1 ? "s" : ""}`,
     empty: "Aucun produit pour le moment dans ce rayon.",

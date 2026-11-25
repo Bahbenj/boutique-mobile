@@ -26,20 +26,25 @@ export const siteConfig = {
   currency: "XOF", // franc CFA (UEMOA), sans décimales
   currencyLabel: "FCFA",
   /**
-   * Logo image (dossier public/brand/, voir son README). null = logo texte.
-   * Deux variantes : `onDark` doré sur noir (site), `onLight` bleu sur blanc
-   * (documents imprimés, fonds clairs). TODO client : fournir le logo.
+   * Logo fourni par le client (public/brand/, générés par
+   * `node scripts/logo-variants.mjs` depuis logo-mobile-empire-bleu.jpg).
+   * `onDark` : texte blanc, bleu conservé, fond transparent (site sombre) ;
+   * `onLight` : version d'origine, texte noir sur blanc (bon de livraison).
+   * Les versions `*Compact` (nom + sous-titre seuls) servent aux petites
+   * tailles, où les éclairs rendraient le nom illisible. null = logo texte.
    */
   logo: {
-    onDark: null as string | null, // ex. "/brand/logo-dore.svg"
-    onLight: null as string | null, // ex. "/brand/logo-bleu.svg"
+    onDark: "/brand/logo-mobile-empire-clair.png" as string | null,
+    onDarkCompact: "/brand/logo-mobile-empire-clair-horizontal.png" as string | null,
+    onLight: "/brand/logo-mobile-empire-bleu.png" as string | null,
+    onLightCompact: "/brand/logo-mobile-empire-bleu-horizontal.png" as string | null,
   },
 
   // --- Couleurs (injectées en variables CSS dans app/layout.tsx) ------------
-  // D'après la page Facebook : logo « MOBILE EMPIRE » doré sur noir, bannières
-  // à hexagones bleus. TODO client : quand le logo sera fourni, échantillonner
-  // ses couleurs (npm run brand:colors -- public/brand/<logo>) et remplacer
-  // `gold` / `accent` / `navy`. Changer une valeur ici suffit : cartes,
+  // Bleu échantillonné sur le logo (npm run brand:colors : #0684DB), éclairci
+  // d'un cran (#1A8FE6, même teinte) pour rester AA sur les cartes et le marine.
+  // Le logo ne contient pas d'or : le bronze vient de la charte de la page
+  // Facebook et reste la couleur des boutons principaux (complémentaire du bleu). Changer une valeur ici suffit : cartes,
   // bordures, survols et versions atténuées en sont dérivés (app/globals.css).
   // Contraste AA : texte ≥ 4,5:1 sur canvas, surface et navy (tous vérifiés).
   // Charte : ni jaune vif ni rouge, y compris pour les alertes.
@@ -51,7 +56,7 @@ export const siteConfig = {
     muted: "#A9A5A0", // texte secondaire
     gold: "#C8956C", // or / bronze rosé du logo : boutons principaux, logo, détails (7,6:1 sur noir)
     onGold: "#060709", // texte posé sur l'or
-    accent: "#3D8BFF", // bleu électrique des hexagones : liens, états actifs, focus
+    accent: "#1A8FE6", // bleu du logo : liens, états actifs, focus, hexagones (≥ 4,9:1 partout)
     onAccent: "#060709", // texte posé sur le bleu
     navy: "#0C1A3A", // bleu marine : fonds à motif hexagonal
     danger: "#B8A2FF", // alertes et erreurs (lavande, jamais de rouge)

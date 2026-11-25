@@ -63,7 +63,12 @@ export type Service = { icon: ServiceIcon; title: string; text: string };
 export const services: Service[] = [
   { icon: "repair", title: "Réparation", text: "Écran, vitre, micro-soudure, remplacement par kit." },
   { icon: "flash", title: "Flashage et décodage", text: "Remise à neuf du système de votre téléphone." },
-  { icon: "unlock", title: "Déblocage", text: "Sur présentation d'un justificatif de propriété (facture, boîte d'origine)." },
+  {
+    icon: "unlock",
+    title: "Déblocage",
+    // Formulation imposée : jamais « bypass », « supprimer le FRP » ni « MDM » (voir AGENTS.md)
+    text: "Déblocage de votre propre appareil (compte oublié, verrouillage d'entreprise) sur présentation d'une preuve d'achat ou de propriété. Nous nous réservons le droit de refuser une demande.",
+  },
   { icon: "transfer", title: "Transfert de données", text: "Contacts, photos, applications : tout passe sur votre nouveau téléphone." },
   { icon: "setup", title: "Aide à la configuration", text: "Comptes, WhatsApp, réglages : on vous aide à bien démarrer." },
   { icon: "shop", title: "Coques, écouteurs et gadgets", text: "Tout pour protéger et équiper votre téléphone, en magasin et en ligne." },

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import type { ProductImage } from "@/data/products";
+import { imageBg, imageFit, type ProductImage } from "@/data/products";
 import { cn } from "@/lib/utils";
 
 /** Galerie de la fiche : grand visuel + vignettes (si plusieurs photos). */
@@ -21,7 +21,8 @@ export function ProductGallery({ images, soldOut }: { images: ProductImage[]; so
           preload={index === 0}
           sizes="(min-width: 1024px) 50vw, 100vw"
           quality={75}
-          className={cn("object-cover", soldOut && "opacity-60 grayscale")}
+          style={imageBg(current)}
+          className={cn(imageFit(current), soldOut && "opacity-60 grayscale")}
         />
       </div>
       {images.length > 1 && (
@@ -38,7 +39,7 @@ export function ProductGallery({ images, soldOut }: { images: ProductImage[]; so
                   i === index ? "ring-fg" : "ring-transparent hover:ring-line",
                 )}
               >
-                <Image src={img.src} alt="" fill sizes="80px" className="object-cover" />
+                <Image src={img.src} alt="" fill sizes="80px" style={imageBg(img)} className={imageFit(img)} />
               </button>
             </li>
           ))}

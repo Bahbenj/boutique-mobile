@@ -2,13 +2,13 @@
  * Catalogue. Données statiques en attendant le back-office : les fonctions
  * d'accès (lib/catalog.ts) sont le seul point à rebrancher sur une API / BDD.
  *
- * 9 produits d'EXEMPLE inspirés de la page Facebook du magasin, que le
- * commerçant remplacera depuis l'admin. Règles :
- *  - TOUS LES PRIX SONT À CONFIRMER (TODO client), y compris ceux repris des publications ;
- *  - aucune caractéristique technique inventée : seules celles publiées par le
- *    client figurent dans `specs` (casque ANC EP07) ;
- *  - visuels provisoires sobres (public/photos/provisoire), jamais d'image
- *    chargée depuis Facebook. Vraies photos : public/photos (voir son README).
+ * Produits d'EXEMPLE tirés des publications et des photos du client, qu'il
+ * remplacera depuis l'admin. Règles :
+ *  - TOUS LES PRIX SONT À CONFIRMER (TODO client), y compris ceux lus sur les affiches ;
+ *  - aucune caractéristique technique inventée : seules celles publiées par le client ;
+ *  - aucun nom de marque sans confirmation de l'authenticité du produit ;
+ *  - photos du client dans public/photos (jamais les affiches de reference-client/,
+ *    jamais d'image chargée depuis Facebook) ; sinon visuel provisoire du rayon.
  */
 
 export type CategorySlug = "smartphones" | "ecouteurs-casques" | "montres" | "accessoires" | "protections" | "gadgets";
@@ -40,24 +40,24 @@ export const categories: Category[] = [
     label: "Écouteurs & casques",
     title: "Écouteurs et casques",
     description: "Écouteurs sans fil et casques Bluetooth.",
-    image: placeholder("ecouteurs-casques"),
-    alt: "Visuel provisoire : casque audio",
+    image: "/photos/casque-anc-yesido-640.webp",
+    alt: "Casque Bluetooth Yesido noir",
   },
   {
     slug: "montres",
     label: "Montres connectées",
     title: "Montres connectées",
     description: "Montres connectées pour tous les jours.",
-    image: placeholder("montres"),
-    alt: "Visuel provisoire : montre connectée",
+    image: "/photos/montre-yesido-io22-600.webp",
+    alt: "Montres connectées Yesido IO22",
   },
   {
     slug: "accessoires",
     label: "Chargeurs & câbles",
     title: "Chargeurs et câbles",
     description: "Chargeurs, chargeurs sans fil et câbles.",
-    image: placeholder("accessoires"),
-    alt: "Visuel provisoire : chargeur",
+    image: "/photos/station-charge-3en1-627.webp",
+    alt: "Station de charge sans fil 3 en 1",
   },
   {
     slug: "protections",
@@ -77,7 +77,18 @@ export const categories: Category[] = [
   },
 ];
 
-export type ProductImage = { src: string; alt: string };
+export type ProductImage = {
+  src: string;
+  alt: string;
+  /** "contain" : photo entière, sans recadrage, posée sur `bg` (fond de la photo, blanc par défaut). */
+  fit?: "contain";
+  bg?: string;
+};
+
+/** Classes d'affichage d'une photo produit selon son cadrage. */
+export const imageFit = (img: ProductImage) => (img.fit === "contain" ? "object-contain p-[6%]" : "object-cover");
+/** Fond assorti à la photo quand elle n'est pas recadrée. */
+export const imageBg = (img: ProductImage) => (img.fit === "contain" ? { backgroundColor: img.bg ?? "#ffffff" } : undefined);
 
 export type StorageOption = { label: string; price: number; oldPrice?: number };
 
@@ -128,7 +139,13 @@ const withDefaults = (p: ProductInput): Product => ({
 
 const img = (slug: CategorySlug, alt: string): ProductImage => ({ src: placeholder(slug), alt: `${alt} (visuel provisoire)` });
 
+// Visuels : photos fournies par le client (public/photos, optimisées par
+// npm run photos:optimize) ; à défaut, visuel provisoire du rayon.
+const photo = (file: string, alt: string, fit?: "contain", bg?: string): ProductImage => ({ src: `/photos/${file}`, alt, ...(fit ? { fit } : {}), ...(bg ? { bg } : {}) });
+
 // TODO client : confirmer chaque prix (FCFA), le stock et le modèle exact.
+// Marques : n'écrire un nom de marque que si le client confirme l'authenticité
+// du produit (Yesido : logo visible sur les photos fournies par le client).
 const productInputs: ProductInput[] = [
   // --- Smartphones ---------------------------------------------------------------
   {
@@ -157,57 +174,56 @@ const productInputs: ProductInput[] = [
     highlights: ["Modèle et capacité à préciser"],
     specs: [],
     description: "Smartphone Tecno neuf. Demandez-nous sur WhatsApp les modèles disponibles en magasin.",
-    isFeatured: true,
   },
 
   // --- Écouteurs et casques --------------------------------------------------------
   {
-    id: "p-jbl-casque",
-    slug: "casque-bluetooth-jbl",
-    name: "Casque Bluetooth JBL",
-    brand: "JBL",
+    id: "p-casque-super-bass",
+    slug: "casque-bluetooth-super-bass",
+    name: "Casque Bluetooth Super Bass",
+    brand: "",
     category: "ecouteurs-casques",
-    price: 10_000, // prix promo publié, TODO client : à confirmer
-    images: [img("ecouteurs-casques", "Casque Bluetooth JBL")],
+    price: 10_000, // prix de l'affiche « Super promo », TODO client : à confirmer
+    images: [img("ecouteurs-casques", "Casque Bluetooth Super Bass")], // TODO client : photo du produit seul (l'affiche n'est pas publiable)
     stock: 10,
     tag: "Promo",
     freeDelivery: true,
-    highlights: ["Bluetooth", "Livraison offerte"],
+    highlights: ["Bluetooth", "Super Bass", "Livraison offerte"],
     specs: [],
-    description: "Casque Bluetooth JBL en promotion, livraison offerte.",
+    description: "Casque Bluetooth aux basses renforcées, en promotion avec la livraison offerte.",
     isFeatured: true,
   },
   {
-    id: "p-jbl-tour-pro-2",
-    slug: "ecouteurs-jbl-tour-pro-2",
-    name: "Écouteurs JBL Tour Pro 2",
-    brand: "JBL",
+    id: "p-casque-anc-yesido",
+    slug: "casque-bluetooth-anc-yesido",
+    name: "Casque Bluetooth ANC Yesido",
+    brand: "Yesido",
     category: "ecouteurs-casques",
-    price: 15_000, // TODO client : à confirmer
-    images: [img("ecouteurs-casques", "Écouteurs JBL Tour Pro 2")],
-    stock: 10,
-    highlights: [],
+    price: 25_000, // TODO client : prix
+    images: [photo("casque-anc-yesido-640.webp", "Casque Bluetooth Yesido noir, arceau réglable et coussinets en similicuir", "contain")],
+    stock: 5,
+    highlights: ["Réduction de bruit active (ANC)", "Bluetooth"],
     specs: [],
-    description: "Écouteurs JBL Tour Pro 2.",
+    description: "Casque Bluetooth Yesido à réduction de bruit active.",
     isFeatured: true,
   },
   {
-    id: "p-ep07",
-    slug: "casque-anc-ep07",
-    name: "Casque ANC EP07",
-    brand: "",
+    id: "p-ecouteurs-conduction",
+    slug: "ecouteurs-conduction-air-yesido",
+    name: "Écouteurs à conduction d'air Yesido",
+    brand: "Yesido",
     category: "ecouteurs-casques",
-    price: 20_000, // TODO client : prix
-    images: [img("ecouteurs-casques", "Casque ANC EP07")],
-    stock: 10,
-    highlights: ["Réduction de bruit 35 dB", "Bluetooth 5.3", "Jusqu'à 60 h d'autonomie"],
+    price: 15_000, // TODO client : prix
+    images: [photo("ecouteurs-conduction-yesido-640.webp", "Écouteurs Yesido à conduction d'air, tour de nuque noir")],
+    stock: 5,
+    highlights: ["Hors de l'oreille", "Bluetooth 5.3", "10 h d'autonomie"],
     specs: [
+      ["Type", "Conduction d'air, hors de l'oreille"],
       ["Connexion", "Bluetooth 5.3"],
-      ["Réduction de bruit", "Active (ANC), jusqu'à 35 dB"],
-      ["Autonomie sans ANC", "50 à 60 h"],
-      ["Autonomie avec ANC", "30 à 40 h"],
+      ["Autonomie", "10 h"],
     ],
-    description: "Casque à réduction de bruit active : coupez-vous du bruit et profitez de votre musique.",
+    description: "Le son sans rien dans l'oreille, dans un format léger.",
+    isNew: true,
     isFeatured: true,
   },
   {
@@ -216,43 +232,93 @@ const productInputs: ProductInput[] = [
     name: "Écouteurs sans fil",
     brand: "",
     category: "ecouteurs-casques",
-    price: 8_000, // TODO client : modèle et prix
+    price: 15_000, // TODO client : à confirmer
     images: [img("ecouteurs-casques", "Écouteurs sans fil")],
     stock: 10,
     highlights: [],
     specs: [],
-    description: "Écouteurs sans fil. Demandez-nous les modèles et coloris disponibles.",
+    description: "Écouteurs sans fil avec leur boîtier de charge. Demandez-nous les modèles et coloris disponibles.",
+  },
+  {
+    id: "p-ep07",
+    slug: "casque-anc-ep07",
+    name: "Casque ANC EP07",
+    brand: "",
+    category: "ecouteurs-casques",
+    price: 20_000, // TODO client : prix ; s'agit-il du même casque que le « Casque Bluetooth ANC Yesido » ?
+    images: [img("ecouteurs-casques", "Casque ANC EP07")],
+    stock: 10,
+    highlights: ["Réduction de bruit 35 dB", "Bluetooth 5.3", "Jusqu'à 60 h d'autonomie"],
+    specs: [
+      ["Connexion", "Bluetooth 5.3"],
+      ["Réduction de bruit", "Active (ANC), jusqu'à 35 dB"],
+      ["Autonomie sans ANC", "50 à 60 h"],
+      ["Autonomie avec ANC", "30 à 40 h"],
+    ],
+    description: "Casque à réduction de bruit active : coupez-vous du bruit et profitez de votre musique.",
   },
 
   // --- Montres connectées ------------------------------------------------------------
   {
-    id: "p-montre",
-    slug: "montre-connectee",
-    name: "Montre connectée",
-    brand: "",
+    id: "p-montre-io22",
+    slug: "montre-connectee-yesido-io22",
+    name: "Montre connectée Yesido IO22",
+    brand: "Yesido",
     category: "montres",
-    price: 25_000, // TODO client : à confirmer
-    images: [img("montres", "Montre connectée")],
+    price: 25_000, // prix de l'affiche, TODO client : à confirmer
+    images: [photo("montre-yesido-io22-600.webp", "Deux montres connectées Yesido IO22 noires, écrans allumés", "contain")],
     stock: 8,
-    highlights: [],
-    specs: [],
-    description: "Montre connectée. Demandez-nous les modèles et coloris disponibles.",
+    highlights: ["Deux bracelets", "Jusqu'à 5 jours d'autonomie", "Résistante à l'eau IP67"],
+    // Textes de la fiche fournie par le client (montre-yesido-io22-fiche.jpg)
+    specs: [
+      ["Écran", "Tactile HD, haute résolution, lisible même en plein soleil"],
+      ["Santé", "Fréquence cardiaque, sommeil, pas et calories brûlées, entraînement multisports"],
+      ["Notifications", "Appels, SMS et réseaux sociaux (WhatsApp, Facebook…)"],
+      ["Connexion", "Bluetooth, compatible iOS et Android"],
+      ["Autonomie", "Jusqu'à 5 jours d'utilisation, 30 jours en veille"],
+      ["Bracelet", "Silicone ou métal, deux couleurs"],
+      ["Étanchéité", "IP67"],
+      ["Autres", "Contrôle de la musique, rappel de sédentarité, chronomètre et alarmes, localisation du téléphone"],
+    ],
+    description:
+      "Une montre connectée légère et moderne : santé, sport et notifications au poignet, jusqu'à 5 jours sans recharge.",
+    isNew: true,
     isFeatured: true,
   },
 
   // --- Chargeurs et câbles -----------------------------------------------------------
   {
-    id: "p-chargeur-sans-fil",
-    slug: "chargeur-sans-fil",
-    name: "Chargeur sans fil",
+    id: "p-station-3en1",
+    slug: "station-charge-sans-fil-3-en-1",
+    name: "Station de charge sans fil 3 en 1",
     brand: "",
     category: "accessoires",
-    price: 10_000, // TODO client : prix
-    images: [img("accessoires", "Chargeur sans fil")],
-    stock: 10,
-    highlights: [],
+    price: 15_000, // TODO client : prix
+    images: [photo("station-charge-3en1-627.webp", "Station de charge 3 en 1 argentée avec support de montre et câble USB", "contain")],
+    stock: 5,
+    highlights: ["Charge sans fil", "Support de montre", "3 en 1"],
     specs: [],
-    description: "Chargeur sans fil. Vérifiez avec nous la compatibilité avec votre téléphone.",
+    description: "Rechargez plusieurs appareils au même endroit, montre comprise, sur une seule station. Vérifiez avec nous la compatibilité avec vos appareils.",
+    isFeatured: true,
+  },
+  {
+    id: "p-batterie-porte-cles",
+    slug: "mini-batterie-porte-cles",
+    name: "Mini batterie porte-clés",
+    brand: "",
+    category: "accessoires",
+    price: 7_500, // TODO client : prix
+    images: [photo("batterie-porte-cles-640.webp", "Quatre mini batteries porte-clés : noir et rouge, noir et argent, blanc, rose", "contain", "#d9ebf5")],
+    colors: [
+      { name: "Noir / rouge", hex: "#9b2c33" },
+      { name: "Noir / argent", hex: "#2b2d31" },
+      { name: "Blanc", hex: "#f2f2f0" },
+      { name: "Rose", hex: "#f2c9cc" },
+    ],
+    stock: 12,
+    highlights: ["USB-C + Lightning", "Format porte-clés", "4 coloris"],
+    specs: [["Connecteurs", "USB-C et Lightning intégrés"]],
+    description: "Une batterie d'appoint qui tient sur votre trousseau de clés, pour Android comme pour iPhone.",
   },
 
   // --- Gadgets ------------------------------------------------------------------------

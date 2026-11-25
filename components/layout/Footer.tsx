@@ -33,7 +33,7 @@ export function Footer() {
       <Container>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div className="max-w-xs">
-            <Logo />
+            <Logo size="full" imgClassName="h-auto w-52" />
             <p className="mt-4 text-[0.9375rem] font-semibold text-gold-text">{siteConfig.slogan}</p>
             <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
               {t.home.since(siteConfig.since)} · {siteConfig.description}.

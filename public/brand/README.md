@@ -1,16 +1,16 @@
 # Logo de Mobile Empire
 
-Déposez ici le logo fourni par le client (jamais une copie téléchargée depuis Facebook) :
+Source fournie par le client : `logo-mobile-empire-bleu.jpg` (texte noir, éclairs bleus, fond blanc).
 
-| Fichier                 | Variante                         | Utilisé pour                       |
-| ----------------------- | -------------------------------- | ---------------------------------- |
-| `logo-dore.svg` (ou .png) | doré sur fond noir / transparent | site (thème sombre)                |
-| `logo-bleu.svg` (ou .png) | bleu sur fond blanc / transparent | bon de livraison, fonds clairs     |
+Variantes générées par `node scripts/logo-variants.mjs` (à relancer si la source change) :
 
-De préférence en SVG ; sinon PNG transparent d'au moins 600 px de large.
+| Fichier                                   | Usage                                                       |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| `logo-mobile-empire-clair.png`            | thème sombre : texte blanc, bleu conservé, fond transparent (pied de page) |
+| `logo-mobile-empire-clair-horizontal.png` | thème sombre, petites tailles : nom + sous-titre (barre de navigation) |
+| `logo-mobile-empire-bleu.png`             | version d'origine, marges retirées (bon de livraison, fonds clairs) |
+| `logo-mobile-empire-bleu-horizontal.png`  | version d'origine, petites tailles                          |
 
-Puis :
+Chemins déclarés dans `config/site.ts` → `logo`. Couleurs : `npm run brand:colors -- public/brand/logo-mobile-empire-bleu.jpg` (bleu du logo : `#0684DB`, éclairci en `#1A8FE6` dans le thème pour rester lisible sur fond sombre).
 
-1. Renseignez les chemins dans `config/site.ts` → `logo.onDark` et `logo.onLight` (ex. `"/brand/logo-dore.svg"`). Tant qu'ils valent `null`, le site affiche le logo texte provisoire (hexagone « ME » + « MOBILE EMPIRE »).
-2. Échantillonnez les couleurs du logo : `npm run brand:colors -- public/brand/logo-dore.png`, puis reportez l'or dans `theme.gold` (et les bleus dans `theme.accent` / `theme.navy`) en gardant un contraste ≥ 4,5:1 (le script l'affiche).
-3. Favicon : remplacez `app/favicon.ico` par une version carrée du monogramme.
+TODO client : une version vectorielle (SVG ou PDF) du logo donnerait un rendu plus net, et un favicon carré (remplacer `app/favicon.ico`).

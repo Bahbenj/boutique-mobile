@@ -209,7 +209,7 @@ export function HeroScroll() {
               </p>
               <h1 className="relative">
                 <span className="sr-only">
-                  {scenes.map((s) => s.title).join(" ")} {siteConfig.name} : smartphones neufs et d&apos;occasion, accessoires et service après-vente à Bamako, livraison dans tout le Mali.
+                  {scenes.map((s) => s.title).join(" ")} {siteConfig.name} : smartphones, accessoires et service après-vente à Bamako, livraison dans tout le Mali.
                 </span>
                 {/* Pile de titres masquée : un seul visible à la fois */}
                 <span

@@ -2,7 +2,7 @@
  * Échantillonne les couleurs du logo pour config/site.ts → theme.
  * Usage : npm run brand:colors -- public/brand/logo-dore.png
  *
- * Réduit l'image, ignore les pixels transparents, quasi noirs ou quasi blancs,
+ * Réduit l'image, ignore les pixels transparents, quasi noirs, quasi blancs ou gris,
  * regroupe les teintes proches et affiche les couleurs dominantes avec leur
  * contraste sur le fond noir du site (#060709). À reporter à la main dans
  * `gold` (or du logo) et `accent` / `navy` (bleus), en gardant un contraste
@@ -31,6 +31,7 @@ for (let i = 0; i < data.length; i += info.channels) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   if (max < 40 || min > 225) continue; // fond noir ou blanc
+  if (max - min < 30) continue; // gris (anticrénelage du texte) : pas une couleur de marque
   const key = [r, g, b].map((v) => v >> 4).join(",");
   const bin = bins.get(key) ?? { n: 0, r: 0, g: 0, b: 0 };
   bin.n++;

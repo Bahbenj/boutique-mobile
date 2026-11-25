@@ -47,7 +47,7 @@ export function Navbar() {
         )}
       >
         <div className="flex h-14 items-center gap-2 ps-4 pe-2 sm:h-16 sm:ps-5">
-          <Logo className="me-auto" />
+          <Logo className="me-auto" priority />
 
           {/* Liens desktop */}
           <ul className="hidden items-center gap-1 lg:flex">

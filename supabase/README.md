@@ -35,7 +35,7 @@ Puis, pour les produits d'exemple, faites de même avec `supabase/seed.sql`. Ce 
 
 ### Base déjà installée avec d'anciens produits d'exemple
 
-`seed.sql` n'écrase jamais un produit existant. Si votre base contient encore des produits d'exemple des versions précédentes (iPhone 15 Pro, Tecno Camon 30, AirPods Pro…) et que vous ne les avez **pas** modifiés, supprimez-les puis relancez `supabase/seed.sql` pour obtenir les 9 exemples actuels (casque JBL, casque ANC EP07, montre connectée…) :
+`seed.sql` n'écrase jamais un produit existant. Si votre base contient encore des produits d'exemple des versions précédentes (iPhone 15 Pro, Tecno Camon 30, AirPods Pro…) et que vous ne les avez **pas** modifiés, supprimez-les puis relancez `supabase/seed.sql` pour obtenir les 11 exemples actuels (montre Yesido IO22, station de charge 3 en 1, mini batterie porte-clés…) :
 
 ```sql
 delete from public.products where slug in (
@@ -46,7 +46,9 @@ delete from public.products where slug in (
   'chargeur-rapide-usb-c-20w', 'coque-fibre-aramide', 'casque-bluetooth',
   -- 2e version
   'tecno-camon-30', 'tecno-spark-20-pro', 'iphone-13-occasion', 'casque-bluetooth-oraimo',
-  'coque-antichoc-verre-trempe', 'chargeur-samsung-25w'
+  'coque-antichoc-verre-trempe', 'chargeur-samsung-25w',
+  -- 3e version (renommés ou remplacés depuis les visuels du client)
+  'casque-bluetooth-jbl', 'ecouteurs-jbl-tour-pro-2', 'montre-connectee', 'chargeur-sans-fil'
 );
 delete from public.categories c
   where slug in ('neufs', 'occasion', 'ecouteurs', 'casques')
@@ -55,7 +57,7 @@ delete from public.categories c
 
 Les commandes déjà passées ne sont pas touchées (elles gardent une copie des articles). Une catégorie qui contient encore des produits n'est pas supprimée.
 
-Les produits d'exemple utilisent des **visuels provisoires** (`/photos/provisoire/…svg`) : remplacez-les par les vraies photos depuis l'admin. **Tous leurs prix sont à confirmer** avec le client.
+Les produits d'exemple utilisent les photos fournies par le client (`/photos/…webp`) ou, à défaut, des **visuels provisoires** (`/photos/provisoire/…svg`) à remplacer depuis l'admin. **Tous leurs prix sont à confirmer** avec le client.
 
 ## 3. Créer le compte administrateur
 
@@ -86,7 +88,7 @@ Le résultat doit indiquer « 1 row ». Pour retirer l'accès : `delete from pub
 
 ## 5. Vérifier
 
-Ouvrez `/admin` : la page de connexion s'affiche. Connectez-vous : le tableau de bord indique 9 produits, 6 catégories (Smartphones, Écouteurs et casques, Montres connectées, Chargeurs et câbles, Coques et protections, Gadgets) et 0 commande.
+Ouvrez `/admin` : la page de connexion s'affiche. Connectez-vous : le tableau de bord indique 11 produits, 6 catégories (Smartphones, Écouteurs et casques, Montres connectées, Chargeurs et câbles, Coques et protections, Gadgets) et 0 commande.
 
 Puis :
 

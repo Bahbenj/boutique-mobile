@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Product } from "@/data/products";
+import { imageBg, imageFit, type Product } from "@/data/products";
 import { t } from "@/i18n";
 import { hasPriceRange } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
@@ -27,8 +27,10 @@ export function ProductCard({ product: p, sizes, className }: { product: Product
           fill
           sizes={sizes ?? "(min-width: 1024px) 24vw, (min-width: 640px) 45vw, 80vw"}
           quality={75}
+          style={imageBg(p.images[0])}
           className={cn(
-            "object-cover transition-transform duration-700 ease-out-expo group-hover:scale-[1.04]",
+            imageFit(p.images[0]),
+            "transition-transform duration-700 ease-out-expo group-hover:scale-[1.04]",
             soldOut && "opacity-50 grayscale",
           )}
         />

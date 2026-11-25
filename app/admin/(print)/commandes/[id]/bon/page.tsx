@@ -29,7 +29,7 @@ export default async function DeliveryNotePage({ params }: PageProps<"/admin/com
       <article className="delivery-note mx-auto max-w-[21cm] bg-surface p-6 text-[13px] leading-snug text-black shadow-soft sm:p-10 print:max-w-none print:p-0 print:shadow-none">
         <header className="flex items-start justify-between gap-6 border-b-2 border-black pb-4">
           <div>
-            <Logo variant="light" href={null} className="mb-1.5" />
+            <Logo variant="light" size="full" href={null} imgClassName="h-auto w-36" className="mb-1.5" />
             <p className="sr-only">{siteConfig.name}</p>
             <p>{storeAddress}</p>
             <p>Tél. {phone}</p>

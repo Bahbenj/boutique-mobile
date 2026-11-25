@@ -2,7 +2,8 @@
  * Optimise les photos du client pour le web.
  *
  * Déposez les originaux (JPG, PNG, HEIC exporté en JPG…) dans
- * public/photos/originaux/ puis lancez :  npm run photos:optimize
+ * photos-originaux/ (racine du projet, hors de public/) puis lancez :
+ *   npm run photos:optimize
  *
  * Pour chaque photo, produit dans public/photos/ des WebP en 640, 1280 et
  * 1920 px de large (sans jamais agrandir), qualité 78, métadonnées retirées
@@ -11,7 +12,7 @@
  * Utilisez ensuite "/photos/vitrine-1280.webp" dans le code ou l'admin :
  * next/image choisit lui-même la taille servie.
  *
- * Les originaux ne sont pas publiés tels quels : public/photos/originaux est
+ * Les originaux ne sont jamais publiés : photos-originaux/ est hors de public/ et
  * ignoré par git (voir .gitignore), gardez-en une copie ailleurs.
  * Ne téléchargez jamais d'images depuis Facebook : demandez les fichiers au client.
  */
@@ -27,13 +28,14 @@ try {
 }
 
 const root = join(process.cwd(), "public", "photos");
-const source = join(root, "originaux");
+const source = join(process.cwd(), "photos-originaux"); // hors de public/ : jamais servi
 mkdirSync(source, { recursive: true });
 
 const widths = [640, 1280, 1920];
-const files = readdirSync(source).filter((f) => /\.(jpe?g|png|webp|avif|tiff?)$/i.test(f));
+// « *-source.* » : originaux avant retouche (scripts/client-images.mjs), jamais publiés
+const files = readdirSync(source).filter((f) => /\.(jpe?g|png|webp|avif|tiff?)$/i.test(f) && !/-source\.[a-z]+$/i.test(f));
 if (!files.length) {
-  console.log("Aucune photo dans public/photos/originaux/.");
+  console.log("Aucune photo dans photos-originaux/.");
   process.exit(0);
 }
 
