@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Price } from "./Price";
 import { LowStockBadge, ProductBadges, productBadges } from "./ProductBadges";
 import { QuickAdd } from "./QuickAdd";
+import { RatingInline } from "./Stars";
 
 /** Carte produit des grilles (accueil, boutique) : visuel, badges, prix, ajout rapide. */
 export function ProductCard({ product: p, sizes, className }: { product: Product; sizes?: string; className?: string }) {
@@ -48,6 +49,7 @@ export function ProductCard({ product: p, sizes, className }: { product: Product
         <p className="sr-only">
           {[...productBadges({ product: p }).map((b) => b.label), p.grade].filter(Boolean).join(", ")}
         </p>
+        {p.rating && <RatingInline average={p.rating.average} count={p.rating.count} className="mt-1" />}
         <Price price={p.price} oldPrice={p.oldPrice} from={hasPriceRange(p)} className="mt-1" />
         <div className="mt-auto">
           <QuickAdd product={p} />

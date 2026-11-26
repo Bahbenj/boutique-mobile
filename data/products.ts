@@ -116,6 +116,8 @@ export type Product = {
   imageBg?: string;
   isFeatured: boolean; // mis en avant sur l'accueil
   isActive: boolean; // false : masqué du site
+  /** Avis clients publiés (migration 24) : note moyenne, nombre, % qui recommandent. */
+  rating?: { average: number; count: number; recommendPct: number };
 };
 
 /** Champs facultatifs à la saisie, complétés par withDefaults. */

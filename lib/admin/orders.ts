@@ -106,6 +106,8 @@ export type DashboardData = {
   latest: DbOrder[];
   latestRepairs: DbRepair[];
   lowStock: { items: { id: string; name: string; stock: number; images: string[] }[]; count: number };
+  /** Avis produits à valider (0 sans la migration 24). */
+  pendingReviews: number;
 };
 
 export async function getDashboard(): Promise<DashboardData | { error: { message: string } }> {
@@ -125,6 +127,7 @@ export async function getDashboard(): Promise<DashboardData | { error: { message
       .limit(8),
     supabase.from("repair_requests").select("*").order("created_at", { ascending: false }).limit(5),
   ]);
+  const reviews = await supabase.rpc("admin_pending_reviews_count");
   const error = stats.error ?? latest.error ?? lowStock.error ?? repairs.error;
   if (error) return { error };
 
@@ -148,6 +151,7 @@ export async function getDashboard(): Promise<DashboardData | { error: { message
     } satisfies DashboardStats,
     latest: (latest.data ?? []).map(toOrder),
     lowStock: { items: (lowStock.data ?? []) as { id: string; name: string; stock: number; images: string[] }[], count: lowStock.count ?? 0 },
+    pendingReviews: reviews.error ? 0 : Number(reviews.data ?? 0),
     latestRepairs: (repairs.data ?? []).map((r) => ({ ...r, quote_amount: r.quote_amount == null ? null : Number(r.quote_amount) }) as DbRepair),
   };
 }

@@ -40,6 +40,17 @@ export function Dashboard({ email, data }: { email: string; data: DashboardData 
         </>
       }
     >
+      {data.pendingReviews > 0 && (
+        <Link
+          href="/admin/avis?vue=produits"
+          className="mb-3 flex min-h-12 items-center justify-between gap-3 rounded-card bg-accent-soft px-4 py-3 text-sm font-semibold ring-1 ring-accent/40 hover:ring-accent"
+        >
+          <span>
+            {data.pendingReviews} avis client{data.pendingReviews > 1 ? "s" : ""} à valider avant publication
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+      )}
       {/* 1. À traiter */}
       <h2 className="sr-only">À traiter</h2>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[repeat(2,minmax(0,1fr))]">

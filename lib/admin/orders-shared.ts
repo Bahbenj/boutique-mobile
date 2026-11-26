@@ -159,3 +159,22 @@ export function periodStart(period: Period, now = new Date()) {
   const localMidnightUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, day);
   return new Date(localMidnightUtc - offsetMin * 60_000).toISOString();
 }
+
+/**
+ * Message WhatsApp pour demander un avis après une commande livrée : un lien par
+ * produit vers « Donner mon avis » (le client se connecte, puis revient au formulaire).
+ */
+export function reviewRequestWhatsapp(o: Pick<DbOrder, "phone" | "customer_name" | "number"> & { items: { name: string; slug?: string }[] }, origin: string) {
+  const first = o.customer_name.trim().split(/\s+/)[0] ?? "";
+  const seen = new Set<string>();
+  const links = o.items
+    .filter((i) => i.slug && !seen.has(i.slug) && seen.add(i.slug))
+    .map((i) => `• ${i.name} : ${origin}/compte/avis?produit=${i.slug}`);
+  const text = [
+    `Bonjour ${first}, merci pour votre commande ${o.number} chez ${siteConfig.name} !`,
+    "Êtes-vous satisfait de votre achat ? Votre avis aide beaucoup les autres clients (1 minute) :",
+    ...links,
+    "Merci et à bientôt !",
+  ].join("\n");
+  return `https://wa.me/${waNumber(o.phone)}?text=${encodeURIComponent(text)}`;
+}

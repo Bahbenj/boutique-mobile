@@ -13,6 +13,9 @@ import {
   type OrderHistoryEntry,
 } from "@/lib/admin/orders-shared";
 import { formatMlPhoneIntl, telLink } from "@/lib/phone";
+import { siteConfig } from "@/config/site";
+import { reviewRequestWhatsapp } from "@/lib/admin/orders-shared";
+import { IconStar } from "@/components/ui/icons";
 import { formatPrice } from "@/lib/utils";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { FormSection } from "@/components/admin/ui";
@@ -60,6 +63,17 @@ export function OrderDetail({ order, history, account = null }: { order: DbOrder
             Bon<span className="max-sm:sr-only"> de livraison</span>
           </span>
         </a>
+        {order.status === "livree" && (
+          <a
+            href={reviewRequestWhatsapp(order, (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, ""))}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClasses("light", "md", "col-span-3 px-3 shadow-soft sm:col-span-1 sm:px-5")}
+          >
+            <IconStar size={18} />
+            Demander un avis
+          </a>
+        )}
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">

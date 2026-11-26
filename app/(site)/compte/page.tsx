@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { repairStatusLabels } from "@/lib/admin/repairs-shared";
 import { getCustomer, profileComplete } from "@/lib/customer";
-import { listMyOrders, listMyRepairs } from "@/lib/customer-orders";
+import { listMyOrders, listMyRepairs, listMyReviews, reviewStatus } from "@/lib/customer-orders";
 import { formatMlPhone } from "@/lib/phone";
 import { getCheckoutSettings } from "@/lib/storefront";
 import { formatPrice } from "@/lib/utils";
 import { MyInfoForm, SignOutButton } from "@/components/account/AccountForms";
 import { Alert } from "@/components/account/AuthForms";
 import { OrderCard, formatDay } from "@/components/account/OrderBits";
+import { Stars } from "@/components/product/Stars";
+import { cn } from "@/lib/utils";
 import { buttonClasses } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 
@@ -27,9 +30,9 @@ export default function AccountPage({ searchParams }: PageProps<"/compte">) {
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+function Section({ title, action, children, id }: { title: string; action?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <section className="rounded-card bg-surface p-5 shadow-soft sm:p-6">
+    <section id={id} className="scroll-mt-28 rounded-card bg-surface p-5 shadow-soft sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-extrabold">{title}</h2>
         {action}
@@ -43,7 +46,7 @@ async function Account({ searchParams }: Pick<PageProps<"/compte">, "searchParam
   const customer = await getCustomer();
   if (!customer) redirect("/compte/connexion?next=/compte");
   if (!profileComplete(customer)) redirect("/compte/completer?next=/compte");
-  const [sp, orders, repairs, settings] = await Promise.all([searchParams, listMyOrders(5), listMyRepairs(), getCheckoutSettings()]);
+  const [sp, orders, repairs, settings, { reviews, toReview }] = await Promise.all([searchParams, listMyOrders(5), listMyRepairs(), getCheckoutSettings(), listMyReviews()]);
   const first = customer.fullName.split(" ")[0];
 
   return (
@@ -84,6 +87,64 @@ async function Account({ searchParams }: Pick<PageProps<"/compte">, "searchParam
               Voir la boutique
             </Link>
           </div>
+        )}
+      </Section>
+
+      {toReview.length > 0 && (
+        <Section title="Vos produits reçus : votre avis compte">
+          <ul className="space-y-2">
+            {toReview.map((p) => (
+              <li key={p.product_id} className="flex items-center gap-3 rounded-2xl bg-raised/50 p-3 ring-1 ring-line">
+                <span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-raised">
+                  {p.image && <Image src={p.image} alt="" fill sizes="48px" className="object-cover" />}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
+                <Link href={`/compte/avis?produit=${p.slug}`} className={buttonClasses("primary", "sm", "shrink-0")}>
+                  Noter
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title="Mes avis" id="avis">
+        {reviews.length ? (
+          <ul className="space-y-2">
+            {reviews.map((r) => {
+              const st = reviewStatus[r.status];
+              return (
+                <li key={r.id} className="rounded-2xl bg-raised/50 p-3 ring-1 ring-line">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link href={`/produit/${r.product_slug}`} className="font-bold hover:underline">
+                      {r.product_name}
+                    </Link>
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        st.tone === "on" && "bg-success/15 text-success",
+                        st.tone === "wait" && "bg-accent-soft ring-1 ring-accent/40",
+                        st.tone === "off" && "bg-danger-soft text-danger",
+                      )}
+                    >
+                      {st.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 flex items-center gap-2 text-sm text-muted">
+                    <Stars value={r.rating} size={14} />
+                    {r.title || "Sans titre"}
+                  </p>
+                  {r.status === "rejected" && r.reject_reason && <p className="mt-1 text-sm">Motif : {r.reject_reason}</p>}
+                  {r.reply && <p className="mt-1 text-sm text-muted">Réponse de la boutique : {r.reply}</p>}
+                  <Link href={`/compte/avis?produit=${r.product_slug}`} className="mt-2 inline-flex min-h-9 items-center text-sm font-semibold text-accent underline-offset-4 hover:underline">
+                    Modifier ou supprimer
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-muted">Vous n&apos;avez pas encore donné d&apos;avis. Après une commande livrée, vos produits apparaissent ici pour être notés.</p>
         )}
       </Section>
 

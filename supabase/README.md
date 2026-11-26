@@ -39,6 +39,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 21. `20261126002100_activity_log.sql` (journal d'activité : chaque modification faite dans l'admin, avec son auteur et l'avant / après ; lisible par le propriétaire seul)
 22. `20261126002200_promo_code_attempts.sql` (codes promo : 10 essais ratés par heure et par visiteur au plus, contre les devinettes ; l'adresse IP n'est jamais enregistrée, seulement une empreinte)
 23. `20261126002300_customer_accounts.sql` (comptes clients : profils créés à l'inscription, commandes et réparations rattachées au compte, `place_order` réservé aux clients connectés à l'e-mail confirmé, chaque client ne voit que ses commandes, limites anti-robots)
+24. `20261126002400_product_reviews.sql` (avis produits des clients connectés : note, recommandation, photos, « Achat vérifié », modération avant publication, réponse de la boutique, signalement d'abus ; témoignages existants inchangés)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -76,7 +77,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 23) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 23, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 24) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 24, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -197,6 +198,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'rôles d''équipe', exists (select 1 from information_schema.columns where table_name = 'admins' and column_name = 'role')
    union all select 'journal d''activité', to_regclass('public.activity_log') is not null
    union all select 'comptes clients', to_regclass('public.profiles') is not null
+   union all select 'avis produits', to_regclass('public.product_reviews') is not null
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :

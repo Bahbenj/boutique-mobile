@@ -129,7 +129,7 @@ export async function getCatalog(): Promise<Catalog> {
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const [cats, prods, promos] = await Promise.all([
+  const [cats, prods, promos, ratings] = await Promise.all([
     supabase.from("categories").select("id, name, slug, description, image, position").order("position").order("name"),
     supabase
       .from("products")
@@ -141,6 +141,8 @@ export async function getCatalog(): Promise<Catalog> {
       .order("created_at", { ascending: true }),
     // Promotions actives (la RLS ne montre que celles-ci) ; table absente = aucune promotion
     supabase.from("promotions").select("kind, value, scope, category_id, product_id, starts_at, ends_at").eq("is_active", true),
+    // Avis publiés (moyenne par produit) ; fonction absente = pas encore de notes
+    supabase.rpc("product_rating_stats"),
   ]);
 
   const error = cats.error ?? prods.error;
@@ -161,7 +163,17 @@ export async function getCatalog(): Promise<Catalog> {
     .filter((t) => t > now);
   const nextChange = boundaries.length ? Math.ceil((Math.min(...boundaries) - now) / 1000) : 3600;
   cacheLife({ stale: 60, revalidate: Math.max(60, Math.min(3600, nextChange)), expire: 86_400 });
-  const products = rows.map((r) => toProduct(r, now, campaigns));
+  const ratingOf = new Map(
+    ((ratings.error ? [] : ratings.data) as { product_id: string; reviews: number; average: number; recommend_pct: number }[] | null ?? []).map((s) => [
+      s.product_id,
+      { average: Number(s.average), count: Number(s.reviews), recommendPct: Number(s.recommend_pct) },
+    ]),
+  );
+  const products = rows.map((r) => {
+    const p = toProduct(r, now, campaigns);
+    const rating = ratingOf.get(r.id);
+    return rating ? { ...p, rating } : p;
+  });
   const firstImage = (slug: string) => products.find((p) => p.category === slug && !p.images[0].src.includes("/provisoire/"))?.images[0].src;
   const categories: Category[] = (cats.data ?? []).map((c) => ({
     slug: c.slug,

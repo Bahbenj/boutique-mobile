@@ -75,3 +75,35 @@ export const customerStatus: Record<OrderStatus, { label: string; help: string }
   livree: { label: "Livrée", help: "Merci pour votre confiance !" },
   annulee: { label: "Annulée", help: "Cette commande a été annulée." },
 };
+
+// --- Avis produits du client (migration 24) ---------------------------------------------------
+
+export type MyProductReview = {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  rating: number;
+  title: string;
+  status: "pending" | "published" | "rejected" | "hidden";
+  reject_reason: string | null;
+  reply: string | null;
+  updated_at: string;
+};
+export type ReviewableProduct = { product_id: string; name: string; slug: string; image: string | null };
+
+export async function listMyReviews() {
+  const supabase = await createClient();
+  const [mine, todo] = await Promise.all([supabase.rpc("my_product_reviews"), supabase.rpc("my_reviewable_products")]);
+  return {
+    reviews: (mine.error ? [] : (mine.data ?? [])) as MyProductReview[],
+    toReview: (todo.error ? [] : (todo.data ?? [])) as ReviewableProduct[],
+  };
+}
+
+export const reviewStatus: Record<MyProductReview["status"], { label: string; tone: "on" | "wait" | "off" }> = {
+  pending: { label: "En attente de relecture", tone: "wait" },
+  published: { label: "Publié", tone: "on" },
+  rejected: { label: "Refusé", tone: "off" },
+  hidden: { label: "Masqué par la boutique", tone: "off" },
+};

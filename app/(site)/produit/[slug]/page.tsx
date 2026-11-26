@@ -10,6 +10,8 @@ import { IconCash, IconShield, IconTruck } from "@/components/ui/icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
 import { TrackViewContent } from "@/components/layout/MetaPixel";
+import { ProductReviews } from "@/components/product/ProductReviews";
+import { RatingInline } from "@/components/product/Stars";
 
 /** Produits connus au build ; ceux créés ensuite dans l'admin sont rendus à la demande. */
 export async function generateStaticParams() {
@@ -39,8 +41,33 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
     { Icon: IconShield, text: t.product.warranty(warranty) },
   ];
 
+  // Données structurées (schema.org) : prix, disponibilité et note moyenne des avis publiés
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, "");
+  const abs = (src: string) => (src.startsWith("http") ? src : `${origin}${src}`);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    sku: product.slug,
+    image: product.images.map((i) => abs(i.src)),
+    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
+    offers: {
+      "@type": "Offer",
+      url: `${origin}/produit/${product.slug}`,
+      priceCurrency: siteConfig.currency,
+      price: product.price,
+      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: product.condition === "neuf" ? "https://schema.org/NewCondition" : "https://schema.org/UsedCondition",
+    },
+    ...(product.rating && product.rating.count > 0
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: product.rating.average, reviewCount: product.rating.count, bestRating: 5, worstRating: 1 } }
+      : {}),
+  };
+
   return (
     <Container className="pt-24 pb-20 sm:pt-32 sm:pb-28">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <TrackViewContent
         key={product.slug}
         params={{
@@ -83,6 +110,12 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
           <h1 className="mt-1 text-[clamp(2.25rem,7vw,3.75rem)] leading-[0.95] font-extrabold tracking-[-0.04em]">
             {product.name}
           </h1>
+          {product.rating && (
+            <a href="#avis" className="mt-2 inline-flex min-h-9 items-center hover:underline">
+              <RatingInline average={product.rating.average} count={product.rating.count} />
+              <span className="ms-2 text-sm text-muted">· {product.rating.recommendPct} % recommandent</span>
+            </a>
+          )}
           <p className="mt-4 leading-relaxed text-muted">{product.description}</p>
 
           <div className="mt-6">
@@ -119,6 +152,8 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
           </dl>
         </div>
       </div>
+
+      <ProductReviews product={product} />
     </Container>
   );
 }

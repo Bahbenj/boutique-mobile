@@ -39,8 +39,11 @@ export async function compressImage(file: File): Promise<Blob> {
   return blob;
 }
 
-/** Compresse puis envoie ; renvoie l'URL publique. `folder` : products | categories. */
-export async function uploadImage(file: File, folder: "products" | "categories"): Promise<string> {
+/**
+ * Compresse puis envoie ; renvoie l'URL publique. `folder` : products | categories
+ * (admin), ou reviews/<id du client> (photos d'avis : seul ce client peut y écrire).
+ */
+export async function uploadImage(file: File, folder: "products" | "categories" | `reviews/${string}`): Promise<string> {
   const blob = await compressImage(file);
   const ext = blob.type === "image/webp" ? "webp" : "jpg";
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
