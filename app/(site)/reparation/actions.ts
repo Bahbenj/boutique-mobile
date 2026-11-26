@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { normalizeMlPhone, phoneError } from "@/lib/phone";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -61,7 +62,10 @@ export async function submitRepairRequest(input: RepairRequestInput): Promise<Re
   }
 
   try {
-    const { data, error } = await createServiceClient().rpc("create_repair_request", { p_request: { name, phone, device, issue } });
+    // Visiteur connecté : demande rattachée à son compte (session vérifiée ici, jamais un identifiant du navigateur)
+    const { data: auth } = await (await createClient()).auth.getClaims();
+    const user_id = typeof auth?.claims?.sub === "string" ? auth.claims.sub : undefined;
+    const { data, error } = await createServiceClient().rpc("create_repair_request", { p_request: { name, phone, device, issue, user_id } });
     if (error) {
       const code = Object.keys(messages).find((k) => error.message.includes(k));
       if (code) return { ok: false, error: messages[code], ...(code.startsWith("invalid_") ? { fields: { [code.slice(8)]: messages[code] } } : {}) };

@@ -9,6 +9,7 @@ import { CATALOG_TAG } from "@/lib/catalog";
 import { normalizeMlPhone } from "@/lib/phone";
 import type { AppliedCode } from "@/lib/promo-shared";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -53,8 +54,9 @@ export type PlacedLine = { name: string; variant?: string; qty: number; price: n
 
 export type PlaceOrderResult =
   | { ok: true; number: string; subtotal: number; discount: number; promoCode: string | null; fee: number; total: number; region: string; lines: PlacedLine[] }
-  /** fallback : enregistrement impossible (base absente ou injoignable) → envoi WhatsApp sans numéro */
-  | { ok: false; error: string; fallback?: boolean };
+  /** fallback : enregistrement impossible (base absente ou injoignable) → envoi WhatsApp sans numéro ;
+   *  needsLogin : session expirée ou absente → page de connexion, retour à la commande */
+  | { ok: false; error: string; fallback?: boolean; needsLogin?: boolean };
 
 const messages: Record<string, string> = {
   invalid_items: "Votre panier est vide ou trop grand.",
@@ -69,6 +71,7 @@ const messages: Record<string, string> = {
   promo_code_expired: "Ce code promo a expiré. Retirez-le pour commander.",
   promo_code_used_up: "Ce code promo a déjà été utilisé le nombre de fois prévu. Retirez-le pour commander.",
   promo_code_min_order: "Le montant minimum pour ce code promo n'est pas atteint.",
+  email_not_confirmed: "Confirmez d'abord votre adresse e-mail : ouvrez le lien reçu par e-mail, puis validez à nouveau.",
 };
 
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
@@ -86,6 +89,11 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     return { ok: false, fallback: true, error: "Commande transmise par WhatsApp uniquement." };
   }
 
+  // Compte client obligatoire : la session est relue ici, et place_order revérifie auth.uid()
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims?.sub) return { ok: false, needsLogin: true, error: "Connectez-vous pour valider votre commande : votre panier est gardé." };
+
   // Code promo : d'abord la vérification limitée en essais (anti-devinette), puis place_order revérifie tout
   if (customer.promo_code) {
     const check = await verifyCode(customer.promo_code, { tolerant: true });
@@ -93,7 +101,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
 
   try {
-    const supabase = createServiceClient();
+    // Session du client (rôle authenticated) : plus jamais la clé de service pour commander
     const { data, error } = await supabase.rpc("place_order", {
       p_customer: { ...customer, phone },
       p_items: items.map((i) => ({ product_id: i.product_id, qty: i.qty, color: i.color ?? "", storage: i.storage ?? "" })),
@@ -102,6 +110,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     });
 
     if (error) {
+      if (error.message.includes("not_authenticated")) {
+        return { ok: false, needsLogin: true, error: "Votre session a expiré. Reconnectez-vous : votre panier est gardé." };
+      }
       const code = Object.keys(messages).find((k) => error.message.includes(k));
       if (code) {
         const detail =
