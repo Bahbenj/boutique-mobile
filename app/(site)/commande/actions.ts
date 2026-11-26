@@ -45,6 +45,8 @@ const orderSchema = z.object({
   payment: z.enum(paymentMethodIds),
   /** Champ piège invisible : rempli uniquement par les robots. */
   website: z.string().max(0).optional(),
+  /** Enregistrer zone, quartier et adresse (et nom / téléphone s'ils manquent) dans le profil. */
+  save_address: z.boolean().optional(),
 });
 
 export type PlaceOrderInput = z.input<typeof orderSchema>;
@@ -76,7 +78,7 @@ const messages: Record<string, string> = {
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
   const parsed = orderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Certaines informations de la commande sont invalides." };
-  const { customer, items, delivery, payment, website } = parsed.data;
+  const { customer, items, delivery, payment, website, save_address } = parsed.data;
   if (website) return { ok: false, error: "Commande refusée." };
 
   const phone = normalizeMlPhone(customer.phone);
@@ -139,6 +141,21 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       .single();
 
     updateTag(CATALOG_TAG); // le stock a changé
+
+    // Profil du client : seulement ses propres champs (RLS + droits par colonne)
+    if (save_address) {
+      const { data: profile } = await supabase.from("profiles").select("full_name, phone").eq("id", auth.claims.sub).maybeSingle();
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          ...(delivery === "home" ? { zone_id: customer.zone_id ?? null, address: customer.address } : {}),
+          city: customer.city,
+          ...(profile && !profile.phone ? { phone } : {}),
+          ...(profile && (profile.full_name ?? "").trim().length < 2 ? { full_name: customer.name } : {}),
+        })
+        .eq("id", auth.claims.sub);
+      if (profileError) console.error("[commande] adresse non enregistrée dans le profil", profileError.message);
+    }
 
     const lines = ((order?.items ?? []) as { name: string; color: string | null; storage: string | null; qty: number; price: number }[]).map(
       (l) => ({ name: l.name, variant: [l.color, l.storage].filter(Boolean).join(" · ") || undefined, qty: l.qty, price: Number(l.price) }),

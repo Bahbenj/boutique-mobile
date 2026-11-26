@@ -232,3 +232,67 @@ export async function signOutCustomer() {
   if (isSupabaseConfigured) await (await createClient()).auth.signOut();
   redirect("/");
 }
+
+// --- Mon compte ---------------------------------------------------------------------------------
+
+const infoSchema = z.object({
+  full_name: z.string().trim().min(2, "Indiquez votre nom complet.").max(80, "80 caractères maximum."),
+  zone_id: z.string().max(60),
+  city: z.string().trim().max(80, "80 caractères maximum."),
+  address: z.string().trim().max(300, "300 caractères maximum."),
+});
+
+/** Mes informations : nom, téléphone, adresse de livraison par défaut (son profil seulement). */
+export async function saveMyInfo(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const raw = Object.fromEntries(["full_name", "zone_id", "city", "address"].map((k) => [k, String(formData.get(k) ?? "")]));
+  const parsed = infoSchema.safeParse(raw);
+  const fields: Record<string, string> = {};
+  if (!parsed.success) for (const i of parsed.error.issues) fields[String(i.path[0])] ??= i.message;
+  const phone = normalizeMlPhone(String(formData.get("phone") ?? ""));
+  if (!phone) fields.phone = phoneError;
+  if (Object.keys(fields).length || !parsed.success || !phone) return { error: "Vérifiez les champs signalés.", fields };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims?.sub) redirect("/compte/connexion?next=/compte");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ ...parsed.data, zone_id: parsed.data.zone_id || null, phone })
+    .eq("id", auth.claims.sub);
+  if (error) {
+    logSupabaseError("profil client", error);
+    return { error: "Vos informations n'ont pas été enregistrées. Réessayez." };
+  }
+  return { notice: "Informations enregistrées." };
+}
+
+/**
+ * Suppression du compte et des données personnelles (sur demande du client).
+ * Refusée tant qu'une commande ou une réparation est en cours. Le profil est
+ * effacé ; les commandes passées restent pour la comptabilité, détachées du compte.
+ */
+export async function deleteMyAccount(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== "SUPPRIMER") return { error: "Tapez SUPPRIMER en majuscules pour confirmer." };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const uid = auth?.claims?.sub;
+  if (!uid) redirect("/compte/connexion?next=/compte/supprimer");
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: UNAVAILABLE };
+
+  const [{ count: orders }, { data: repairs }] = await Promise.all([
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", uid).in("status", ["nouvelle", "confirmee", "expediee"]),
+    supabase.rpc("my_repairs"),
+  ]);
+  if (orders) return { error: "Une commande est encore en cours : attendez sa livraison (ou son annulation) avant de supprimer votre compte." };
+  if (((repairs ?? []) as { status: string }[]).some((r) => ["nouvelle", "devis_envoye", "en_cours", "prete"].includes(r.status)))
+    return { error: "Une réparation est encore en cours : récupérez votre appareil avant de supprimer votre compte." };
+
+  // Clé de service, après vérification de la session : on ne supprime que SON compte
+  const { error } = await createServiceClient().auth.admin.deleteUser(uid);
+  if (error) {
+    logSupabaseError("suppression de compte", error);
+    return { error: "La suppression n'a pas abouti. Réessayez, ou écrivez-nous sur WhatsApp." };
+  }
+  await supabase.auth.signOut();
+  redirect("/?compte=supprime");
+}

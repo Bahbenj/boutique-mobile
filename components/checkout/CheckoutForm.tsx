@@ -30,7 +30,10 @@ type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", s
  * TODO étape admin 4 : enregistrer d'abord la commande côté serveur
  * (place_order recalcule prix, frais de zone et valide le paiement).
  */
-export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
+/** Coordonnées du client connecté (profil), pour pré-remplir le formulaire. */
+export type CheckoutProfile = { fullName: string; phone: string; email: string; zoneId: string | null; city: string; address: string };
+
+export function CheckoutForm({ settings, profile = null }: { settings: CheckoutSettings; profile?: CheckoutProfile | null }) {
   const waLink = useWhatsappLink();
 
   const { zones, payments, freeFrom, pickup } = settings;
@@ -38,7 +41,9 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
   const router = useRouter();
   const { items, clear, promo } = useCart();
   const [mode, setMode] = useState<DeliveryMode>(zones.length || !pickup.enabled ? "home" : "pickup");
-  const [zoneId, setZoneId] = useState("");
+  const [zoneId, setZoneId] = useState(profile?.zoneId && settings.zones.some((z) => z.id === profile.zoneId) ? profile.zoneId : "");
+  // Adresse enregistrée pour la prochaine fois : cochée d'office tant qu'aucune n'est enregistrée
+  const [saveAddress, setSaveAddress] = useState(!profile?.address);
   const [payment, setPayment] = useState<PaymentMethod["id"]>(payments[0]?.id ?? "cod");
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState<{ link: string; number: string | null; total: number } | null>(null);
@@ -148,6 +153,7 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
         delivery: mode,
         payment,
         website: get("website") || undefined,
+        save_address: saveAddress,
       });
     } catch {
       result = { ok: false, fallback: true, error: "Connexion impossible." };
@@ -220,10 +226,11 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {/* Champ piège invisible : seuls les robots le remplissent */}
             <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
-            <Field label={t.checkout.name} name="name" autoComplete="name" required error={errors.name} />
+            <Field label={t.checkout.name} name="name" autoComplete="name" defaultValue={profile?.fullName} required error={errors.name} />
             <Field
               label={t.checkout.phone}
               name="phone"
+              defaultValue={profile?.phone}
               type="tel"
               inputMode="tel"
               autoComplete="tel-national"
@@ -287,18 +294,25 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
                 ))}
               </SelectField>
             )}
-            <Field label={t.checkout.city} name="city" autoComplete="address-level2" placeholder="Quartier, ville" error={errors.city} />
+            <Field label={t.checkout.city} name="city" autoComplete="address-level2" placeholder="Quartier, ville" defaultValue={profile?.city} error={errors.city} />
             {mode === "home" && (
               <Field
                 label={t.checkout.address}
                 name="address"
                 autoComplete="street-address"
+                defaultValue={profile?.address}
                 className="sm:col-span-2"
                 error={errors.address}
               />
             )}
             <TextareaField label={t.checkout.note} name="note" className="sm:col-span-2" rows={2} />
           </div>
+          {profile && (
+            <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
+              <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-5 accent-[var(--accent)]" />
+              Enregistrer ces coordonnées pour ma prochaine commande
+            </label>
+          )}
           {mode === "home" && offered && <p className="mt-3 text-sm font-semibold text-success">{t.checkout.offeredByProduct}</p>}
           {mode === "home" && !offered && freeFrom != null && <p className="mt-3 text-sm text-muted">{t.checkout.freeFrom(formatPrice(freeFrom))}</p>}
         </fieldset>

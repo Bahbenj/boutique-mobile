@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { t } from "@/i18n";
+import { getCustomer } from "@/lib/customer";
+import { formatMlPhone } from "@/lib/phone";
 import { getCheckoutSettings } from "@/lib/storefront";
 import { Container } from "@/components/ui/Container";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
@@ -9,6 +12,10 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+/**
+ * Commande : réservée aux clients connectés (proxy.ts ; place_order revérifie).
+ * Le formulaire est pré-rempli avec le profil du client.
+ */
 export default async function CheckoutPage() {
   // Zones, frais et paiements réglés dans /admin/parametres (en cache, invalidé à l'enregistrement)
   const settings = await getCheckoutSettings();
@@ -19,7 +26,19 @@ export default async function CheckoutPage() {
         <span className="text-gold">.</span>
       </h1>
       <p className="mt-4 mb-10 max-w-xl text-muted sm:text-lg">{t.checkout.lead}</p>
-      <CheckoutForm settings={settings} />
+      <Suspense fallback={<CheckoutForm settings={settings} />}>
+        <CheckoutWithProfile settings={settings} />
+      </Suspense>
     </Container>
+  );
+}
+
+async function CheckoutWithProfile({ settings }: { settings: Awaited<ReturnType<typeof getCheckoutSettings>> }) {
+  const c = await getCustomer();
+  return (
+    <CheckoutForm
+      settings={settings}
+      profile={c ? { fullName: c.fullName, phone: c.phone ? formatMlPhone(c.phone) : "", email: c.email, zoneId: c.zoneId, city: c.city, address: c.address } : null}
+    />
   );
 }
