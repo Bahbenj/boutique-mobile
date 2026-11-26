@@ -1,4 +1,3 @@
-import { AuthModal } from "@/components/layout/AuthModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/layout/Footer";
 import { MetaPixel } from "@/components/layout/MetaPixel";
@@ -31,7 +30,6 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       <WhatsAppFab />
       <MobileActionBar />
       <CartDrawer freeFrom={freeFrom} onlyCod={isOnlyCod(payments)} />
-      <AuthModal />
       <Toaster />
       <MetaPixel />
       {pixelEnabled && (

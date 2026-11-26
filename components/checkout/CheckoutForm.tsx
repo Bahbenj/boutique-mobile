@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { PaymentMethod } from "@/config/site";
@@ -34,6 +35,7 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
 
   const { zones, payments, freeFrom, pickup } = settings;
   const mounted = useMounted();
+  const router = useRouter();
   const { items, clear, promo } = useCart();
   const [mode, setMode] = useState<DeliveryMode>(zones.length || !pickup.enabled ? "home" : "pickup");
   const [zoneId, setZoneId] = useState("");
@@ -151,6 +153,12 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
       result = { ok: false, fallback: true, error: "Connexion impossible." };
     }
     setPending(false);
+
+    // Session absente ou expirée : connexion puis retour ici, panier intact (navigateur)
+    if (!result.ok && result.needsLogin) {
+      router.push(`/compte/connexion?next=${encodeURIComponent("/commande")}`);
+      return;
+    }
 
     // Erreur métier (stock, zone, paiement…) : on reste sur le formulaire
     if (!result.ok && !result.fallback) {

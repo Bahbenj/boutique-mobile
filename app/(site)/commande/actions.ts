@@ -1,12 +1,11 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { updateTag } from "next/cache";
-import { headers } from "next/headers";
 import { z } from "zod";
 import { paymentMethodIds } from "@/config/site";
 import { CATALOG_TAG } from "@/lib/catalog";
 import { normalizeMlPhone } from "@/lib/phone";
+import { requestKey } from "@/lib/request-key";
 import type { AppliedCode } from "@/lib/promo-shared";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -172,12 +171,6 @@ const codeReasons: Record<string, string> = {
   too_many_attempts: "Trop d'essais de codes promo. Réessayez dans une heure.",
 };
 
-/** Empreinte de l'adresse IP du visiteur (jamais l'adresse elle-même), pour limiter les essais. */
-async function clientKey() {
-  const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim();
-  return ip ? createHash("sha256").update(`code-promo:${ip}`).digest("hex") : null;
-}
 
 /**
  * Vérification d'un code (10 essais ratés par heure et par visiteur, en base).
@@ -188,7 +181,7 @@ async function verifyCode(raw: string, { tolerant = false } = {}): Promise<Promo
   if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return { ok: false, error: codeReasons.invalid };
   if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, error: "Les codes promo ne sont pas disponibles pour le moment." };
   try {
-    const { data, error } = await createServiceClient().rpc("check_promo_code", { p_code: code, p_client: await clientKey() });
+    const { data, error } = await createServiceClient().rpc("check_promo_code", { p_code: code, p_client: await requestKey("code-promo") });
     if (error) throw error;
     const r = data as { ok: boolean; reason?: string; code?: string; kind?: "percent" | "amount"; value?: number; min_order?: number };
     if (!r?.ok || !r.code || !r.kind) return { ok: false, error: codeReasons[r?.reason ?? "invalid"] ?? codeReasons.invalid };

@@ -22,7 +22,6 @@ export function Navbar({ announcement = null }: { announcement?: Announcement | 
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
-  const openAuth = useUI((s) => s.openAuth);
   const openCart = useUI((s) => s.openCart);
   const cartLabel = useCartLabel(t.nav.cart);
 
@@ -73,14 +72,13 @@ export function Navbar({ announcement = null }: { announcement?: Announcement | 
           </ul>
 
           <div className="ms-auto flex items-center gap-1 lg:ms-3">
-            <button
-              type="button"
-              onClick={() => openAuth("login")}
+            <Link
+              href="/compte"
               className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-fg/80 transition-colors hover:bg-fg/5 hover:text-fg sm:flex"
             >
               <IconUser size={18} />
               {t.nav.account}
-            </button>
+            </Link>
 
             <button
               type="button"
@@ -136,17 +134,10 @@ export function Navbar({ announcement = null }: { announcement?: Announcement | 
                 ))}
               </ul>
               <div className="grid grid-cols-2 gap-2 border-t border-fg/8 p-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    openAuth("login");
-                  }}
-                  className={buttonClasses("light", "md", "ring-1 ring-fg/10")}
-                >
+                <Link href="/compte" onClick={() => setMenuOpen(false)} className={buttonClasses("light", "md", "ring-1 ring-fg/10")}>
                   <IconUser size={18} />
                   {t.nav.account}
-                </button>
+                </Link>
                 <Link href="/boutique" className={buttonClasses("primary", "md")}>
                   {t.nav.cta}
                 </Link>

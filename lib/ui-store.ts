@@ -15,17 +15,12 @@ export type Toast = {
 
 /** État d'interface global (non persisté) : modales, tiroirs, notifications. */
 type UIState = {
-  authOpen: boolean;
-  authMode: "login" | "signup";
   cartOpen: boolean;
   heroActive: boolean; // hero épinglé à l'écran (masque les actions flottantes)
   /** Incrémenté à chaque ajout : sert de `key` pour rejouer l'animation du compteur. */
   cartBump: number;
   toast: Toast | null;
   setHeroActive: (v: boolean) => void;
-  openAuth: (mode?: "login" | "signup") => void;
-  closeAuth: () => void;
-  setAuthMode: (mode: "login" | "signup") => void;
   openCart: () => void;
   closeCart: () => void;
   bumpCart: () => void;
@@ -34,16 +29,11 @@ type UIState = {
 };
 
 export const useUI = create<UIState>((set) => ({
-  authOpen: false,
-  authMode: "login",
   cartOpen: false,
   heroActive: false,
   cartBump: 0,
   toast: null,
   setHeroActive: (heroActive) => set({ heroActive }),
-  openAuth: (mode = "login") => set({ authOpen: true, authMode: mode }),
-  closeAuth: () => set({ authOpen: false }),
-  setAuthMode: (authMode) => set({ authMode }),
   openCart: () => set({ cartOpen: true }),
   closeCart: () => set({ cartOpen: false }),
   bumpCart: () => set((s) => ({ cartBump: s.cartBump + 1 })),
