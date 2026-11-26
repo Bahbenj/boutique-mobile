@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
-import { IconExternal, IconMenu } from "@/components/ui/icons";
-import { navFor, type NavRole } from "./nav";
+import { IconExternal, IconMenu, IconPlus } from "@/components/ui/icons";
+import { canAddProduct, navFor, type NavRole } from "./nav";
 
 const isActive = (pathname: string, href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
@@ -44,7 +44,16 @@ function NavView({ pathname, account, role }: { pathname: string; account: React
             <span className="block text-xs font-semibold text-muted">Administration</span>
           </span>
         </Link>
-        <nav aria-label="Administration" className="mt-8 flex-1">
+        {canAddProduct(role) && (
+          <Link
+            href="/admin/produits/nouveau"
+            className="mt-6 flex h-11 items-center justify-center gap-2 rounded-full bg-gold text-[0.9375rem] font-semibold text-on-gold hover:brightness-105"
+          >
+            <IconPlus size={18} />
+            Ajouter un produit
+          </Link>
+        )}
+        <nav aria-label="Administration" className="mt-5 flex-1 overflow-y-auto">
           <ul className="space-y-1">
             {items.map(({ href, label, Icon }) => {
               const active = isActive(pathname, href);
@@ -81,14 +90,14 @@ function NavView({ pathname, account, role }: { pathname: string; account: React
       </aside>
 
       {/* Mobile : onglets principaux en bas + menu « Plus » pour le reste */}
-      <MobileTabs pathname={pathname} items={items} />
+      <MobileTabs pathname={pathname} items={items} canAdd={canAddProduct(role)} />
     </>
   );
 }
 
 const tab = "flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold tracking-[-0.02em] transition-colors";
 
-function MobileTabs({ pathname, items }: { pathname: string; items: ReturnType<typeof navFor> }) {
+function MobileTabs({ pathname, items, canAdd }: { pathname: string; items: ReturnType<typeof navFor>; canAdd: boolean }) {
   const [open, setOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
   const panel = useRef<HTMLDivElement>(null);
@@ -120,7 +129,18 @@ function MobileTabs({ pathname, items }: { pathname: string; items: ReturnType<t
     >
       <div ref={panel}>
         {open && (
-          <ul id="admin-more" className="absolute inset-x-3 bottom-full mb-2 space-y-1 rounded-card bg-raised p-2 shadow-lift ring-1 ring-fg/10">
+          <ul
+            id="admin-more"
+            className="absolute inset-x-3 bottom-full mb-2 max-h-[calc(100dvh-8rem)] space-y-1 overflow-y-auto rounded-card bg-raised p-2 shadow-lift ring-1 ring-fg/10"
+          >
+            {canAdd && (
+              <li>
+                <Link href="/admin/produits/nouveau" className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gold font-semibold text-on-gold">
+                  <IconPlus size={19} />
+                  Ajouter un produit
+                </Link>
+              </li>
+            )}
             {more.map(({ href, label, Icon }) => {
               const active = isActive(pathname, href);
               return (

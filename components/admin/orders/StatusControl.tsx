@@ -17,11 +17,17 @@ export function StatusControl({ id, number, status }: { id: string; number: stri
   const [confirmCancel, setConfirmCancel] = useState(false);
   const next = nextStep[status];
 
-  const change = (to: OrderStatus) =>
+  // « Annuler » dans le message : revient au statut précédent (une seule fois)
+  const change = (to: OrderStatus, from: OrderStatus | null = status) =>
     startTransition(async () => {
       const res = await updateOrderStatus({ id, status: to });
       setConfirmCancel(false);
-      toast(res.ok ? { title: `${number} : ${statusLabels[to]}` } : { title: "Statut non modifié", text: res.error });
+      if (!res.ok) return toast({ title: "Statut non modifié", text: res.error, tone: "error" });
+      toast({
+        title: `${number} : ${statusLabels[to]}`,
+        text: to === "annulee" ? "Articles remis en stock." : undefined,
+        action: from ? { label: "Annuler", onClick: () => change(from, null) } : undefined,
+      });
     });
 
   return (

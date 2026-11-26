@@ -22,7 +22,9 @@ export function RepairEditor({ repair }: { repair: DbRepair }) {
   const next = repairNextStep[repair.status];
   const dirty = notes !== repair.internal_notes || (parseAmount(quote) ?? null) !== repair.quote_amount;
 
-  const save = (patch: { status?: RepairStatus; quote_amount?: number | null; internal_notes?: string }, success: string) => {
+  const save = (patch: { status?: RepairStatus; quote_amount?: number | null; internal_notes?: string }, success: string, undo = true) => {
+    // Changement de statut : « Annuler » dans le message revient au statut précédent
+    const previous = repair.status;
     const input = { id: repair.id, ...patch };
     const check = repairUpdateSchema.safeParse(input);
     if (!check.success) {
@@ -33,11 +35,17 @@ export function RepairEditor({ repair }: { repair: DbRepair }) {
       const res = await updateRepair(input);
       if (!res.ok) {
         setErrors(res.fields ?? {});
-        toast({ title: "Non enregistré", text: res.error });
+        toast({ title: "Non enregistré", text: res.error, tone: "error" });
         return;
       }
       setErrors({});
-      toast({ title: success });
+      toast({
+        title: success,
+        action:
+          undo && patch.status && patch.status !== previous
+            ? { label: "Annuler", onClick: () => save({ status: previous }, `${repair.number} : ${repairStatusLabels[previous]}`, false) }
+            : undefined,
+      });
     });
   };
 

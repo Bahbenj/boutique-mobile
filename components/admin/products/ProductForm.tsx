@@ -4,17 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { deleteProduct, quickUpdateProduct, saveProduct } from "@/app/admin/(panel)/produits/actions";
-import {
-  conditionLabels,
-  conditions,
-  fieldErrors,
-  grades,
-  parseAmount,
-  productSchema,
-  slugify,
-  type DbProduct,
-  type ProductInput,
-} from "@/lib/admin/schema";
+import { conditionLabels, conditions, fieldErrors, grades, parseAmount, productSchema, slugify, type DbProduct, type ProductInput } from "@/lib/admin/schema";
 import { useUI } from "@/lib/ui-store";
 import { useMounted } from "@/lib/use-mounted";
 import { cn, formatAmount } from "@/lib/utils";
@@ -25,6 +15,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FormSection, IconButton, Switch } from "../ui";
 import { ImageManager } from "./ImageManager";
 import { ProductPreview } from "./ProductPreview";
+import { HelpTip } from "../HelpTip";
 
 type Row = { key: string; a: string; b: string; c: string };
 const row = (a = "", b = "", c = ""): Row => ({ key: Math.random().toString(36).slice(2), a, b, c });
@@ -220,7 +211,10 @@ export function ProductForm({
     free_delivery: d.freeDelivery,
     image_bg: d.imageBg,
     description: d.description,
-    highlights: d.highlights.split("\n").map((l) => l.trim()).filter(Boolean),
+    highlights: d.highlights
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean),
     specs: d.specs
       .split("\n")
       .map((l) => l.trim())
@@ -238,13 +232,21 @@ export function ProductForm({
 
   const showErrors = (errs: Record<string, string>) => {
     setErrors(errs);
-    const missing = [...new Set(Object.keys(errs).map((k) => fieldNames[k.split(".")[0]] ?? null).filter(Boolean))];
+    const missing = [
+      ...new Set(
+        Object.keys(errs)
+          .map((k) => fieldNames[k.split(".")[0]] ?? null)
+          .filter(Boolean),
+      ),
+    ];
     toast({
       title: "Il manque quelque chose",
       text: missing.length ? `À vérifier : ${missing.join(", ")}.` : Object.values(errs)[0],
       tone: "error",
     });
-    requestAnimationFrame(() => document.querySelector<HTMLElement>("[aria-invalid=true], [data-invalid=true]")?.scrollIntoView({ block: "center", behavior: "smooth" }));
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>("[aria-invalid=true], [data-invalid=true]")?.scrollIntoView({ block: "center", behavior: "smooth" }),
+    );
   };
 
   const submit = () => {
@@ -265,7 +267,11 @@ export function ProductForm({
         toast({ title: "Modifications enregistrées", text: d.name, image: d.images[0] });
       } else {
         localStorage.removeItem("admin-brouillon-produit:nouveau");
-        toast({ title: "Produit ajouté", text: d.isActive ? "Il est en vente sur le site." : "Il est masqué : activez « En vente » quand il est prêt.", image: d.images[0] });
+        toast({
+          title: "Produit ajouté",
+          text: d.isActive ? "Il est en vente sur le site." : "Il est masqué : activez « En vente » quand il est prêt.",
+          image: d.images[0],
+        });
         router.replace(`/admin/produits/${res.data.id}`);
       }
     });
@@ -350,7 +356,14 @@ export function ProductForm({
 
           <FormSection title="Ce que le client voit">
             <div className="grid gap-4">
-              <Field label="Nom du produit *" value={d.name} onChange={(ev) => set("name", ev.target.value)} error={e("name")} placeholder="Ex. Casque Bluetooth JBL" maxLength={120} />
+              <Field
+                label="Nom du produit *"
+                value={d.name}
+                onChange={(ev) => set("name", ev.target.value)}
+                error={e("name")}
+                placeholder="Ex. Casque Bluetooth JBL"
+                maxLength={120}
+              />
               <SelectField label="Catégorie *" value={d.categoryId} onChange={(ev) => set("categoryId", ev.target.value)} error={e("category_id")}>
                 <option value="" disabled>
                   Choisir une catégorie…
@@ -377,9 +390,25 @@ export function ProductForm({
           >
             {!hasStorage && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Prix *" inputMode="numeric" value={d.price} onChange={(ev) => set("price", ev.target.value)} error={e("price")} placeholder="Ex. 25 000" hint="Prix normal en FCFA." />
                 <Field
-                  label="Prix promo (facultatif)"
+                  label="Prix *"
+                  inputMode="numeric"
+                  value={d.price}
+                  onChange={(ev) => set("price", ev.target.value)}
+                  error={e("price")}
+                  placeholder="Ex. 25 000"
+                  hint="Prix normal en FCFA."
+                />
+                <Field
+                  label={
+                    <>
+                      Prix promo (facultatif){" "}
+                      <HelpTip label="Aide : prix promo">
+                        Le prix pendant la promotion, plus bas que le prix normal. Le site affiche l&apos;ancien prix barré et le pourcentage. Sans dates, la
+                        promo dure jusqu&apos;à ce que vous effaciez ce prix.
+                      </HelpTip>
+                    </>
+                  }
                   inputMode="numeric"
                   value={d.promoPrice}
                   onChange={(ev) => set("promoPrice", ev.target.value)}
@@ -389,19 +418,44 @@ export function ProductForm({
                 />
                 {d.promoPrice && (
                   <>
-                    <Field label="Début de la promo" type="date" value={d.promoStart} onChange={(ev) => set("promoStart", ev.target.value)} hint="Vide : tout de suite." />
-                    <Field label="Fin de la promo" type="date" value={d.promoEnd} onChange={(ev) => set("promoEnd", ev.target.value)} error={e("promo_ends_at")} hint="Vide : jusqu'à ce que vous l'arrêtiez." />
+                    <Field
+                      label="Début de la promo"
+                      type="date"
+                      value={d.promoStart}
+                      onChange={(ev) => set("promoStart", ev.target.value)}
+                      hint="Vide : tout de suite."
+                    />
+                    <Field
+                      label="Fin de la promo"
+                      type="date"
+                      value={d.promoEnd}
+                      onChange={(ev) => set("promoEnd", ev.target.value)}
+                      error={e("promo_ends_at")}
+                      hint="Vide : jusqu'à ce que vous l'arrêtiez."
+                    />
                   </>
                 )}
               </div>
             )}
             <div className="mt-4 grid gap-1 border-t border-line pt-3">
-              <Switch checked={d.freeDelivery} onChange={(v) => set("freeDelivery", v)} label="Livraison offerte avec ce produit" showLabel />
+              <span className="flex items-center gap-2">
+                <Switch checked={d.freeDelivery} onChange={(v) => set("freeDelivery", v)} label="Livraison offerte avec ce produit" showLabel />
+                <HelpTip label="Aide : livraison offerte">
+                  Si ce produit est dans le panier, le client ne paie pas la livraison à domicile, pour toute la commande.
+                </HelpTip>
+              </span>
             </div>
           </FormSection>
 
           <FormSection title="Stock" description="Nombre d'exemplaires disponibles. À 0, le produit s'affiche « Rupture » et ne peut plus être commandé.">
-            <Field label="Quantité en stock" inputMode="numeric" value={d.stock} onChange={(ev) => set("stock", ev.target.value.replace(/\D/g, "").slice(0, 6))} error={e("stock")} className="max-w-48" />
+            <Field
+              label="Quantité en stock"
+              inputMode="numeric"
+              value={d.stock}
+              onChange={(ev) => set("stock", ev.target.value.replace(/\D/g, "").slice(0, 6))}
+              error={e("stock")}
+              className="max-w-48"
+            />
           </FormSection>
 
           <details className="group rounded-card bg-surface shadow-soft" open={Boolean(e("slug") || Object.keys(errors).some((k) => k.startsWith("variants")))}>
@@ -414,8 +468,22 @@ export function ProductForm({
             </summary>
             <div className="space-y-6 border-t border-line p-5 sm:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Marque" value={d.brand} onChange={(ev) => set("brand", ev.target.value)} placeholder="Ex. Samsung" hint="Seulement si le produit est authentique." />
-                <Field label="Pastille sur la photo" value={d.tag} onChange={(ev) => set("tag", ev.target.value)} placeholder="Ex. Promo, Arrivage" maxLength={24} error={e("tag")} hint="Petit texte doré sur la photo." />
+                <Field
+                  label="Marque"
+                  value={d.brand}
+                  onChange={(ev) => set("brand", ev.target.value)}
+                  placeholder="Ex. Samsung"
+                  hint="Seulement si le produit est authentique."
+                />
+                <Field
+                  label="Pastille sur la photo"
+                  value={d.tag}
+                  onChange={(ev) => set("tag", ev.target.value)}
+                  placeholder="Ex. Promo, Arrivage"
+                  maxLength={24}
+                  error={e("tag")}
+                  hint="Petit texte doré sur la photo."
+                />
                 <SelectField label="État" value={d.condition} onChange={(ev) => set("condition", ev.target.value as DbProduct["condition"])}>
                   {conditions.map((c) => (
                     <option key={c} value={c}>
@@ -431,7 +499,13 @@ export function ProductForm({
                         <option key={g}>{g}</option>
                       ))}
                     </SelectField>
-                    <Field label="Batterie (%)" inputMode="numeric" value={d.battery} onChange={(ev) => set("battery", ev.target.value.replace(/\D/g, "").slice(0, 3))} error={e("battery")} />
+                    <Field
+                      label="Batterie (%)"
+                      inputMode="numeric"
+                      value={d.battery}
+                      onChange={(ev) => set("battery", ev.target.value.replace(/\D/g, "").slice(0, 3))}
+                      error={e("battery")}
+                    />
                   </>
                 )}
               </div>
@@ -466,7 +540,12 @@ export function ProductForm({
                         <input
                           type="color"
                           value={c.b || "#000000"}
-                          onChange={(ev) => set("colors", d.colors.map((x) => (x.key === c.key ? { ...x, b: ev.target.value } : x)))}
+                          onChange={(ev) =>
+                            set(
+                              "colors",
+                              d.colors.map((x) => (x.key === c.key ? { ...x, b: ev.target.value } : x)),
+                            )
+                          }
                           className="absolute -inset-2 size-[calc(100%+1rem)] cursor-pointer"
                         />
                       </label>
@@ -474,11 +553,24 @@ export function ProductForm({
                         aria-label={`Nom du coloris ${i + 1}`}
                         value={c.a}
                         placeholder="Ex. Noir"
-                        onChange={(ev) => set("colors", d.colors.map((x) => (x.key === c.key ? { ...x, a: ev.target.value } : x)))}
+                        onChange={(ev) =>
+                          set(
+                            "colors",
+                            d.colors.map((x) => (x.key === c.key ? { ...x, a: ev.target.value } : x)),
+                          )
+                        }
                         aria-invalid={Boolean(e(`variants.colors.${i}.name`)) || undefined}
                         className="h-11 min-w-0 flex-1 rounded-2xl border border-line bg-raised px-4 text-[1rem] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 aria-[invalid=true]:border-danger"
                       />
-                      <IconButton label={`Retirer le coloris ${i + 1}`} onClick={() => set("colors", d.colors.filter((x) => x.key !== c.key))}>
+                      <IconButton
+                        label={`Retirer le coloris ${i + 1}`}
+                        onClick={() =>
+                          set(
+                            "colors",
+                            d.colors.filter((x) => x.key !== c.key),
+                          )
+                        }
+                      >
                         <IconClose size={16} />
                       </IconButton>
                     </li>
@@ -501,7 +593,12 @@ export function ProductForm({
                           label="Capacité"
                           value={s.a}
                           placeholder="128 Go"
-                          onChange={(ev) => set("storage", d.storage.map((x) => (x.key === s.key ? { ...x, a: ev.target.value } : x)))}
+                          onChange={(ev) =>
+                            set(
+                              "storage",
+                              d.storage.map((x) => (x.key === s.key ? { ...x, a: ev.target.value } : x)),
+                            )
+                          }
                           error={e(`variants.storage.${i}.label`)}
                           className="col-span-2 sm:col-span-1"
                         />
@@ -509,14 +606,24 @@ export function ProductForm({
                           label="Prix"
                           inputMode="numeric"
                           value={s.b}
-                          onChange={(ev) => set("storage", d.storage.map((x) => (x.key === s.key ? { ...x, b: ev.target.value } : x)))}
+                          onChange={(ev) =>
+                            set(
+                              "storage",
+                              d.storage.map((x) => (x.key === s.key ? { ...x, b: ev.target.value } : x)),
+                            )
+                          }
                           error={e(`variants.storage.${i}.price`)}
                         />
                         <Field
                           label="Prix barré"
                           inputMode="numeric"
                           value={s.c}
-                          onChange={(ev) => set("storage", d.storage.map((x) => (x.key === s.key ? { ...x, c: ev.target.value } : x)))}
+                          onChange={(ev) =>
+                            set(
+                              "storage",
+                              d.storage.map((x) => (x.key === s.key ? { ...x, c: ev.target.value } : x)),
+                            )
+                          }
                           error={e(`variants.storage.${i}.old_price`)}
                         />
                         <div className="col-span-2 flex justify-end gap-1 sm:col-span-1">
@@ -531,7 +638,15 @@ export function ProductForm({
                           >
                             <IconChevron dir="up" size={16} />
                           </IconButton>
-                          <IconButton label={`Retirer la capacité ${i + 1}`} onClick={() => set("storage", d.storage.filter((x) => x.key !== s.key))}>
+                          <IconButton
+                            label={`Retirer la capacité ${i + 1}`}
+                            onClick={() =>
+                              set(
+                                "storage",
+                                d.storage.filter((x) => x.key !== s.key),
+                              )
+                            }
+                          >
                             <IconClose size={16} />
                           </IconButton>
                         </div>
@@ -539,7 +654,12 @@ export function ProductForm({
                     </li>
                   ))}
                 </ul>
-                <Button variant="ghost" size="sm" className="mt-2 h-11 ring-1 ring-line" onClick={() => set("storage", [...d.storage, row("", d.storage.length ? "" : d.price)])}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 h-11 ring-1 ring-line"
+                  onClick={() => set("storage", [...d.storage, row("", d.storage.length ? "" : d.price)])}
+                >
                   <IconPlus size={16} />
                   Ajouter une capacité
                 </Button>
@@ -559,11 +679,26 @@ export function ProductForm({
                   spellCheck={false}
                 />
                 <div>
-                  <Switch checked={d.imageBg !== null} onChange={(on) => set("imageBg", on ? "#ffffff" : null)} label="Photo entière (sans recadrage)" showLabel />
+                  <span className="flex items-center gap-2">
+                    <Switch
+                      checked={d.imageBg !== null}
+                      onChange={(on) => set("imageBg", on ? "#ffffff" : null)}
+                      label="Photo entière (sans recadrage)"
+                      showLabel
+                    />
+                    <HelpTip label="Aide : photo entière">
+                      Pour une photo sur fond blanc : elle est montrée en entier sur un fond de couleur, au lieu d&apos;être coupée pour remplir le cadre.
+                    </HelpTip>
+                  </span>
                   {d.imageBg !== null && (
                     <label className="mt-2 flex items-center gap-2 text-sm text-muted">
                       Couleur du fond
-                      <input type="color" value={d.imageBg} onChange={(ev) => set("imageBg", ev.target.value)} className="h-11 w-14 cursor-pointer rounded-lg border border-line bg-raised" />
+                      <input
+                        type="color"
+                        value={d.imageBg}
+                        onChange={(ev) => set("imageBg", ev.target.value)}
+                        className="h-11 w-14 cursor-pointer rounded-lg border border-line bg-raised"
+                      />
                     </label>
                   )}
                   <p className="mt-1 text-xs text-muted">Pour une photo sur fond uni : elle n&apos;est plus coupée sur les vignettes.</p>
@@ -588,8 +723,16 @@ export function ProductForm({
         <div className="space-y-5 lg:sticky lg:top-6">
           <FormSection title="Visibilité">
             <div className="grid gap-1">
-              <Switch checked={d.isActive} onChange={(v) => set("isActive", v)} label={d.isActive ? "En vente sur le site" : "Masqué du site"} showLabel />
-              <Switch checked={d.isFeatured} onChange={(v) => set("isFeatured", v)} label="Mis en avant sur l'accueil" showLabel />
+              <span className="flex items-center gap-2">
+                <Switch checked={d.isActive} onChange={(v) => set("isActive", v)} label={d.isActive ? "En vente sur le site" : "Masqué du site"} showLabel />
+                <HelpTip label="Aide : en vente ou masqué">
+                  Masqué : le produit disparaît du site mais reste ici, avec ses photos et son stock. Pratique en rupture ou pour préparer une fiche.
+                </HelpTip>
+              </span>
+              <span className="flex items-center gap-2">
+                <Switch checked={d.isFeatured} onChange={(v) => set("isFeatured", v)} label="Mis en avant sur l'accueil" showLabel />
+                <HelpTip label="Aide : mise en avant">Le produit apparaît dans « Les plus demandés » sur la page d&apos;accueil (8 produits au plus).</HelpTip>
+              </span>
             </div>
           </FormSection>
           <section className="hidden rounded-card bg-surface p-5 shadow-soft lg:block">
@@ -600,7 +743,9 @@ export function ProductForm({
             <Button type="submit" size="lg" disabled={pending}>
               {pending ? "Enregistrement…" : product ? "Enregistrer" : "Ajouter le produit"}
             </Button>
-            <p className={cn("text-center text-xs", dirty ? "font-semibold text-fg" : "text-muted")}>{dirty ? "Modifications non enregistrées (gardées en brouillon)" : "Tout est enregistré"}</p>
+            <p className={cn("text-center text-xs", dirty ? "font-semibold text-fg" : "text-muted")}>
+              {dirty ? "Modifications non enregistrées (gardées en brouillon)" : "Tout est enregistré"}
+            </p>
             <Link href="/admin/produits" className="py-2 text-center text-sm font-semibold text-muted hover:text-fg">
               Retour à la liste
             </Link>
@@ -614,7 +759,9 @@ export function ProductForm({
           <Button variant="light" className="h-11 px-4" onClick={() => setPreviewOpen(true)}>
             Aperçu
           </Button>
-          <p className={cn("min-w-0 flex-1 text-xs leading-tight", dirty ? "font-semibold text-fg" : "text-muted")}>{dirty ? "Non enregistré" : "Enregistré"}</p>
+          <p className={cn("min-w-0 flex-1 text-xs leading-tight", dirty ? "font-semibold text-fg" : "text-muted")}>
+            {dirty ? "Non enregistré" : "Enregistré"}
+          </p>
           <Button type="submit" className="h-11" disabled={pending}>
             {pending ? "Enregistrement…" : product ? "Enregistrer" : "Ajouter"}
           </Button>

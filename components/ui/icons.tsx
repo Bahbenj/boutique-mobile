@@ -287,3 +287,17 @@ export const IconPlay = (p: IconProps) => (
     <path d="M8 5.5v13l10.5-6.5L8 5.5Z" />
   </Svg>
 );
+export const IconHelp = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2.1-2.4 3.8" />
+    <path d="M12 17h.01" />
+  </Svg>
+);
+export const IconHistory = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 12a9 9 0 1 0 3-6.7" />
+    <path d="M3 4v4h4" />
+    <path d="M12 8v4l3 2" />
+  </Svg>
+);

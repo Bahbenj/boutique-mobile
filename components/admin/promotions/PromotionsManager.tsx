@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import {
-  deletePromoCode,
-  deletePromotion,
-  savePromoCode,
-  savePromotion,
-  setPromoCodeActive,
-  setPromotionActive,
-} from "@/app/admin/(panel)/promotions/actions";
+import { deletePromoCode, deletePromotion, savePromoCode, savePromotion, setPromoCodeActive, setPromotionActive } from "@/app/admin/(panel)/promotions/actions";
 import { promoCodeSchema, promoStatus, promotionSchema, type DbPromoCode, type DbPromotion } from "@/lib/admin/promo-schema";
 import { fieldErrors, parseAmount } from "@/lib/admin/schema";
 import { discounted, discountLabel, type DiscountKind } from "@/lib/promo-shared";
@@ -18,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, SelectField } from "@/components/ui/Field";
 import { IconPencil, IconPlus, IconTag, IconTrash } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/Modal";
+import { HelpTip } from "../HelpTip";
 import { ConfirmDialog, IconButton, Switch } from "../ui";
 
 type Option = { id: string; name: string };
@@ -78,7 +72,11 @@ export function PromotionsManager({
   const prodName = new Map(products.map((p) => [p.id, p.name]));
 
   const target = (p: DbPromotion) =>
-    p.scope === "all" ? "toute la boutique" : p.scope === "category" ? `la catégorie ${catName.get(p.category_id ?? "") ?? "?"}` : (prodName.get(p.product_id ?? "") ?? "un produit");
+    p.scope === "all"
+      ? "toute la boutique"
+      : p.scope === "category"
+        ? `la catégorie ${catName.get(p.category_id ?? "") ?? "?"}`
+        : (prodName.get(p.product_id ?? "") ?? "un produit");
 
   const toggle = (kind: "promo" | "code", id: string, value: boolean, label: string) =>
     start(async () => {
@@ -100,7 +98,9 @@ export function PromotionsManager({
             <h2 id="titre-promos" className="text-xl font-extrabold">
               Promotions sur le site
             </h2>
-            <p className="mt-1 text-sm text-muted">Le prix baisse tout seul pendant les dates choisies, l&apos;ancien prix apparaît barré. Si plusieurs remises existent, le client a la meilleure.</p>
+            <p className="mt-1 text-sm text-muted">
+              Le prix baisse tout seul pendant les dates choisies, l&apos;ancien prix apparaît barré. Si plusieurs remises existent, le client a la meilleure.
+            </p>
           </div>
           <Button onClick={() => setEditPromo("new")} className="max-sm:w-full">
             <IconPlus size={18} />
@@ -108,10 +108,7 @@ export function PromotionsManager({
           </Button>
         </div>
         {promotions.length === 0 ? (
-          <Empty
-            title="Aucune promotion pour l'instant."
-            text="Exemple : −10 % sur toute la boutique pour la Tabaski, ou −5 000 FCFA sur un téléphone."
-          />
+          <Empty title="Aucune promotion pour l'instant." text="Exemple : −10 % sur toute la boutique pour la Tabaski, ou −5 000 FCFA sur un téléphone." />
         ) : (
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2">
             {promotions.map((p) => {
@@ -119,7 +116,9 @@ export function PromotionsManager({
               return (
                 <li key={p.id} className="rounded-card bg-surface p-4 shadow-soft">
                   <div className="flex items-start gap-3">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gold text-sm font-extrabold text-on-gold">{p.kind === "percent" ? `${p.value}%` : <IconTag size={20} />}</span>
+                    <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gold text-sm font-extrabold text-on-gold">
+                      {p.kind === "percent" ? `${p.value}%` : <IconTag size={20} />}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="font-bold">{p.name}</span>
@@ -169,8 +168,12 @@ export function PromotionsManager({
               return (
                 <li key={c.id} className="rounded-card bg-surface p-4 shadow-soft">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="rounded-xl border border-dashed border-gold px-3 py-1 font-mono text-lg font-bold tracking-wider text-gold-text">{c.code}</span>
-                    <StatusPill tone={usedUp ? "off" : st.tone}>{usedUp ? "Épuisé" : st.label === "Terminée" ? "Expiré" : st.label === "Désactivée" ? "Désactivé" : "Actif"}</StatusPill>
+                    <span className="rounded-xl border border-dashed border-gold px-3 py-1 font-mono text-lg font-bold tracking-wider text-gold-text">
+                      {c.code}
+                    </span>
+                    <StatusPill tone={usedUp ? "off" : st.tone}>
+                      {usedUp ? "Épuisé" : st.label === "Terminée" ? "Expiré" : st.label === "Désactivée" ? "Désactivé" : "Actif"}
+                    </StatusPill>
                   </div>
                   <p className="mt-2 text-sm">
                     <strong>{discountLabel(c.kind, c.value)}</strong>
@@ -195,12 +198,22 @@ export function PromotionsManager({
         )}
       </section>
 
-      <Modal open={editPromo !== null} onClose={() => setEditPromo(null)} title={editPromo === "new" ? "Nouvelle promotion" : "Modifier la promotion"} className="max-w-lg">
+      <Modal
+        open={editPromo !== null}
+        onClose={() => setEditPromo(null)}
+        title={editPromo === "new" ? "Nouvelle promotion" : "Modifier la promotion"}
+        className="max-w-lg"
+      >
         {editPromo !== null && (
           <PromotionForm promo={editPromo === "new" ? null : editPromo} categories={categories} products={products} onDone={() => setEditPromo(null)} />
         )}
       </Modal>
-      <Modal open={editCode !== null} onClose={() => setEditCode(null)} title={editCode === "new" ? "Nouveau code promo" : "Modifier le code"} className="max-w-lg">
+      <Modal
+        open={editCode !== null}
+        onClose={() => setEditCode(null)}
+        title={editCode === "new" ? "Nouveau code promo" : "Modifier le code"}
+        className="max-w-lg"
+      >
         {editCode !== null && <CodeForm code={editCode === "new" ? null : editCode} onDone={() => setEditCode(null)} />}
       </Modal>
 
@@ -221,8 +234,8 @@ export function PromotionsManager({
       >
         <p>
           <strong className="text-fg">{toDelete?.label}</strong> sera supprimé définitivement.{" "}
-          {toDelete?.kind === "code" ? "Les commandes déjà passées gardent leur remise." : "Les prix reviennent à la normale sur le site."} Pour une pause, utilisez plutôt
-          l&apos;interrupteur.
+          {toDelete?.kind === "code" ? "Les commandes déjà passées gardent leur remise." : "Les prix reviennent à la normale sur le site."} Pour une pause,
+          utilisez plutôt l&apos;interrupteur.
         </p>
       </ConfirmDialog>
     </div>
@@ -238,7 +251,19 @@ function Empty({ title, text }: { title: string; text: string }) {
   );
 }
 
-function Actions({ active, onToggle, onEdit, onDelete, name }: { active: boolean; onToggle: (v: boolean) => void; onEdit: () => void; onDelete: () => void; name: string }) {
+function Actions({
+  active,
+  onToggle,
+  onEdit,
+  onDelete,
+  name,
+}: {
+  active: boolean;
+  onToggle: (v: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  name: string;
+}) {
   return (
     <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2">
       <Switch checked={active} onChange={onToggle} label={active ? "Activé" : "Désactivé"} showLabel />
@@ -309,7 +334,17 @@ const num = (s: string) => {
 
 // --- Formulaire promotion ---------------------------------------------------------------
 
-function PromotionForm({ promo, categories, products, onDone }: { promo: DbPromotion | null; categories: Option[]; products: ProductOption[]; onDone: () => void }) {
+function PromotionForm({
+  promo,
+  categories,
+  products,
+  onDone,
+}: {
+  promo: DbPromotion | null;
+  categories: Option[];
+  products: ProductOption[];
+  onDone: () => void;
+}) {
   const toast = useUI((s) => s.showToast);
   const [name, setName] = useState(promo?.name ?? "");
   const [kind, setKind] = useState<DiscountKind>(promo?.kind ?? "percent");
@@ -363,11 +398,24 @@ function PromotionForm({ promo, categories, products, onDone }: { promo: DbPromo
       }}
       className="grid grid-cols-[minmax(0,1fr)] gap-4"
     >
-      <Field label="Nom *" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} placeholder="Ex. Soldes de la Tabaski" hint="Pour vous seulement : le client voit le prix barré." autoFocus />
+      <Field
+        label="Nom *"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        error={errors.name}
+        placeholder="Ex. Soldes de la Tabaski"
+        hint="Pour vous seulement : le client voit le prix barré."
+        autoFocus
+      />
       <DiscountField kind={kind} value={value} onKind={setKind} onValue={setValue} error={errors.value} />
 
       <fieldset className="min-w-0">
-        <legend className="mb-1.5 text-sm font-semibold">Sur quels produits ?</legend>
+        <legend className="mb-1.5 flex items-center gap-2 text-sm font-semibold">
+          Sur quels produits&nbsp;?
+          <HelpTip label="Aide : cible de la promotion">
+            Les remises ne s&apos;additionnent pas : si un produit a plusieurs promotions (ou un prix promo sur sa fiche), le client paie le prix le plus bas.
+          </HelpTip>
+        </legend>
         <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2">
           {(
             [
@@ -497,10 +545,40 @@ function CodeForm({ code, onDone }: { code: DbPromoCode | null; onDone: () => vo
       />
       <DiscountField kind={kind} value={value} onKind={setKind} onValue={setValue} error={errors.value} />
       <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3">
-        <Field label="Achat minimum" inputMode="numeric" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} error={errors.min_order} placeholder="0" hint="En FCFA. Vide : aucun." />
-        <Field label="Utilisations max." inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} error={errors.max_uses} placeholder="Illimité" hint="Vide : illimité." />
+        <Field
+          label="Achat minimum"
+          inputMode="numeric"
+          value={minOrder}
+          onChange={(e) => setMinOrder(e.target.value)}
+          error={errors.min_order}
+          placeholder="0"
+          hint="En FCFA. Vide : aucun."
+        />
+        <Field
+          label={
+            <>
+              Utilisations max.{" "}
+              <HelpTip label="Aide : utilisations">
+                Nombre total de commandes qui peuvent utiliser ce code, tous clients confondus. Une commande annulée rend son utilisation.
+              </HelpTip>
+            </>
+          }
+          inputMode="numeric"
+          value={maxUses}
+          onChange={(e) => setMaxUses(e.target.value)}
+          error={errors.max_uses}
+          placeholder="Illimité"
+          hint="Vide : illimité."
+        />
       </div>
-      <Field label="Valable jusqu'au (inclus)" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} error={errors.expires_at} hint="Vide : sans date de fin." />
+      <Field
+        label="Valable jusqu'au (inclus)"
+        type="date"
+        value={expires}
+        onChange={(e) => setExpires(e.target.value)}
+        error={errors.expires_at}
+        hint="Vide : sans date de fin."
+      />
       <Switch checked={active} onChange={setActive} label={active ? "Activé" : "Désactivé (en pause)"} showLabel />
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="light" onClick={onDone}>

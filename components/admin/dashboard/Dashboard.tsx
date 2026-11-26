@@ -29,7 +29,17 @@ export function Dashboard({ email, data }: { email: string; data: DashboardData 
   ];
 
   return (
-    <AdminPage title="Tableau de bord" description={`Connecté en tant que ${email}`}>
+    <AdminPage
+      title="Tableau de bord"
+      description={
+        <>
+          Connecté en tant que {email} ·{" "}
+          <Link href="/admin/aide" className="font-semibold whitespace-nowrap text-accent hover:underline">
+            Guide rapide
+          </Link>
+        </>
+      }
+    >
       {/* 1. À traiter */}
       <h2 className="sr-only">À traiter</h2>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[repeat(2,minmax(0,1fr))]">

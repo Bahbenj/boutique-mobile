@@ -27,7 +27,7 @@ export function Switch({
       aria-label={showLabel ? undefined : label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="inline-flex min-h-10 items-center gap-2.5 rounded-full text-sm font-semibold disabled:opacity-50"
+      className="inline-flex min-h-11 items-center gap-2.5 rounded-full text-sm font-semibold disabled:opacity-50"
     >
       <span
         aria-hidden="true"
@@ -56,7 +56,7 @@ export function IconButton({ label, className, tone = "light", ...props }: Compo
       aria-label={label}
       title={label}
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-40",
+        "grid size-11 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-40",
         tone === "danger" ? "text-danger hover:bg-danger-soft" : "text-fg/70 hover:bg-fg/5 hover:text-fg",
         className,
       )}

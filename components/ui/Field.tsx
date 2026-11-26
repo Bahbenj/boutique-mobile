@@ -6,7 +6,7 @@ const control =
   "transition-[border-color,box-shadow] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25 " +
   "aria-[invalid=true]:border-danger";
 
-type FieldProps = { label: string; error?: string; hint?: ReactNode; className?: string };
+type FieldProps = { label: ReactNode; error?: string; hint?: ReactNode; className?: string };
 
 /** Champ de formulaire libellé (16px mini pour éviter le zoom iOS). */
 export function Field({ label, error, hint, className, ...input }: FieldProps & ComponentProps<"input">) {

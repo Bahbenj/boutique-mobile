@@ -36,6 +36,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 18. `20261125001800_stock.sql` (seuil « stock faible » réglable ; historique des mouvements de stock écrit par la base : ventes, annulations, ajustements avec motif, qui et quand)
 19. `20261125001900_customers.sql` (liste des clients calculée à partir des commandes et des demandes de réparation, recherche par téléphone ou par nom, réservée à l'admin)
 20. `20261125002000_team_roles.sql` (rôles Propriétaire, Gérant, Vendeur : les comptes déjà présents deviennent propriétaires ; le vendeur n'accède qu'aux commandes, réparations et stock ; seul le propriétaire gère l'équipe)
+21. `20261126002100_activity_log.sql` (journal d'activité : chaque modification faite dans l'admin, avec son auteur et l'avant / après ; lisible par le propriétaire seul)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -73,7 +74,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 20) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 20, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 21) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 21, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -147,6 +148,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'historique du stock', to_regclass('public.stock_movements') is not null
    union all select 'liste des clients', to_regprocedure('public.admin_customers(text, text, integer)') is not null
    union all select 'rôles d''équipe', exists (select 1 from information_schema.columns where table_name = 'admins' and column_name = 'role')
+   union all select 'journal d''activité', to_regclass('public.activity_log') is not null
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -219,6 +221,12 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 20 p. **Équipe** : e-mail d'un second compte (le vôtre en `+vendeur`, ex. `vous+vendeur@gmail.com`), rôle **Vendeur**, **Créer son accès** : un mot de passe provisoire s'affiche avec **Envoyer par WhatsApp**. Dans une fenêtre de navigation privée, connectez-vous avec ce compte : seuls **Commandes**, **Réparations** et **Stock** apparaissent ; `/admin/produits` ou `/admin/parametres` renvoient vers les commandes. **Mon compte** permet de changer le mot de passe.
 20 q. Avec le vendeur, faites avancer une commande (ex. Confirmée) : l'historique de la commande affiche l'e-mail du vendeur. Revenez au compte propriétaire, passez-le en **Gérant** puis **Retirer** : il ne peut plus ouvrir l'admin.
 
+### F septies. Aide et journal
+
+20 r. Sur le téléphone, la barre du bas affiche **Accueil, Commandes, Produits, Réparations, Plus** ; **Plus** commence par **+ Ajouter un produit** et se termine par **Guide rapide** (6 étapes illustrées). Sur la fiche d'un produit, touchez les **?** : une explication s'affiche.
+20 s. Ouvrez une commande, touchez **Confirmer la commande** puis **Annuler** dans le message : elle revient à « Nouvelle ». Même geste sur une réparation.
+20 t. **Plus → Journal d'activité** (propriétaire) : vos essais des étapes précédentes apparaissent, avec l'auteur et l'avant → après (ex. « prix : 7 000 FCFA → 7 500 FCFA »). Connecté en vendeur, cette page n'est pas proposée.
+
 ### G. Sécurité (depuis un ordinateur, PowerShell)
 
 21. Remplacez `<URL>` par `NEXT_PUBLIC_SUPABASE_URL` et `<CLE_PUBLIQUE>` par `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jamais la clé secrète) :
@@ -227,9 +235,10 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
     curl.exe -s "<URL>/rest/v1/repair_requests?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/promo_codes?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/stock_movements?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/activity_log?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
-    Attendu pour les cinq : une erreur « permission denied » (code 42501), **jamais** de données.
+    Attendu pour les six : une erreur « permission denied » (code 42501), **jamais** de données.
 
 ### H. Nettoyage des essais
 
