@@ -30,6 +30,9 @@ export type OrderCustomer = {
   city: string;
   address: string;
   note?: string;
+  /** Consignes pour le livreur et position partagée (facultatives). */
+  instructions?: string;
+  position?: { lat: number; lng: number } | null;
 };
 
 /** Message WhatsApp récapitulatif envoyé au magasin. */
@@ -69,6 +72,8 @@ export function orderWhatsappMessage({
     `Nom : ${customer.name}`,
     `Téléphone : ${formatMlPhoneIntl(customer.phone)}`,
     `Adresse : ${[customer.address, customer.city, customer.region].filter(Boolean).join(", ")}`,
+    ...(customer.instructions ? [`Consignes livreur : ${customer.instructions}`] : []),
+    ...(customer.position ? [`Position : https://www.google.com/maps/search/?api=1&query=${customer.position.lat},${customer.position.lng}`] : []),
     ...(customer.note ? [`Note : ${customer.note}`] : []),
   ].join("\n");
 }

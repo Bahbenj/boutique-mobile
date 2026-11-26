@@ -15,7 +15,8 @@ import {
 import { formatMlPhoneIntl, telLink } from "@/lib/phone";
 import { siteConfig } from "@/config/site";
 import { reviewRequestWhatsapp } from "@/lib/admin/orders-shared";
-import { IconStar } from "@/components/ui/icons";
+import { IconPin, IconStar } from "@/components/ui/icons";
+import { mapsLink } from "@/lib/customer-addresses";
 import { formatPrice } from "@/lib/utils";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { FormSection } from "@/components/admin/ui";
@@ -156,6 +157,25 @@ export function OrderDetail({ order, history, account = null }: { order: DbOrder
                   <span className="block font-normal text-muted">{order.region}</span>
                 </dd>
               </div>
+              {!pickup && order.delivery_instructions && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-semibold text-muted">Consignes pour le livreur</dt>
+                  <dd className="font-semibold">{order.delivery_instructions}</dd>
+                </div>
+              )}
+              {!pickup && order.delivery_lat != null && order.delivery_lng != null && (
+                <div className="sm:col-span-2">
+                  <a
+                    href={mapsLink(Number(order.delivery_lat), Number(order.delivery_lng))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonClasses("light", "md", "max-sm:w-full")}
+                  >
+                    <IconPin size={18} />
+                    Ouvrir dans Maps
+                  </a>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold text-muted">Paiement choisi</dt>
                 <dd className="font-semibold">

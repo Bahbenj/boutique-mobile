@@ -1,6 +1,7 @@
 import "server-only";
 import type { OrderStatus } from "@/lib/admin/orders-shared";
 import type { RepairStatus } from "@/lib/admin/repairs-shared";
+import { toSavedAddress, type SavedAddress } from "@/lib/customer-addresses";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -107,3 +108,16 @@ export const reviewStatus: Record<MyProductReview["status"], { label: string; to
   rejected: { label: "Refusé", tone: "off" },
   hidden: { label: "Masqué par la boutique", tone: "off" },
 };
+
+// --- Carnet d'adresses (migration 25) ---------------------------------------------------------
+
+/** Adresses du client connecté (RLS : les siennes), la principale en premier. */
+export async function listMyAddresses(): Promise<SavedAddress[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("customer_addresses")
+    .select("id, label, recipient_name, phone, zone_id, city, address, instructions, lat, lng, is_default")
+    .order("is_default", { ascending: false })
+    .order("created_at");
+  return error ? [] : (data ?? []).map(toSavedAddress);
+}

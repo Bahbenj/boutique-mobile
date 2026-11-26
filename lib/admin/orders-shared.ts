@@ -50,6 +50,10 @@ export type DbOrder = {
   promo_code: string | null;
   /** Compte client qui a passé la commande (migration 23). */
   user_id?: string | null;
+  /** Consignes pour le livreur et position, copiées à l'achat (migration 25). */
+  delivery_instructions?: string | null;
+  delivery_lat?: number | string | null;
+  delivery_lng?: number | string | null;
   delivery_fee: number;
   total: number;
   status: OrderStatus;

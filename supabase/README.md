@@ -40,6 +40,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 22. `20261126002200_promo_code_attempts.sql` (codes promo : 10 essais ratés par heure et par visiteur au plus, contre les devinettes ; l'adresse IP n'est jamais enregistrée, seulement une empreinte)
 23. `20261126002300_customer_accounts.sql` (comptes clients : profils créés à l'inscription, commandes et réparations rattachées au compte, `place_order` réservé aux clients connectés à l'e-mail confirmé, chaque client ne voit que ses commandes, limites anti-robots)
 24. `20261126002400_product_reviews.sql` (avis produits des clients connectés : note, recommandation, photos, « Achat vérifié », modération avant publication, réponse de la boutique, signalement d'abus ; témoignages existants inchangés)
+25. `20261126002500_customer_addresses.sql` (carnet d'adresses des clients, 10 au plus ; consignes pour le livreur et position copiées dans la commande ; `place_order` inchangée)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -77,7 +78,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 24) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 24, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 25) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 25, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -199,6 +200,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'journal d''activité', to_regclass('public.activity_log') is not null
    union all select 'comptes clients', to_regclass('public.profiles') is not null
    union all select 'avis produits', to_regclass('public.product_reviews') is not null
+   union all select 'carnet d''adresses', to_regclass('public.customer_addresses') is not null
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -293,6 +295,26 @@ Connecté avec le compte client de l'étape 5 b (une commande exige désormais u
 20 w. Côté client, **Mon compte** : la commande est listée ; touchez-la : articles, total et **Suivi** (Reçue → Confirmée…) sans aucun e-mail de l'équipe. Une demande de réparation envoyée connecté apparaît dans **Mes réparations**, sans les notes internes.
 20 x. **Mon compte → Supprimer mon compte** avec une commande en cours : refusé. Après livraison (ou annulation) : tapez SUPPRIMER → retour à l'accueil, connexion impossible avec ce compte ; dans l'admin, la commande existe toujours, sans compte rattaché.
 
+### F nonies. Avis produits
+
+20 y. Sur un téléphone, connecté avec le compte client de l'étape 5 b : fiche de la **Montre connectée Yesido IO22** → section **Avis clients** → **Donner mon avis**. Touchez **Publier** sans rien remplir : « Choisissez une note… », « Écrivez au moins 10 caractères », « Dites-nous si vous recommandez… ». Remplissez : 4 étoiles, titre « Test avis », un texte de 20 caractères contenant `<b>gras</b>`, **Oui**, une photo prise au téléphone → **Publier mon avis** : « Merci ! Votre avis sera publié après une rapide relecture… ».
+20 z. Sur la fiche (rechargez), l'avis n'apparaît **pas** encore ; **Mon compte → Mes avis** l'affiche « En attente de relecture ».
+20 aa. **Admin → Tableau de bord** : bandeau « 1 avis client à valider ». **Admin → Plus → Avis clients**, onglet **Avis produits** : l'avis est là (le texte ne contient plus `<b>`), avec la photo. **Répondre** « Merci ! » puis **Publier**. L'onglet **Témoignages** montre toujours vos témoignages habituels.
+20 ab. Fiche produit (rechargez) : moyenne 4,0, « 1 avis · 100 % recommandent », l'avis avec la réponse de la boutique ; la carte de la montre sur `/boutique` et l'accueil affiche ★ 4,0 (1). Code source de la page (ou https://search.google.com/test/rich-results une fois en ligne) : bloc `application/ld+json` avec `AggregateRating`.
+20 ac. **Achat vérifié** : livrez (statut **Livrée**) une commande de ce compte contenant la montre, puis modifiez l'avis (4 → 5 étoiles) : il repasse « En attente » ; publiez-le : le badge **Achat vérifié** apparaît. Sur la commande livrée, le bouton **Demander un avis** ouvre WhatsApp avec un lien par produit.
+20 ad. Refus : modifiez encore l'avis, puis dans l'admin **Refuser** avec le motif « Test de refus » : la fiche ne montre plus l'avis ; **Mon compte** affiche « Refusé » et le motif. Un autre visiteur (navigation privée) ne voit jamais un avis en attente ou refusé.
+20 ae. Signalement : publiez l'avis, puis depuis trois appareils (ou réseaux) différents, **Signaler un abus** : au troisième, l'avis disparaît de la fiche et revient « À valider » (« Signalé 3 fois »).
+
+### F decies. Carnet d'adresses
+
+20 af. **Mon compte → Mes adresses de livraison → Ajouter une adresse** : nom « Maison », destinataire, téléphone, zone **Bamako – Commune I**, quartier, « Rue 45, porte 12, derrière la pharmacie », consignes « Appeler en arrivant », **Partager ma position** (autorisez) → « Position partagée », **Vérifier sur la carte** ouvre Google Maps au bon endroit → **Ajouter l'adresse** : elle est « Par défaut ».
+20 ag. Ajoutez « Bureau » (autre zone) sans position, puis **Mettre par défaut** : « Maison » perd le badge.
+20 ah. Panier → **Commander** : le bloc **Livrer à** propose Maison, Bureau et Nouvelle adresse. Touchez **Maison** : nom, téléphone, zone, quartier, adresse et consignes se remplissent, les frais de livraison suivent la zone. Validez.
+20 ai. **Admin → Commandes**, ouvrez cette commande : adresse complète, **Consignes pour le livreur**, bouton **Ouvrir dans Maps** (position de l'étape 20 af), bouton WhatsApp habituel ; le message WhatsApp du client contient aussi les consignes et la position.
+20 aj. Dans **Mon compte**, modifiez l'adresse « Maison » (autre rue), puis supprimez-la : la commande de l'étape 20 ah garde l'ancienne adresse et ses consignes (rouvrez-la dans l'admin).
+20 ak. Nouvelle commande avec **Nouvelle adresse** et la case **Enregistrer cette adresse dans mon carnet** cochée (nom « Chez maman ») : l'adresse apparaît ensuite dans le carnet.
+20 al. Non-régression : avec un compte **sans** adresse ni avis (créez-en un), commandez comme avant : pas de bloc « Livrer à », formulaire pré-rempli par le profil, frais selon la zone, commande enregistrée.
+
 ### F septies. Aide et journal
 
 20 r. Sur le téléphone, la barre du bas affiche **Accueil, Commandes, Produits, Réparations, Plus** ; **Plus** commence par **+ Ajouter un produit** et se termine par **Guide rapide** (6 étapes illustrées). Sur la fiche d'un produit, touchez les **?** : une explication s'affiche.
@@ -310,10 +332,17 @@ Connecté avec le compte client de l'étape 5 b (une commande exige désormais u
     curl.exe -s "<URL>/rest/v1/activity_log?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/promo_code_attempts?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/profiles?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/customer_addresses?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/product_reviews?select=user_id" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s -X POST "<URL>/rest/v1/product_reviews" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"product_id\":\"00000000-0000-0000-0000-000000000000\",\"rating\":5,\"body\":\"Avis anonyme de test\"}"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/place_order" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_customer\":{},\"p_items\":[],\"p_delivery\":\"pickup\",\"p_payment\":\"cod\"}"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
-    Attendu pour les neuf : une erreur « permission denied » (code 42501), **jamais** de données.
+    Attendu pour les douze : une erreur « permission denied » (code 42501), **jamais** de données.
+    Et sans erreur, mais sans aucun avis en attente ni refusé (seulement les avis publiés, sans identifiant de client) :
+    ```powershell
+    curl.exe -s "<URL>/rest/v1/product_reviews?select=rating,title,status" -H "apikey: <CLE_PUBLIQUE>"
+    ```
 
 ### H. Nettoyage des essais
 
@@ -321,5 +350,12 @@ Connecté avec le compte client de l'étape 5 b (une commande exige désormais u
     ```sql
     delete from public.orders where status = 'annulee' and phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';
     delete from public.repair_requests where phone = '<VOTRE NUMÉRO À 8 CHIFFRES>';
+    -- Avis, signalements et carnet d'adresses des comptes de test
+    delete from public.product_reviews where user_id in (select id from auth.users where email in ('<E-MAIL DE TEST 1>', '<E-MAIL DE TEST 2>'));
+    delete from public.customer_addresses where user_id in (select id from auth.users where email in ('<E-MAIL DE TEST 1>', '<E-MAIL DE TEST 2>'));
+    -- Compteurs anti-robots (connexions, inscriptions, e-mails, signalements, codes promo)
+    delete from public.rate_limit_hits;
+    delete from public.promo_code_attempts;
     ```
+    Les photos d'avis de test restent dans **Storage → catalog → reviews/** : supprimez le dossier du compte de test. Pour retirer un compte de test : **Authentication → Users → … → Delete user** (son profil, ses adresses et ses avis partent avec lui ; ses commandes restent, détachées).
     Les numéros CMD-… et REP-… continuent ensuite à partir du dernier utilisé : c'est normal.

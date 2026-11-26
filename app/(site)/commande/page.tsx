@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { t } from "@/i18n";
 import { getCustomer } from "@/lib/customer";
+import { listMyAddresses } from "@/lib/customer-orders";
 import { formatMlPhone } from "@/lib/phone";
 import { getCheckoutSettings } from "@/lib/storefront";
 import { Container } from "@/components/ui/Container";
@@ -35,9 +36,11 @@ export default async function CheckoutPage() {
 
 async function CheckoutWithProfile({ settings }: { settings: Awaited<ReturnType<typeof getCheckoutSettings>> }) {
   const c = await getCustomer();
+  const addresses = c ? await listMyAddresses() : [];
   return (
     <CheckoutForm
       settings={settings}
+      addresses={addresses}
       profile={c ? { fullName: c.fullName, phone: c.phone ? formatMlPhone(c.phone) : "", email: c.email, zoneId: c.zoneId, city: c.city, address: c.address } : null}
     />
   );

@@ -20,6 +20,10 @@ import { Button, buttonClasses } from "@/components/ui/Button";
 import { Field, SelectField, TextareaField } from "@/components/ui/Field";
 import { IconCash, IconCheck, IconSpinner, IconWhatsApp } from "@/components/ui/icons";
 import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
+import { LocateButton } from "@/components/account/AddressBook";
+import { MAX_ADDRESSES, type SavedAddress } from "@/lib/customer-addresses";
+import { formatMlPhone } from "@/lib/phone";
+import { useGeolocation } from "@/lib/use-geolocation";
 
 type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", string>>;
 
@@ -33,7 +37,16 @@ type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", s
 /** Coordonnées du client connecté (profil), pour pré-remplir le formulaire. */
 export type CheckoutProfile = { fullName: string; phone: string; email: string; zoneId: string | null; city: string; address: string };
 
-export function CheckoutForm({ settings, profile = null }: { settings: CheckoutSettings; profile?: CheckoutProfile | null }) {
+export function CheckoutForm({
+  settings,
+  profile = null,
+  addresses = [],
+}: {
+  settings: CheckoutSettings;
+  profile?: CheckoutProfile | null;
+  /** Carnet d'adresses du client (la principale en premier) ; vide = formulaire comme avant. */
+  addresses?: SavedAddress[];
+}) {
   const waLink = useWhatsappLink();
 
   const { zones, payments, freeFrom, pickup } = settings;
@@ -41,7 +54,26 @@ export function CheckoutForm({ settings, profile = null }: { settings: CheckoutS
   const router = useRouter();
   const { items, clear, promo } = useCart();
   const [mode, setMode] = useState<DeliveryMode>(zones.length || !pickup.enabled ? "home" : "pickup");
-  const [zoneId, setZoneId] = useState(profile?.zoneId && settings.zones.some((z) => z.id === profile.zoneId) ? profile.zoneId : "");
+  // Adresse du carnet choisie en un clic ; « new » = saisie libre (pré-remplie par le profil, comme avant)
+  const usable = addresses.filter((a) => settings.zones.some((z) => z.id === a.zoneId));
+  const [addressId, setAddressId] = useState(usable[0]?.id ?? "new");
+  const chosen = usable.find((a) => a.id === addressId) ?? null;
+  const pre = chosen
+    ? { fullName: chosen.recipientName, phone: formatMlPhone(chosen.phone), city: chosen.city, address: chosen.address, instructions: chosen.instructions }
+    : { fullName: profile?.fullName ?? "", phone: profile?.phone ?? "", city: profile?.city ?? "", address: profile?.address ?? "", instructions: "" };
+  const geo = useGeolocation(chosen?.lat != null && chosen.lng != null ? { lat: chosen.lat, lng: chosen.lng } : null);
+  const [addressLabel, setAddressLabel] = useState("");
+  const initialZone = chosen?.zoneId ?? profile?.zoneId;
+  const [zoneId, setZoneId] = useState(initialZone && settings.zones.some((z) => z.id === initialZone) ? initialZone : "");
+  const pickAddress = (id: string) => {
+    setAddressId(id);
+    const a = usable.find((x) => x.id === id);
+    if (a) {
+      setMode("home");
+      setZoneId(a.zoneId);
+      geo.setPosition(a.lat != null && a.lng != null ? { lat: a.lat, lng: a.lng } : null);
+    } else geo.setPosition(null);
+  };
   // Adresse enregistrée pour la prochaine fois : cochée d'office tant qu'aucune n'est enregistrée
   const [saveAddress, setSaveAddress] = useState(!profile?.address);
   const [payment, setPayment] = useState<PaymentMethod["id"]>(payments[0]?.id ?? "cod");
@@ -148,12 +180,17 @@ export function CheckoutForm({ settings, profile = null }: { settings: CheckoutS
           address: customer.address,
           note: customer.note,
           promo_code: discount > 0 && promo ? promo.code : undefined,
+          instructions: mode === "home" ? get("instructions") || undefined : undefined,
+          lat: mode === "home" ? geo.position?.lat : undefined,
+          lng: mode === "home" ? geo.position?.lng : undefined,
         },
         items: items.map((i) => ({ product_id: i.productId, qty: i.qty, color: i.color, storage: i.storage })),
         delivery: mode,
         payment,
         website: get("website") || undefined,
-        save_address: saveAddress,
+        save_address: addressId === "new" && saveAddress,
+        save_to_book: Boolean(profile) && addressId === "new" && mode === "home" && saveAddress && usable.length < MAX_ADDRESSES,
+        address_label: addressLabel || undefined,
       });
     } catch {
       result = { ok: false, fallback: true, error: "Connexion impossible." };
@@ -178,7 +215,11 @@ export function CheckoutForm({ settings, profile = null }: { settings: CheckoutS
     const message = orderWhatsappMessage({
       number: placed?.number,
       lines: placed?.lines ?? items.map((i) => ({ name: i.name, variant: i.variant, qty: i.qty, price: i.price })),
-      customer: placed ? { ...customer, region: placed.region || customer.region } : customer,
+      customer: {
+        ...(placed ? { ...customer, region: placed.region || customer.region } : customer),
+        instructions: mode === "home" ? get("instructions") || undefined : undefined,
+        position: mode === "home" ? geo.position : null,
+      },
       delivery: mode === "pickup" ? pickup.label : `livraison, ${zone?.delay}`,
       payment,
       subtotal: placed?.subtotal ?? subtotal,
@@ -220,17 +261,39 @@ export function CheckoutForm({ settings, profile = null }: { settings: CheckoutS
   return (
     <form onSubmit={onSubmit} noValidate className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
       <div className="space-y-8">
+        {usable.length > 0 && (
+          <fieldset className="rounded-card bg-surface p-5 shadow-soft sm:p-7">
+            <legend className="sr-only">Adresse de livraison</legend>
+            <h2 className="text-xl font-extrabold">Livrer à</h2>
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2.5 sm:grid-cols-2">
+              {usable.map((a) => (
+                <label key={a.id} className={radioCard(addressId === a.id)}>
+                  <input type="radio" name="saved_address" checked={addressId === a.id} onChange={() => pickAddress(a.id)} className="size-5 shrink-0 accent-[var(--accent)]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{a.label || a.recipientName}</span>
+                    <span className="block truncate text-sm text-muted">{[a.address, a.city].filter(Boolean).join(", ")}</span>
+                  </span>
+                </label>
+              ))}
+              <label className={radioCard(addressId === "new")}>
+                <input type="radio" name="saved_address" checked={addressId === "new"} onChange={() => pickAddress("new")} className="size-5 shrink-0 accent-[var(--accent)]" />
+                <span className="font-semibold">Nouvelle adresse</span>
+              </label>
+            </div>
+          </fieldset>
+        )}
         <fieldset className="rounded-card bg-surface p-5 shadow-soft sm:p-7">
           <legend className="sr-only">{t.checkout.contact}</legend>
           <h2 className="text-xl font-extrabold">{t.checkout.contact}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {/* Champ piège invisible : seuls les robots le remplissent */}
             <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
-            <Field label={t.checkout.name} name="name" autoComplete="name" defaultValue={profile?.fullName} required error={errors.name} />
+            <Field key={`name-${addressId}`} label={t.checkout.name} name="name" autoComplete="name" defaultValue={pre.fullName} required error={errors.name} />
             <Field
+              key={`phone-${addressId}`}
               label={t.checkout.phone}
               name="phone"
-              defaultValue={profile?.phone}
+              defaultValue={pre.phone}
               type="tel"
               inputMode="tel"
               autoComplete="tel-national"
@@ -294,24 +357,62 @@ export function CheckoutForm({ settings, profile = null }: { settings: CheckoutS
                 ))}
               </SelectField>
             )}
-            <Field label={t.checkout.city} name="city" autoComplete="address-level2" placeholder="Quartier, ville" defaultValue={profile?.city} error={errors.city} />
+            <Field
+              key={`city-${addressId}`}
+              label={t.checkout.city}
+              name="city"
+              autoComplete="address-level2"
+              placeholder="Quartier, ville"
+              defaultValue={pre.city}
+              error={errors.city}
+            />
             {mode === "home" && (
               <Field
+                key={`address-${addressId}`}
                 label={t.checkout.address}
                 name="address"
                 autoComplete="street-address"
-                defaultValue={profile?.address}
+                defaultValue={pre.address}
+                placeholder="Rue, porte et repère (ex. derrière la pharmacie)"
                 className="sm:col-span-2"
                 error={errors.address}
               />
             )}
+            {mode === "home" && (
+              <TextareaField
+                key={`instructions-${addressId}`}
+                label="Consignes pour le livreur (facultatif)"
+                name="instructions"
+                defaultValue={pre.instructions}
+                maxLength={300}
+                rows={2}
+                placeholder="Ex. Appeler en arrivant"
+                className="sm:col-span-2"
+              />
+            )}
+            {mode === "home" && (
+              <div className="sm:col-span-2">
+                <LocateButton geo={geo} />
+              </div>
+            )}
             <TextareaField label={t.checkout.note} name="note" className="sm:col-span-2" rows={2} />
           </div>
-          {profile && (
-            <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
-              <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-5 accent-[var(--accent)]" />
-              Enregistrer ces coordonnées pour ma prochaine commande
-            </label>
+          {profile && addressId === "new" && (
+            <div className="mt-4">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
+                <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-5 accent-[var(--accent)]" />
+                {mode === "home" && usable.length < MAX_ADDRESSES ? "Enregistrer cette adresse dans mon carnet" : "Enregistrer ces coordonnées pour ma prochaine commande"}
+              </label>
+              {saveAddress && mode === "home" && usable.length < MAX_ADDRESSES && (
+                <Field
+                  label="Nom de l'adresse (facultatif)"
+                  value={addressLabel}
+                  onChange={(e) => setAddressLabel(e.target.value.slice(0, 40))}
+                  placeholder="Maison, Bureau…"
+                  className="mt-2"
+                />
+              )}
+            </div>
           )}
           {mode === "home" && offered && <p className="mt-3 text-sm font-semibold text-success">{t.checkout.offeredByProduct}</p>}
           {mode === "home" && !offered && freeFrom != null && <p className="mt-3 text-sm text-muted">{t.checkout.freeFrom(formatPrice(freeFrom))}</p>}

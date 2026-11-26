@@ -29,6 +29,10 @@ const orderSchema = z.object({
     address: z.string().trim().max(200),
     note: z.string().trim().max(500).optional(),
     promo_code: z.string().trim().max(30).optional(),
+    /** Copiés dans la commande après sa création (set_order_delivery_details, migration 25). */
+    instructions: z.string().trim().max(300).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
   }),
   items: z
     .array(
@@ -47,6 +51,9 @@ const orderSchema = z.object({
   website: z.string().max(0).optional(),
   /** Enregistrer zone, quartier et adresse (et nom / téléphone s'ils manquent) dans le profil. */
   save_address: z.boolean().optional(),
+  /** Ajouter l'adresse saisie au carnet du client (10 au plus). */
+  save_to_book: z.boolean().optional(),
+  address_label: z.string().trim().max(40).optional(),
 });
 
 export type PlaceOrderInput = z.input<typeof orderSchema>;
@@ -78,7 +85,7 @@ const messages: Record<string, string> = {
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
   const parsed = orderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Certaines informations de la commande sont invalides." };
-  const { customer, items, delivery, payment, website, save_address } = parsed.data;
+  const { customer, items, delivery, payment, website, save_address, save_to_book, address_label } = parsed.data;
   if (website) return { ok: false, error: "Commande refusée." };
 
   const phone = normalizeMlPhone(customer.phone);
@@ -102,9 +109,11 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
 
   try {
-    // Session du client (rôle authenticated) : plus jamais la clé de service pour commander
+    // Session du client (rôle authenticated) : plus jamais la clé de service pour commander.
+    // place_order reçoit exactement les mêmes champs qu'avant (consignes et position à part).
+    const { instructions, lat, lng, ...orderCustomer } = customer;
     const { data, error } = await supabase.rpc("place_order", {
-      p_customer: { ...customer, phone },
+      p_customer: { ...orderCustomer, phone },
       p_items: items.map((i) => ({ product_id: i.product_id, qty: i.qty, color: i.color ?? "", storage: i.storage ?? "" })),
       p_delivery: delivery,
       p_payment: payment,
@@ -141,6 +150,35 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       .single();
 
     updateTag(CATALOG_TAG); // le stock a changé
+
+    // Consignes et position : copiées dans SA commande, une fois (le carnet peut changer ensuite)
+    const hasPosition = lat != null && lng != null;
+    if (delivery === "home" && (instructions || hasPosition)) {
+      const { error: detailsError } = await supabase.rpc("set_order_delivery_details", {
+        p_order: placed.order_id,
+        p_instructions: instructions ?? "",
+        p_lat: hasPosition ? lat : null,
+        p_lng: hasPosition ? lng : null,
+      });
+      if (detailsError) console.error("[commande] consignes non copiées dans la commande", detailsError.message);
+    }
+
+    // Carnet d'adresses : nouvelle adresse saisie à la commande
+    if (save_to_book && delivery === "home" && customer.zone_id) {
+      const { error: bookError } = await supabase.from("customer_addresses").insert({
+        label: address_label ?? "",
+        recipient_name: customer.name,
+        phone,
+        zone_id: customer.zone_id,
+        city: customer.city,
+        address: customer.address,
+        instructions: instructions ?? "",
+        lat: hasPosition ? lat : null,
+        lng: hasPosition ? lng : null,
+        is_default: false,
+      });
+      if (bookError) console.error("[commande] adresse non ajoutée au carnet", bookError.message);
+    }
 
     // Profil du client : seulement ses propres champs (RLS + droits par colonne)
     if (save_address) {

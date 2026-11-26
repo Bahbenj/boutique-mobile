@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { repairStatusLabels } from "@/lib/admin/repairs-shared";
 import { getCustomer, profileComplete } from "@/lib/customer";
-import { listMyOrders, listMyRepairs, listMyReviews, reviewStatus } from "@/lib/customer-orders";
+import { listMyAddresses, listMyOrders, listMyRepairs, listMyReviews, reviewStatus } from "@/lib/customer-orders";
+import { AddressBook } from "@/components/account/AddressBook";
 import { formatMlPhone } from "@/lib/phone";
 import { getCheckoutSettings } from "@/lib/storefront";
 import { formatPrice } from "@/lib/utils";
@@ -46,7 +47,14 @@ async function Account({ searchParams }: Pick<PageProps<"/compte">, "searchParam
   const customer = await getCustomer();
   if (!customer) redirect("/compte/connexion?next=/compte");
   if (!profileComplete(customer)) redirect("/compte/completer?next=/compte");
-  const [sp, orders, repairs, settings, { reviews, toReview }] = await Promise.all([searchParams, listMyOrders(5), listMyRepairs(), getCheckoutSettings(), listMyReviews()]);
+  const [sp, orders, repairs, settings, { reviews, toReview }, addresses] = await Promise.all([
+    searchParams,
+    listMyOrders(5),
+    listMyRepairs(),
+    getCheckoutSettings(),
+    listMyReviews(),
+    listMyAddresses(),
+  ]);
   const first = customer.fullName.split(" ")[0];
 
   return (
@@ -174,6 +182,10 @@ async function Account({ searchParams }: Pick<PageProps<"/compte">, "searchParam
         ) : (
           <p className="text-muted">Aucune demande de réparation pour l&apos;instant.</p>
         )}
+      </Section>
+
+      <Section title="Mes adresses de livraison" id="adresses">
+        <AddressBook addresses={addresses} zones={settings.zones} defaults={{ name: customer.fullName, phone: customer.phone ? formatMlPhone(customer.phone) : "" }} />
       </Section>
 
       <Section title="Mes informations">
