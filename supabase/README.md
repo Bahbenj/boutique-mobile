@@ -37,6 +37,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 19. `20261125001900_customers.sql` (liste des clients calculée à partir des commandes et des demandes de réparation, recherche par téléphone ou par nom, réservée à l'admin)
 20. `20261125002000_team_roles.sql` (rôles Propriétaire, Gérant, Vendeur : les comptes déjà présents deviennent propriétaires ; le vendeur n'accède qu'aux commandes, réparations et stock ; seul le propriétaire gère l'équipe)
 21. `20261126002100_activity_log.sql` (journal d'activité : chaque modification faite dans l'admin, avec son auteur et l'avant / après ; lisible par le propriétaire seul)
+22. `20261126002200_promo_code_attempts.sql` (codes promo : 10 essais ratés par heure et par visiteur au plus, contre les devinettes ; l'adresse IP n'est jamais enregistrée, seulement une empreinte)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -74,7 +75,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 21) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 21, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 22) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 22, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -202,6 +203,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 20 f. **Nouveau code** : `TEST10`, 10 %, achat minimum 20 000, 2 utilisations → **Créer le code**.
 20 g. Sur le site, panier avec la **Montre connectée Yesido IO22** (25 000) → « Vous avez un code promo ? » → `test10` → **Appliquer** : −2 500 FCFA. Validez la commande (retrait en magasin) : écran à 22 500 FCFA, message WhatsApp avec la ligne « Code promo TEST10 ». Dans **Admin → Commandes**, la fiche et le bon de livraison montrent la remise.
 20 h. Passez une 2e commande avec `TEST10`, puis essayez une 3e : « Ce code a déjà été utilisé le nombre de fois prévu ». Annulez une des deux commandes dans l'admin : le code redevient utilisable (« 1 utilisation sur 2 » dans Promotions).
+20 i bis. Dans le panier, tapez 10 codes inventés (`FAUX1`, `FAUX2`…) : au 11e essai, « Trop d'essais de codes promo. Réessayez dans une heure. » Un vrai code est alors refusé aussi pendant une heure, depuis ce téléphone seulement.
 20 i. Avec seulement un article à moins de 20 000 FCFA dans le panier, le code affiche « Encore … FCFA d'articles pour profiter de ce code » et n'est pas déduit. Supprimez ensuite la promotion et le code de test.
 
 ### F quater. Stock
@@ -236,9 +238,10 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
     curl.exe -s "<URL>/rest/v1/promo_codes?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/stock_movements?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/activity_log?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/promo_code_attempts?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
-    Attendu pour les six : une erreur « permission denied » (code 42501), **jamais** de données.
+    Attendu pour les sept : une erreur « permission denied » (code 42501), **jamais** de données.
 
 ### H. Nettoyage des essais
 

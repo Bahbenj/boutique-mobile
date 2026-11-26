@@ -1,6 +1,8 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { updateTag } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { paymentMethodIds } from "@/config/site";
 import { CATALOG_TAG } from "@/lib/catalog";
@@ -84,6 +86,12 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     return { ok: false, fallback: true, error: "Commande transmise par WhatsApp uniquement." };
   }
 
+  // Code promo : d'abord la vérification limitée en essais (anti-devinette), puis place_order revérifie tout
+  if (customer.promo_code) {
+    const check = await verifyCode(customer.promo_code, { tolerant: true });
+    if (!check.ok) return { ok: false, error: `${check.error} Retirez le code pour commander sans remise.` };
+  }
+
   try {
     const supabase = createServiceClient();
     const { data, error } = await supabase.rpc("place_order", {
@@ -150,7 +158,36 @@ const codeReasons: Record<string, string> = {
   invalid: "Ce code n'existe pas ou n'est plus valable. Vérifiez l'orthographe.",
   expired: "Ce code a expiré.",
   used_up: "Ce code a déjà été utilisé le nombre de fois prévu.",
+  too_many_attempts: "Trop d'essais de codes promo. Réessayez dans une heure.",
 };
+
+/** Empreinte de l'adresse IP du visiteur (jamais l'adresse elle-même), pour limiter les essais. */
+async function clientKey() {
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim();
+  return ip ? createHash("sha256").update(`code-promo:${ip}`).digest("hex") : null;
+}
+
+/**
+ * Vérification d'un code (10 essais ratés par heure et par visiteur, en base).
+ * tolerant : une panne de la vérification n'empêche pas la commande (place_order revérifie).
+ */
+async function verifyCode(raw: string, { tolerant = false } = {}): Promise<PromoCheck> {
+  const code = String(raw ?? "").trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return { ok: false, error: codeReasons.invalid };
+  if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, error: "Les codes promo ne sont pas disponibles pour le moment." };
+  try {
+    const { data, error } = await createServiceClient().rpc("check_promo_code", { p_code: code, p_client: await clientKey() });
+    if (error) throw error;
+    const r = data as { ok: boolean; reason?: string; code?: string; kind?: "percent" | "amount"; value?: number; min_order?: number };
+    if (!r?.ok || !r.code || !r.kind) return { ok: false, error: codeReasons[r?.reason ?? "invalid"] ?? codeReasons.invalid };
+    return { ok: true, code: { code: r.code, kind: r.kind, value: Number(r.value), minOrder: Number(r.min_order ?? 0) } };
+  } catch (err) {
+    console.error("[code promo] vérification impossible", err);
+    if (tolerant) return { ok: true, code: { code, kind: "amount", value: 0, minOrder: 0 } };
+    return { ok: false, error: "Vérification impossible pour le moment. Réessayez." };
+  }
+}
 
 /**
  * Vérifie un code promo (clé de service : la table des codes n'est jamais lisible
@@ -158,17 +195,5 @@ const codeReasons: Record<string, string> = {
  * est recalculée et le code revérifié par place_order au moment de la commande.
  */
 export async function checkPromoCode(raw: string): Promise<PromoCheck> {
-  const code = String(raw ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return { ok: false, error: codeReasons.invalid };
-  if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, error: "Les codes promo ne sont pas disponibles pour le moment." };
-  try {
-    const { data, error } = await createServiceClient().rpc("check_promo_code", { p_code: code });
-    if (error) throw error;
-    const r = data as { ok: boolean; reason?: string; code?: string; kind?: "percent" | "amount"; value?: number; min_order?: number };
-    if (!r?.ok || !r.code || !r.kind) return { ok: false, error: codeReasons[r?.reason ?? "invalid"] ?? codeReasons.invalid };
-    return { ok: true, code: { code: r.code, kind: r.kind, value: Number(r.value), minOrder: Number(r.min_order ?? 0) } };
-  } catch (err) {
-    console.error("[code promo] vérification impossible", err);
-    return { ok: false, error: "Vérification impossible pour le moment. Réessayez." };
-  }
+  return verifyCode(raw);
 }
