@@ -24,11 +24,14 @@ export function StockManager({
   movements,
   historyReady,
   threshold,
+  canManage = true,
 }: {
   products: StockProduct[];
   movements: StockMovement[];
   historyReady: boolean;
   threshold: number;
+  /** Propriétaire ou gérant : seuil réglable, liens vers les fiches produit (pas les vendeurs). */
+  canManage?: boolean;
 }) {
   const [tab, setTab] = useState<"stock" | "historique">("stock");
   const [filter, setFilter] = useState<Filter>("tous");
@@ -48,9 +51,13 @@ export function StockManager({
 
   return (
     <div>
-      <ThresholdCard threshold={threshold} />
+      {canManage && (
+        <div className="mb-5">
+          <ThresholdCard threshold={threshold} />
+        </div>
+      )}
 
-      <div role="tablist" aria-label="Affichage" className="mt-5 flex gap-1 rounded-full bg-surface p-1 shadow-soft sm:inline-flex">
+      <div role="tablist" aria-label="Affichage" className="flex gap-1 rounded-full bg-surface p-1 shadow-soft sm:inline-flex">
         {(
           [
             ["stock", "Stock actuel"],
@@ -114,13 +121,13 @@ export function StockManager({
           ) : (
             <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2">
               {list.map((p) => (
-                <StockRow key={p.id} product={p} threshold={threshold} />
+                <StockRow key={p.id} product={p} threshold={threshold} linked={canManage} />
               ))}
             </ul>
           )}
         </>
       ) : (
-        <History movements={history} ready={historyReady} />
+        <History movements={history} ready={historyReady} linked={canManage} />
       )}
     </div>
   );
@@ -159,7 +166,7 @@ function ThresholdCard({ threshold }: { threshold: number }) {
   );
 }
 
-function StockRow({ product: p, threshold }: { product: StockProduct; threshold: number }) {
+function StockRow({ product: p, threshold, linked }: { product: StockProduct; threshold: number; linked: boolean }) {
   const toast = useUI((s) => s.showToast);
   const [value, setValue] = useState(String(p.stock));
   const [note, setNote] = useState("");
@@ -209,9 +216,13 @@ function StockRow({ product: p, threshold }: { product: StockProduct; threshold:
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <Link href={`/admin/produits/${p.id}`} className="line-clamp-2 leading-snug font-bold hover:underline">
-            {p.name}
-          </Link>
+          {linked ? (
+            <Link href={`/admin/produits/${p.id}`} className="line-clamp-2 leading-snug font-bold hover:underline">
+              {p.name}
+            </Link>
+          ) : (
+            <p className="line-clamp-2 leading-snug font-bold">{p.name}</p>
+          )}
           <p className="truncate text-xs text-muted">
             {p.category}
             {!p.isActive && " · Masqué"}
@@ -291,7 +302,7 @@ function StockRow({ product: p, threshold }: { product: StockProduct; threshold:
   );
 }
 
-function History({ movements, ready }: { movements: StockMovement[]; ready: boolean }) {
+function History({ movements, ready, linked }: { movements: StockMovement[]; ready: boolean; linked: boolean }) {
   const grouped = movements;
   if (!ready) {
     return (
@@ -317,7 +328,7 @@ function History({ movements, ready }: { movements: StockMovement[]; ready: bool
           </span>
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              {m.product_id ? (
+              {m.product_id && linked ? (
                 <Link href={`/admin/produits/${m.product_id}`} className="font-bold hover:underline">
                   {m.product_name}
                 </Link>

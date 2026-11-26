@@ -1,5 +1,5 @@
 import "server-only";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { repairStatuses, type DbRepair, type RepairStatus } from "./repairs-shared";
 
@@ -12,7 +12,7 @@ const toRepair = (row: Record<string, unknown>) =>
   ({ ...row, quote_amount: row.quote_amount == null ? null : Number(row.quote_amount) }) as DbRepair;
 
 export async function listRepairs(filters: RepairFilters) {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient();
   const page = Math.max(1, filters.page ?? 1);
   let query = supabase.from("repair_requests").select("*", { count: "exact" });
@@ -34,7 +34,7 @@ export async function listRepairs(filters: RepairFilters) {
 }
 
 export async function countRepairsByStatus() {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient();
   const results = await Promise.all(
     repairStatuses.map((s) => supabase.from("repair_requests").select("id", { count: "exact", head: true }).eq("status", s)),
@@ -43,7 +43,7 @@ export async function countRepairsByStatus() {
 }
 
 export async function getRepair(id: string) {
-  await requireAdmin();
+  await requireStaff();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const supabase = await createClient();
   const { data } = await supabase.from("repair_requests").select("*").eq("id", id).maybeSingle();

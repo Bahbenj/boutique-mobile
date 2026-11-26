@@ -2,12 +2,14 @@ import "server-only";
 import { paymentMethods, siteConfig } from "@/config/site";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { DbReview, DeliveryInput, PaymentInput, ZoneInput } from "./settings-schema";
+import { formatMlPhone } from "@/lib/phone";
+import { mergeStoreInfo } from "@/lib/store-info";
+import type { AnnouncementInput, DbReview, DeliveryInput, PaymentInput, StoreInput, ZoneInput } from "./settings-schema";
 
 /** Lectures des paramètres et des avis pour l'admin (session admin, RLS). */
 
 export type AdminSettings =
-  | { ok: true; delivery: DeliveryInput; payment: PaymentInput }
+  | { ok: true; delivery: DeliveryInput; payment: PaymentInput; store: StoreInput; announcement: AnnouncementInput }
   | { ok: false; error: string };
 
 export async function getAdminSettings(): Promise<AdminSettings> {
@@ -15,7 +17,7 @@ export async function getAdminSettings(): Promise<AdminSettings> {
   const supabase = await createClient();
   const [zonesRes, settingsRes] = await Promise.all([
     supabase.from("delivery_zones").select("id, name, zone_group, fee, delay, is_active").order("position"),
-    supabase.from("settings").select("key, value").in("key", ["delivery", "payment"]),
+    supabase.from("settings").select("key, value").in("key", ["delivery", "payment", "store", "announcement"]),
   ]);
   const error = zonesRes.error ?? settingsRes.error;
   if (error) return { ok: false, error: error.message };
@@ -44,8 +46,28 @@ export async function getAdminSettings(): Promise<AdminSettings> {
     ...saved.get(id),
   }));
 
+  // Infos de la boutique : mêmes valeurs que celles affichées sur le site
+  const info = mergeStoreInfo(byKey.get("store"));
+  const local = (p: string) => formatMlPhone(p.replace(/\D/g, "").replace(/^(00)?223(?=\d{8}$)/, ""));
+  const ann = (byKey.get("announcement") ?? {}) as Partial<AnnouncementInput>;
+
   return {
     ok: true,
+    store: {
+      whatsapp: local(info.whatsapp),
+      phone: local(info.phone),
+      phone2: info.phones[1] ? local(info.phones[1]) : "",
+      email: info.email,
+      street: info.address.street,
+      district: info.address.district,
+      city: info.address.city,
+      map_url: info.mapUrl,
+      hours: info.hours,
+      facebook: info.social.facebook,
+      tiktok: info.social.tiktok,
+      instagram: info.social.instagram,
+    },
+    announcement: { enabled: ann.enabled === true, text: typeof ann.text === "string" ? ann.text : "", link: typeof ann.link === "string" ? ann.link : "" },
     delivery: {
       free_from: "free_from" in delivery ? (delivery.free_from ?? null) : siteConfig.delivery.freeFrom,
       pickup: { enabled: true, ...siteConfig.delivery.pickup, ...delivery.pickup },

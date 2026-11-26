@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteConfig, storeAddress } from "@/config/site";
+import { siteConfig } from "@/config/site";
 import { LegalPage } from "@/components/sections/LegalPage";
+import { getStoreInfo } from "@/lib/storefront";
+import { storeAddressOf } from "@/lib/store-info";
 
 export const metadata: Metadata = {
   title: "Conditions générales de vente",
@@ -13,8 +15,11 @@ export const metadata: Metadata = {
  * Texte TYPE, à faire valider par le client et, idéalement, par un juriste
  * (TODO client) : identité légale (forme, RCCM, NIF), droit applicable.
  */
-export default function TermsPage() {
-  const { name, email, phone } = siteConfig;
+export default async function TermsPage() {
+  const store = await getStoreInfo();
+  const { name } = siteConfig;
+  const { email, phone } = store;
+  const storeAddress = storeAddressOf(store);
   return (
     <LegalPage
       title="Conditions générales de vente"
@@ -24,7 +29,7 @@ export default function TermsPage() {
       <section>
         <h2>1. Le vendeur</h2>
         <p>
-          {name}, {storeAddress}, Mali. Téléphone : {phone}. E-mail : {email}.
+          {name}, {storeAddress}, Mali. Téléphone : {phone}.{email && ` E-mail : ${email}.`}
           {/* TODO client : forme juridique, numéro RCCM et NIF */}
           {" "}Numéro RCCM et NIF : à compléter.
         </p>

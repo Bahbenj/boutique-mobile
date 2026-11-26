@@ -12,9 +12,13 @@ import { CartBadge, useCartLabel } from "@/components/cart/CartBadge";
 import { IconBag, IconClose, IconMenu, IconUser } from "@/components/ui/icons";
 import { Logo } from "./Logo";
 import { navLinks } from "./nav-links";
+import type { Announcement } from "@/lib/store-info";
 
-/** Navbar pilule flottante, fixe, fond clair translucide flouté. */
-export function Navbar() {
+/**
+ * Navbar pilule flottante, fixe, fond clair translucide flouté. Au-dessus, le
+ * bandeau d'annonce réglé dans l'admin (Paramètres → Bandeau), sur une ligne.
+ */
+export function Navbar({ announcement = null }: { announcement?: Announcement | null }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
@@ -39,6 +43,7 @@ export function Navbar() {
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:pt-4">
+      {announcement && <AnnouncementBar {...announcement} />}
       <nav
         aria-label="Navigation principale"
         className={cn(
@@ -151,5 +156,23 @@ export function Navbar() {
         </AnimatePresence>
       </nav>
     </header>
+  );
+}
+
+function AnnouncementBar({ text, link }: Announcement) {
+  const cls =
+    "pointer-events-auto mx-auto mb-1.5 flex h-7 max-w-5xl items-center justify-center gap-1.5 truncate rounded-full bg-gold px-4 text-center text-xs font-semibold text-on-gold shadow-soft sm:text-sm";
+  if (!link) return <p className={cls}>{text}</p>;
+  const external = link.startsWith("http");
+  return external ? (
+    <a href={link} target="_blank" rel="noopener noreferrer" className={cls}>
+      <span className="truncate">{text}</span>
+      <span aria-hidden="true">→</span>
+    </a>
+  ) : (
+    <Link href={link} className={cls}>
+      <span className="truncate">{text}</span>
+      <span aria-hidden="true">→</span>
+    </Link>
   );
 }

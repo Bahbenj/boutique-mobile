@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteConfig, storeAddress, telHref } from "@/config/site";
+import { siteConfig, telHref } from "@/config/site";
 import { LegalPage } from "@/components/sections/LegalPage";
+import { getStoreInfo } from "@/lib/storefront";
+import { storeAddressOf } from "@/lib/store-info";
 
 export const metadata: Metadata = {
   title: "Retours et garantie",
@@ -13,8 +15,11 @@ export const metadata: Metadata = {
  * Texte TYPE, à faire valider par le client (TODO client) : délai de retour,
  * durée de garantie, conditions. La durée vient de config/site.ts → warrantyMonths.
  */
-export default function ReturnsPage() {
-  const { warrantyMonths, phone, name } = siteConfig;
+export default async function ReturnsPage() {
+  const store = await getStoreInfo();
+  const { warrantyMonths, name } = siteConfig;
+  const { phone } = store;
+  const storeAddress = storeAddressOf(store);
   return (
     <LegalPage
       title="Retours et garantie"

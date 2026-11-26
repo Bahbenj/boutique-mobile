@@ -4,10 +4,10 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { submitRepairRequest, type RepairRequestResult } from "@/app/(site)/reparation/actions";
 import { siteConfig } from "@/config/site";
 import { formatMlPhoneIntl, normalizeMlPhone, phoneError, phoneHint, phonePlaceholder } from "@/lib/phone";
-import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { Field, TextareaField } from "@/components/ui/Field";
 import { IconCheck, IconSpinner, IconWhatsApp } from "@/components/ui/icons";
+import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 type Fields = "name" | "phone" | "device" | "issue";
 type Errors = Partial<Record<Fields, string>>;
@@ -19,6 +19,8 @@ type Errors = Partial<Record<Fields, string>>;
  * part quand même (sans numéro) : aucune demande n'est perdue.
  */
 export function RepairQuoteForm() {
+  const waLink = useWhatsappLink();
+
   const startedAt = useRef(0);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function RepairQuoteForm() {
       `Nom : ${values.name}`,
       `Téléphone : ${formatMlPhoneIntl(phone)}`,
     ].join("\n");
-    const link = whatsappLink(message);
+    const link = waLink(message);
     setSent({ link, number });
     formEl.reset();
     // Ouverture automatique ; souvent bloquée après un appel réseau (mobile) : le bouton reste affiché

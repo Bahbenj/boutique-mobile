@@ -9,11 +9,11 @@ import { siteConfig } from "@/config/site";
 import { heroScenes as scenes } from "@/data/home";
 import { t } from "@/i18n";
 import { useUI } from "@/lib/ui-store";
-import { whatsappLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconWhatsApp } from "@/components/ui/icons";
+import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -33,6 +33,8 @@ const TOTAL = sceneAt(N - 1) + TRANS + HOLD;
  * Sans animation (prefers-reduced-motion) : hero statique sur la 1re scène.
  */
 export function HeroScroll() {
+  const waLink = useWhatsappLink();
+
   const root = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<ScrollTrigger | null>(null);
   const [active, setActive] = useState(0);
@@ -251,7 +253,7 @@ export function HeroScroll() {
                 </Button>
                 {/* Sur mobile : bouton rond icône seule pour tenir sur une ligne */}
                 <Button
-                  href={whatsappLink(t.whatsapp.greeting)}
+                  href={waLink(t.whatsapp.greeting)}
                   size="lg"
                   variant="outline"
                   className="w-14 border-white/30 bg-white/5 px-0! text-white backdrop-blur-md hover:bg-white/15 sm:w-auto sm:px-7!"

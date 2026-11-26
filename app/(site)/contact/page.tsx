@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { directionsUrl, siteConfig, storeAddress, telHref } from "@/config/site";
+import { siteConfig, storeAddress, telHref } from "@/config/site";
 import { t } from "@/i18n";
 import { reviewRequestMessage } from "@/data/home";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { HexIcon } from "@/components/ui/Hex";
-import { IconClock, IconFacebook, IconMail, IconPhone, IconPin, IconTiktok, IconWhatsApp } from "@/components/ui/icons";
+import { IconClock, IconFacebook, IconInstagram, IconMail, IconPhone, IconPin, IconTiktok, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
+import { directionsOf, mapEmbedOf, storeAddressOf, tiktokHandleOf } from "@/lib/store-info";
 
 export const metadata: Metadata = {
   title: t.contact.title,
@@ -16,8 +18,9 @@ export const metadata: Metadata = {
 };
 
 /** Page Contact : coordonnées, horaires, réseaux et carte Google Maps du magasin. */
-export default function ContactPage() {
-  const { phones, email, hours, social } = siteConfig;
+export default async function ContactPage() {
+  const store = await getStoreInfo();
+  const { phones, email, hours, social } = store;
 
   return (
     <Container className="pt-28 pb-20 sm:pt-36 sm:pb-28">
@@ -42,13 +45,15 @@ export default function ContactPage() {
                   ))}
                 </ul>
               </Item>
-              <Item icon={<IconMail size={20} />} label={t.contact.email}>
-                <a href={`mailto:${email}`} className="font-semibold break-all hover:text-accent hover:underline">
-                  {email}
-                </a>
-              </Item>
+              {email && (
+                <Item icon={<IconMail size={20} />} label={t.contact.email}>
+                  <a href={`mailto:${email}`} className="font-semibold break-all hover:text-accent hover:underline">
+                    {email}
+                  </a>
+                </Item>
+              )}
               <Item icon={<IconPin size={20} />} label={t.contact.address}>
-                <span className="font-semibold">{storeAddress}, Mali</span>
+                <span className="font-semibold">{storeAddressOf(store)}, Mali</span>
               </Item>
               <Item icon={<IconClock size={20} />} label={t.contact.hours}>
                 <ul className="space-y-1">
@@ -63,15 +68,15 @@ export default function ContactPage() {
             </dl>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href={whatsappLink(t.whatsapp.greeting)} variant="whatsapp">
+              <Button href={whatsappLink(t.whatsapp.greeting, store.whatsapp)} variant="whatsapp">
                 <IconWhatsApp size={18} />
                 WhatsApp
               </Button>
-              <Button href={telHref(siteConfig.phone)} variant="outline">
+              <Button href={telHref(store.phone)} variant="outline">
                 <IconPhone size={18} />
                 {t.home.call}
               </Button>
-              <Button href={directionsUrl} variant="light">
+              <Button href={directionsOf(store)} variant="light">
                 <IconPin size={18} />
                 {t.home.directions}
               </Button>
@@ -81,20 +86,32 @@ export default function ContactPage() {
           <div className="rounded-card bg-surface p-6 shadow-soft sm:p-8">
             <h2 className="text-sm font-bold text-muted">{t.contact.social}</h2>
             <ul className="mt-4 flex flex-wrap gap-2">
+              {social.facebook && (
+                <li>
+                  <Button href={social.facebook} variant="light" size="sm">
+                    <IconFacebook size={16} />
+                    Facebook
+                  </Button>
+                </li>
+              )}
+              {social.instagram && (
+                <li>
+                  <Button href={social.instagram} variant="light" size="sm">
+                    <IconInstagram size={16} />
+                    Instagram
+                  </Button>
+                </li>
+              )}
+              {social.tiktok && (
+                <li>
+                  <Button href={social.tiktok} variant="light" size="sm">
+                    <IconTiktok size={16} />
+                    TikTok {tiktokHandleOf(social.tiktok)}
+                  </Button>
+                </li>
+              )}
               <li>
-                <Button href={social.facebook} variant="light" size="sm">
-                  <IconFacebook size={16} />
-                  Facebook
-                </Button>
-              </li>
-              <li>
-                <Button href={social.tiktok} variant="light" size="sm">
-                  <IconTiktok size={16} />
-                  TikTok {social.tiktokHandle}
-                </Button>
-              </li>
-              <li>
-                <Button href={whatsappLink(reviewRequestMessage)} variant="light" size="sm">
+                <Button href={whatsappLink(reviewRequestMessage, store.whatsapp)} variant="light" size="sm">
                   <IconWhatsApp size={16} />
                   {t.home.leaveReview}
                 </Button>
@@ -105,7 +122,7 @@ export default function ContactPage() {
 
         <div className="relative min-h-[22rem] overflow-hidden rounded-card bg-surface shadow-soft lg:min-h-full">
           <iframe
-            src={siteConfig.mapEmbedUrl}
+            src={mapEmbedOf(store)}
             title={t.contact.mapTitle}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"

@@ -6,9 +6,11 @@ import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconStar, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
 
 /** Avis clients publiés (gérés dans /admin/avis). Masqué s'il n'y en a aucun. */
-export function Reviews({ index, reviews }: { index: number; reviews: Review[] }) {
+export async function Reviews({ index, reviews }: { index: number; reviews: Review[] }) {
+  const store = await getStoreInfo();
   if (!reviews.length) return null;
 
   return (
@@ -21,7 +23,7 @@ export function Reviews({ index, reviews }: { index: number; reviews: Review[] }
             kicker={t.home.reviewsKicker}
             title={t.home.reviewsTitle}
             action={
-              <Button href={whatsappLink(reviewRequestMessage)} variant="light">
+              <Button href={whatsappLink(reviewRequestMessage, store.whatsapp)} variant="light">
                 <IconWhatsApp size={18} />
                 {t.home.leaveReview}
               </Button>

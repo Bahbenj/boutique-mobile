@@ -1,4 +1,4 @@
-import { directionsUrl, siteConfig, storeAddress, telHref } from "@/config/site";
+import { telHref } from "@/config/site";
 import { t } from "@/i18n";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
@@ -7,10 +7,13 @@ import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconClock, IconPhone, IconPin, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
+import { directionsOf, mapEmbedOf, storeAddressOf } from "@/lib/store-info";
 
-/** Adresse, horaires et carte du magasin. Tout vient de config/site.ts. */
-export function StoreVisit({ index }: { index: number }) {
-  const { hours, phones } = siteConfig;
+/** Adresse, horaires et carte du magasin (admin → Paramètres → Boutique). */
+export async function StoreVisit({ index }: { index: number }) {
+  const store = await getStoreInfo();
+  const { hours, phones } = store;
 
   return (
     <section aria-labelledby="magasin-title" className="pb-20 sm:pb-28">
@@ -26,7 +29,7 @@ export function StoreVisit({ index }: { index: number }) {
                     <IconPin size={20} />
                     <span className="sr-only">Adresse</span>
                   </dt>
-                  <dd className="font-semibold">{storeAddress}</dd>
+                  <dd className="font-semibold">{storeAddressOf(store)}</dd>
                 </div>
                 <div className="flex gap-3">
                   <dt className="mt-0.5 text-muted">
@@ -60,11 +63,11 @@ export function StoreVisit({ index }: { index: number }) {
               </dl>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button href={directionsUrl} variant="dark">
+                <Button href={directionsOf(store)} variant="dark">
                   <IconPin size={18} />
                   {t.home.directions}
                 </Button>
-                <Button href={whatsappLink(t.whatsapp.greeting)} variant="whatsapp">
+                <Button href={whatsappLink(t.whatsapp.greeting, store.whatsapp)} variant="whatsapp">
                   <IconWhatsApp size={18} />
                   WhatsApp
                 </Button>
@@ -73,7 +76,7 @@ export function StoreVisit({ index }: { index: number }) {
 
             <div className="relative min-h-80 lg:min-h-full">
               <iframe
-                src={siteConfig.mapEmbedUrl}
+                src={mapEmbedOf(store)}
                 title={t.home.mapTitle}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

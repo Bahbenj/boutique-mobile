@@ -2,19 +2,21 @@
 
 import { t } from "@/i18n";
 import { useUI } from "@/lib/ui-store";
-import { whatsappLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { IconWhatsApp } from "@/components/ui/icons";
+import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 /**
  * Bouton WhatsApp flottant, à partir de 768 px (en dessous, la barre
  * d'actions mobile le remplace). S'efface pendant le hero épinglé.
  */
 export function WhatsAppFab() {
+  const waLink = useWhatsappLink();
+
   const hidden = useUI((s) => s.heroActive);
   return (
     <a
-      href={whatsappLink(t.whatsapp.greeting)}
+      href={waLink(t.whatsapp.greeting)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.whatsapp.fab}

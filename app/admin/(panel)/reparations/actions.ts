@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { repairUpdateSchema, type RepairUpdate } from "@/lib/admin/repairs-shared";
 import { fieldErrors, type ActionResult } from "@/lib/admin/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { logSupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
  * les coordonnées et la panne saisies par le client restent intactes.
  */
 export async function updateRepair(input: RepairUpdate): Promise<ActionResult> {
-  await requireAdmin();
+  await requireStaff();
   const parsed = repairUpdateSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Certains champs sont à corriger.", fields: fieldErrors(parsed.error) };
   const { id, ...patch } = parsed.data;

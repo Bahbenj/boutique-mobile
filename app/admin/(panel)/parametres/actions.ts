@@ -2,12 +2,23 @@
 
 import { refresh, updateTag } from "next/cache";
 import { fieldErrors, type ActionResult } from "@/lib/admin/schema";
-import { deliverySchema, paymentSchema, type DeliveryInput, type PaymentInput } from "@/lib/admin/settings-schema";
+import {
+  announcementSchema,
+  deliverySchema,
+  paymentSchema,
+  storeSchema,
+  type AnnouncementInput,
+  type DeliveryInput,
+  type PaymentInput,
+  type StoreInput,
+} from "@/lib/admin/settings-schema";
+import { formatMlPhoneIntl } from "@/lib/phone";
 import { requireAdmin } from "@/lib/auth";
 import { SETTINGS_TAG } from "@/lib/storefront";
+import { logSupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
-/** Paramètres de la boutique : livraison (zones, frais, retrait) et paiement. */
+/** Paramètres de la boutique : infos et contact, bandeau, livraison (zones, frais, retrait) et paiement. */
 
 function done() {
   updateTag(SETTINGS_TAG); // page Commande du site
@@ -50,6 +61,47 @@ export async function savePayments(input: PaymentInput): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await saveSetting(supabase, "payment", { methods: parsed.data.methods });
   if (error) return { ok: false, error: "Paiement non enregistré : " + error.message };
+  done();
+  return { ok: true };
+}
+
+export async function saveStore(input: StoreInput): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = storeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Certains champs sont à corriger.", fields: fieldErrors(parsed.error) };
+  const d = parsed.data;
+  const phone = formatMlPhoneIntl(d.phone);
+  const supabase = await createClient();
+  const { data: current } = await supabase.from("settings").select("value").eq("key", "store").maybeSingle();
+  const before = (current?.value as Record<string, unknown> | null) ?? {};
+  const { error } = await saveSetting(supabase, "store", {
+    whatsapp: `223${d.whatsapp}`,
+    phone,
+    phones: d.phone2 ? [phone, formatMlPhoneIntl(d.phone2)] : [phone],
+    email: d.email,
+    address: { ...((before.address as object | undefined) ?? {}), street: d.street, district: d.district, city: d.city },
+    map_url: d.map_url,
+    hours: d.hours,
+    social: { ...((before.social as object | undefined) ?? {}), facebook: d.facebook, tiktok: d.tiktok, instagram: d.instagram },
+  });
+  if (error) {
+    logSupabaseError("infos boutique", error);
+    return { ok: false, error: "Les infos n'ont pas été enregistrées. Réessayez." };
+  }
+  done();
+  return { ok: true };
+}
+
+export async function saveAnnouncement(input: AnnouncementInput): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = announcementSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Certains champs sont à corriger.", fields: fieldErrors(parsed.error) };
+  const supabase = await createClient();
+  const { error } = await saveSetting(supabase, "announcement", parsed.data);
+  if (error) {
+    logSupabaseError("bandeau", error);
+    return { ok: false, error: "Le bandeau n'a pas été enregistré. Réessayez." };
+  }
   done();
   return { ok: true };
 }

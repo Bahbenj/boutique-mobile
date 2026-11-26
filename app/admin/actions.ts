@@ -74,7 +74,9 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   }
 
   // Identifiants valides : le compte est-il administrateur ?
-  const { data: isAdmin, error: roleError } = await supabase.rpc("is_admin");
+  // Toute l'équipe (propriétaire, gérant, vendeur) ; repli sur is_admin sans la migration 20
+  const staff = await supabase.rpc("is_staff");
+  const { data: isAdmin, error: roleError } = staff.error ? await supabase.rpc("is_admin") : staff;
   if (roleError) {
     logSupabaseError("vérification du rôle admin impossible", roleError, { email: maskEmail(parsed.data.email) });
     await supabase.auth.signOut();

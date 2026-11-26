@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveDelivery, savePayments } from "@/app/admin/(panel)/parametres/actions";
+import { saveAnnouncement, saveDelivery, savePayments, saveStore } from "@/app/admin/(panel)/parametres/actions";
 import { fieldErrors, parseAmount, slugify } from "@/lib/admin/schema";
-import { deliverySchema, paymentSchema, type DeliveryInput, type PaymentInput } from "@/lib/admin/settings-schema";
+import {
+  announcementSchema,
+  deliverySchema,
+  paymentSchema,
+  storeSchema,
+  type AnnouncementInput,
+  type DeliveryInput,
+  type PaymentInput,
+  type StoreInput,
+} from "@/lib/admin/settings-schema";
 import { useUI } from "@/lib/ui-store";
 import { cn, formatAmount } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -298,5 +307,187 @@ function SaveBar({ pending, dirty, onSave }: { pending: boolean; dirty: boolean;
         {pending ? "Enregistrement…" : "Enregistrer"}
       </Button>
     </div>
+  );
+}
+
+// --- Infos de la boutique ------------------------------------------------------------
+
+export function StoreSettingsForm({ initial }: { initial: StoreInput }) {
+  const toast = useUI((s) => s.showToast);
+  const [d, setD] = useState(initial);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  const set = <K extends keyof StoreInput>(key: K, value: StoreInput[K]) => {
+    setD((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+  const setHour = (i: number, patch: Partial<StoreInput["hours"][number]>) =>
+    set(
+      "hours",
+      d.hours.map((h, k) => (k === i ? { ...h, ...patch } : h)),
+    );
+
+  const submit = () => {
+    const check = storeSchema.safeParse(d);
+    if (!check.success) {
+      setErrors(fieldErrors(check.error));
+      toast({ title: "À vérifier", text: "Un champ est à corriger (en lavande).", tone: "error" });
+      return;
+    }
+    startTransition(async () => {
+      const res = await saveStore(d);
+      if (!res.ok) {
+        setErrors(res.fields ?? {});
+        toast({ title: "Pas enregistré", text: res.error, tone: "error" });
+        return;
+      }
+      setErrors({});
+      setDirty(false);
+      toast({ title: "Infos enregistrées", text: "Le site affiche déjà les nouvelles coordonnées." });
+    });
+  };
+
+  return (
+    <FormSection title="Boutique" description="Coordonnées affichées sur le site : boutons WhatsApp et Appeler, pied de page, page Contact.">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
+        <Field label="Numéro WhatsApp *" inputMode="tel" value={d.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} error={errors.whatsapp} hint="Celui qui reçoit les commandes." />
+        <Field label="Téléphone principal *" inputMode="tel" value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint="Bouton « Appeler »." />
+        <Field label="Second téléphone" inputMode="tel" value={d.phone2} onChange={(e) => set("phone2", e.target.value)} error={errors.phone2} hint="Facultatif." />
+        <Field label="E-mail" type="email" value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} hint="Facultatif." />
+        <Field label="Quartier *" value={d.district} onChange={(e) => set("district", e.target.value)} error={errors.district} />
+        <Field label="Ville *" value={d.city} onChange={(e) => set("city", e.target.value)} error={errors.city} />
+        <Field
+          label="Repère"
+          value={d.street}
+          onChange={(e) => set("street", e.target.value)}
+          error={errors.street}
+          hint="Ex. près de l'école fondamentale."
+          className="sm:col-span-2"
+        />
+        <Field
+          label="Lien Google Maps"
+          inputMode="url"
+          value={d.map_url}
+          onChange={(e) => set("map_url", e.target.value)}
+          error={errors.map_url}
+          hint="Dans Google Maps : touchez la boutique, Partager, Copier le lien. Sert au bouton « Itinéraire »."
+          className="sm:col-span-2"
+        />
+      </div>
+
+      <fieldset className="mt-5 min-w-0">
+        <legend className="text-sm font-semibold">Horaires *</legend>
+        <ul className="mt-2 space-y-2">
+          {d.hours.map((h, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <input
+                aria-label={`Jours, ligne ${i + 1}`}
+                value={h.days}
+                onChange={(e) => setHour(i, { days: e.target.value })}
+                placeholder="Lundi – Samedi"
+                className={input}
+                aria-invalid={errors[`hours.${i}.days`] ? true : undefined}
+              />
+              <input
+                aria-label={`Heures, ligne ${i + 1}`}
+                value={h.time}
+                onChange={(e) => setHour(i, { time: e.target.value })}
+                placeholder="8h – 21h"
+                className={input}
+                aria-invalid={errors[`hours.${i}.time`] ? true : undefined}
+              />
+              {d.hours.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => set("hours", d.hours.filter((_, k) => k !== i))}
+                  aria-label={`Retirer la ligne ${i + 1}`}
+                  className="grid size-11 shrink-0 place-items-center rounded-full text-lg text-muted hover:bg-fg/5 hover:text-fg"
+                >
+                  ×
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        {firstError(errors, "hours") && <p className="mt-1.5 text-xs font-medium text-danger">{firstError(errors, "hours")}</p>}
+        {d.hours.length < 7 && (
+          <button
+            type="button"
+            onClick={() => set("hours", [...d.hours, { days: "", time: "" }])}
+            className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-accent"
+          >
+            <IconPlus size={16} />
+            Ajouter une ligne
+          </button>
+        )}
+      </fieldset>
+
+      <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-3">
+        <Field label="Facebook" inputMode="url" value={d.facebook} onChange={(e) => set("facebook", e.target.value)} error={errors.facebook} placeholder="https://www.facebook.com/…" />
+        <Field label="TikTok" inputMode="url" value={d.tiktok} onChange={(e) => set("tiktok", e.target.value)} error={errors.tiktok} placeholder="https://www.tiktok.com/@…" />
+        <Field label="Instagram" inputMode="url" value={d.instagram} onChange={(e) => set("instagram", e.target.value)} error={errors.instagram} placeholder="https://www.instagram.com/…" />
+      </div>
+      <SaveBar pending={pending} dirty={dirty} onSave={submit} />
+    </FormSection>
+  );
+}
+
+// --- Bandeau d'annonce -------------------------------------------------------------------
+
+export function AnnouncementForm({ initial }: { initial: AnnouncementInput }) {
+  const toast = useUI((s) => s.showToast);
+  const [d, setD] = useState(initial);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const set = (patch: Partial<AnnouncementInput>) => {
+    setD((prev) => ({ ...prev, ...patch }));
+    setDirty(true);
+  };
+
+  const submit = () => {
+    const check = announcementSchema.safeParse(d);
+    if (!check.success) return setErrors(fieldErrors(check.error));
+    startTransition(async () => {
+      const res = await saveAnnouncement(d);
+      if (!res.ok) {
+        setErrors(res.fields ?? {});
+        toast({ title: "Pas enregistré", text: res.error, tone: "error" });
+        return;
+      }
+      setErrors({});
+      setDirty(false);
+      toast({ title: d.enabled ? "Bandeau affiché sur le site" : "Bandeau masqué", text: d.enabled ? d.text : undefined });
+    });
+  };
+
+  return (
+    <FormSection title="Bandeau d'annonce" description="Une ligne en haut de toutes les pages du site : promotion, fermeture exceptionnelle, nouvel arrivage…">
+      <Switch checked={d.enabled} onChange={(enabled) => set({ enabled })} label={d.enabled ? "Affiché sur le site" : "Masqué"} showLabel />
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[1.6fr_1fr]">
+        <Field
+          label="Message"
+          value={d.text}
+          onChange={(e) => set({ text: e.target.value })}
+          error={errors.text}
+          maxLength={120}
+          placeholder="Ex. −10 % sur les écouteurs jusqu'à dimanche !"
+          hint={`${d.text.length} / 120`}
+        />
+        <Field label="Lien (facultatif)" value={d.link} onChange={(e) => set({ link: e.target.value })} error={errors.link} placeholder="/boutique" hint="Page ouverte au toucher." />
+      </div>
+      {d.text.trim() && (
+        <div className="mt-4">
+          <p className="mb-1.5 text-xs font-semibold text-muted">Aperçu</p>
+          <p className="truncate rounded-full bg-gold px-4 py-1.5 text-center text-sm font-semibold text-on-gold">
+            {d.text}
+            {d.link && " →"}
+          </p>
+        </div>
+      )}
+      <SaveBar pending={pending} dirty={dirty} onSave={submit} />
+    </FormSection>
   );
 }

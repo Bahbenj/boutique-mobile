@@ -1,12 +1,12 @@
 "use client";
 
-import { siteConfig, telHref } from "@/config/site";
+import { telHref } from "@/config/site";
 import { t } from "@/i18n";
 import { useUI } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
-import { whatsappLink } from "@/lib/whatsapp";
 import { IconBag, IconPhone, IconWhatsApp } from "@/components/ui/icons";
 import { CartBadge, useCartLabel } from "@/components/cart/CartBadge";
+import { useStoreInfo, useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 const item =
   "flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold " +
@@ -17,6 +17,9 @@ const item =
  * Remplace le bouton WhatsApp flottant sur mobile et s'efface pendant le hero.
  */
 export function MobileActionBar() {
+  const waLink = useWhatsappLink();
+  const store = useStoreInfo();
+
   const hidden = useUI((s) => s.heroActive);
   const openCart = useUI((s) => s.openCart);
   const cartLabel = useCartLabel(t.actionBar.cart);
@@ -34,12 +37,12 @@ export function MobileActionBar() {
       )}
     >
       <div className="mx-auto flex max-w-md gap-1.5 rounded-full bg-surface/85 p-1.5 shadow-pill ring-1 ring-fg/5 backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(0))]:bg-surface">
-        <a href={telHref(siteConfig.phone)} tabIndex={tab} className={cn(item, "text-fg hover:bg-fg/5")}>
+        <a href={telHref(store.phone)} tabIndex={tab} className={cn(item, "text-fg hover:bg-fg/5")}>
           <IconPhone size={18} />
           {t.actionBar.call}
         </a>
         <a
-          href={whatsappLink(t.whatsapp.greeting)}
+          href={waLink(t.whatsapp.greeting)}
           target="_blank"
           rel="noopener noreferrer"
           tabIndex={tab}

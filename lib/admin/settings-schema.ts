@@ -96,3 +96,56 @@ export type DbReview = {
   position: number;
   created_at: string;
 };
+
+// --- Infos de la boutique (clé « store ») -------------------------------------------
+
+/** 8 chiffres maliens, avec ou sans +223. */
+const mlPhone = (message: string) =>
+  z
+    .string()
+    .trim()
+    .transform((s) => s.replace(/\D/g, "").replace(/^(00)?223(?=\d{8}$)/, ""))
+    .pipe(z.string().regex(/^[2-9]\d{7}$/, message));
+
+const optionalUrl = (hosts: RegExp, message: string) =>
+  z
+    .string()
+    .trim()
+    .max(300, "Lien trop long.")
+    .refine((s) => !s || (/^https:\/\//.test(s) && hosts.test(new URL(s).hostname)), message);
+
+export const storeSchema = z.object({
+  whatsapp: mlPhone("Numéro WhatsApp : 8 chiffres, ex. 63 51 55 82."),
+  phone: mlPhone("Téléphone : 8 chiffres, ex. 63 51 55 82."),
+  phone2: z.union([z.literal(""), mlPhone("Second numéro : 8 chiffres, ou laissez vide.")]),
+  email: z.union([z.literal(""), z.email("Adresse e-mail invalide.").max(120)]),
+  street: z.string().trim().max(120, "120 caractères maximum."),
+  district: z.string().trim().min(2, "Indiquez le quartier.").max(80),
+  city: z.string().trim().min(2, "Indiquez la ville.").max(80),
+  map_url: optionalUrl(/(^|\.)(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl)$/i, "Collez le lien « Partager » de Google Maps (https://maps.app.goo.gl/…)."),
+  hours: z
+    .array(z.object({ days: z.string().trim().min(2, "Jours ?").max(40), time: z.string().trim().min(2, "Heures ?").max(40) }))
+    .min(1, "Ajoutez au moins une ligne d'horaires.")
+    .max(7),
+  facebook: optionalUrl(/(^|\.)(facebook\.com|fb\.com|fb\.me)$/i, "Lien Facebook invalide (https://www.facebook.com/…)."),
+  tiktok: optionalUrl(/(^|\.)tiktok\.com$/i, "Lien TikTok invalide (https://www.tiktok.com/@…)."),
+  instagram: optionalUrl(/(^|\.)instagram\.com$/i, "Lien Instagram invalide (https://www.instagram.com/…)."),
+});
+
+export type StoreInput = z.input<typeof storeSchema>;
+
+// --- Bandeau d'annonce (clé « announcement ») ---------------------------------------
+
+export const announcementSchema = z
+  .object({
+    enabled: z.boolean(),
+    text: z.string().trim().max(120, "120 caractères maximum : le bandeau tient sur une ligne."),
+    link: z
+      .string()
+      .trim()
+      .max(300)
+      .refine((s) => !s || /^\/[\w\-/#?=&%.]*$/.test(s) || /^https:\/\/\S+$/.test(s), "Lien : une page du site (ex. /boutique) ou une adresse https://…"),
+  })
+  .refine((d) => !d.enabled || d.text.length > 0, { path: ["text"], message: "Écrivez le message à afficher." });
+
+export type AnnouncementInput = z.input<typeof announcementSchema>;

@@ -15,10 +15,10 @@ import { normalizeMlPhone, phoneHint, phonePlaceholder } from "@/lib/phone";
 import type { CheckoutSettings } from "@/lib/storefront";
 import { useMounted } from "@/lib/use-mounted";
 import { cn, formatPrice } from "@/lib/utils";
-import { whatsappLink } from "@/lib/whatsapp";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Field, SelectField, TextareaField } from "@/components/ui/Field";
 import { IconCash, IconCheck, IconSpinner, IconWhatsApp } from "@/components/ui/icons";
+import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", string>>;
 
@@ -30,6 +30,8 @@ type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", s
  * (place_order recalcule prix, frais de zone et valide le paiement).
  */
 export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
+  const waLink = useWhatsappLink();
+
   const { zones, payments, freeFrom, pickup } = settings;
   const mounted = useMounted();
   const { items, clear, promo } = useCart();
@@ -188,7 +190,7 @@ export function CheckoutForm({ settings }: { settings: CheckoutSettings }) {
     );
     track("Lead", money(total), { eventID: `${eventID}-lead` });
 
-    const link = whatsappLink(message);
+    const link = waLink(message);
     setSent({ link, number: placed?.number ?? null, total });
     clear();
     // Ouverture automatique ; souvent bloquée après un appel réseau (mobile) : le bouton reste affiché

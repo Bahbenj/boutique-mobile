@@ -35,6 +35,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 17. `20261125001700_promotions.sql` (promotions datées sur un produit, une catégorie ou tout le site ; codes promo avec minimum, nombre d'utilisations et expiration, appliqués par `place_order` ; la commande garde le code et la remise)
 18. `20261125001800_stock.sql` (seuil « stock faible » réglable ; historique des mouvements de stock écrit par la base : ventes, annulations, ajustements avec motif, qui et quand)
 19. `20261125001900_customers.sql` (liste des clients calculée à partir des commandes et des demandes de réparation, recherche par téléphone ou par nom, réservée à l'admin)
+20. `20261125002000_team_roles.sql` (rôles Propriétaire, Gérant, Vendeur : les comptes déjà présents deviennent propriétaires ; le vendeur n'accède qu'aux commandes, réparations et stock ; seul le propriétaire gère l'équipe)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -72,7 +73,7 @@ Les produits d'exemple utilisent les photos fournies par le client (`/photos/…
 
 Dans **SQL Editor** → **New query** :
 
-1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 19) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 19, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
+1. Collez **tout** `supabase/all-in-one.sql` → **Run**. Il applique les migrations manquantes (8 à 20) puis ajoute les produits d'exemple absents. Sans les migrations 8 à 20, le site public reste sur son catalogue de secours (`data/products.ts`) et les commandes ne sont pas enregistrées (envoi WhatsApp seul).
 2. Si d'anciens produits d'exemple sont en base : requête de nettoyage ci-dessus, puis relancez `supabase/seed.sql` seul.
 3. Vérifiez : `select slug, price, tag, free_delivery, image_bg from public.products order by created_at;` doit lister les 11 produits, dont `casque-bluetooth-super-bass` avec `Promo` et `true`.
 
@@ -88,6 +89,8 @@ Le site se met à jour tout seul : chaque modification dans l'admin invalide le 
 insert into public.admins (user_id)
 select id from auth.users where email = 'vous@exemple.com';
 ```
+
+Ce compte est **propriétaire** (rôle par défaut d'une ligne ajoutée ainsi). Les employés s'ajoutent ensuite depuis l'admin : **Paramètres → Équipe** (rôle Gérant ou Vendeur), sans passer par le SQL Editor.
 
 Le résultat doit indiquer « 1 row ». Pour retirer l'accès : `delete from public.admins where user_id = (select id from auth.users where email = '…');`
 
@@ -143,13 +146,14 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'promotions et codes promo', to_regclass('public.promo_codes') is not null
    union all select 'historique du stock', to_regclass('public.stock_movements') is not null
    union all select 'liste des clients', to_regprocedure('public.admin_customers(text, text, integer)') is not null
+   union all select 'rôles d''équipe', exists (select 1 from information_schema.columns where table_name = 'admins' and column_name = 'role')
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
    ```sql
    select u.email from public.admins a join auth.users u on u.id = a.user_id;
    ```
-   Sinon, refaites l'étape 3 ci-dessus.
+   Votre ligne doit afficher `owner`. Sinon, refaites l'étape 3 ci-dessus.
 
 ### B. Application
 
@@ -207,6 +211,13 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 ### F quinquies. Clients
 
 20 m. **Admin → Plus → Clients** : votre numéro de test apparaît avec ses commandes (hors annulées), le total dépensé et ses demandes de réparation. Tapez les 4 derniers chiffres de votre numéro dans la recherche : seul votre client reste. Touchez « N commandes » : la liste des commandes s'ouvre filtrée sur ce numéro. Le bouton **WhatsApp** ouvre une conversation « Bonjour … ».
+
+### F sexies. Paramètres et équipe
+
+20 n. **Admin → Plus → Paramètres → Boutique** : changez les horaires (ex. « Lundi – Samedi », « 8h – 20h »), **Enregistrer**. Le pied de page et la page Contact du site affichent les nouveaux horaires (rechargez). Remettez les vrais horaires. Collez le lien « Partager » de Google Maps de la boutique : le bouton **Itinéraire** l'ouvre.
+20 o. **Bandeau** : interrupteur **Affiché**, message « Test bandeau », lien `/boutique`, **Enregistrer** : la ligne dorée apparaît en haut de toutes les pages et mène à la boutique. Masquez-la ensuite.
+20 p. **Équipe** : e-mail d'un second compte (le vôtre en `+vendeur`, ex. `vous+vendeur@gmail.com`), rôle **Vendeur**, **Créer son accès** : un mot de passe provisoire s'affiche avec **Envoyer par WhatsApp**. Dans une fenêtre de navigation privée, connectez-vous avec ce compte : seuls **Commandes**, **Réparations** et **Stock** apparaissent ; `/admin/produits` ou `/admin/parametres` renvoient vers les commandes. **Mon compte** permet de changer le mot de passe.
+20 q. Avec le vendeur, faites avancer une commande (ex. Confirmée) : l'historique de la commande affiche l'e-mail du vendeur. Revenez au compte propriétaire, passez-le en **Gérant** puis **Retirer** : il ne peut plus ouvrir l'admin.
 
 ### G. Sécurité (depuis un ordinateur, PowerShell)
 

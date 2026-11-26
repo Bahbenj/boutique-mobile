@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { deliveryZones, paymentMethods, siteConfig, type DeliveryZone, type PaymentMethod } from "@/config/site";
 import type { Review } from "@/data/home";
+import { fallbackStoreInfo, mergeStoreInfo, type Announcement, type StoreInfo } from "@/lib/store-info";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/env";
 
 /**
@@ -102,3 +103,33 @@ export async function getPublishedReviews(): Promise<Review[]> {
   cacheLife("hours");
   return (data ?? []).map((r) => ({ name: r.name, city: r.city, rating: r.rating, text: r.text, product: r.product ?? undefined }));
 }
+
+/**
+ * Infos de la boutique (admin → Paramètres → Boutique) et bandeau d'annonce
+ * (admin → Paramètres → Bandeau). Repli sur config/site.ts sans base.
+ */
+export async function getStoreSettings(): Promise<{ store: StoreInfo; announcement: Announcement | null }> {
+  "use cache";
+  cacheTag(SETTINGS_TAG);
+  if (!isSupabaseConfigured) {
+    cacheLife("max");
+    return { store: fallbackStoreInfo(), announcement: null };
+  }
+  const { data, error } = await publicClient().from("settings").select("key, value").in("key", ["store", "announcement"]);
+  if (error) {
+    console.error("[storefront] infos de la boutique illisibles, repli sur config/site.ts", error.message);
+    cacheLife("minutes");
+    return { store: fallbackStoreInfo(), announcement: null };
+  }
+  cacheLife("hours"); // invalidé immédiatement par l'admin (updateTag)
+  const byKey = new Map((data ?? []).map((s) => [s.key as string, s.value as Record<string, unknown>]));
+  const a = byKey.get("announcement");
+  const text = typeof a?.text === "string" ? a.text.trim() : "";
+  const link = typeof a?.link === "string" ? a.link.trim() : "";
+  return {
+    store: mergeStoreInfo(byKey.get("store")),
+    announcement: a?.enabled === true && text ? { text, link: /^(\/|https:\/\/)/.test(link) ? link : "" } : null,
+  };
+}
+
+export const getStoreInfo = async () => (await getStoreSettings()).store;

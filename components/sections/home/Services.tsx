@@ -10,13 +10,15 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconArrowRight, IconCheck, IconHeadset, IconPhone, IconWhatsApp } from "@/components/ui/icons";
 import { ServiceGrid } from "../ServiceGrid";
+import { getStoreInfo } from "@/lib/storefront";
 
 /**
  * « Nos services » sur l'accueil (ancre #services) : encadré service
  * après-vente, grille des services, lien vers la page /reparation.
  * Masqué si features.services = false.
  */
-export function Services({ index }: { index: number }) {
+export async function Services({ index }: { index: number }) {
+  const store = await getStoreInfo();
   if (!siteConfig.features.services) return null;
 
   return (
@@ -66,7 +68,7 @@ export function Services({ index }: { index: number }) {
                   <IconWhatsApp size={20} />
                   {t.home.repairQuote}
                 </Button>
-                <Button href={telHref(siteConfig.phone)} variant="outline" size="lg">
+                <Button href={telHref(store.phone)} variant="outline" size="lg">
                   <IconPhone size={18} />
                   {t.home.call}
                 </Button>

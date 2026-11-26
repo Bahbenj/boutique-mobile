@@ -6,15 +6,17 @@ import { t } from "@/i18n";
 import { stockState } from "@/lib/product-helpers";
 import { priceFor, useAddToCart } from "@/lib/use-add-to-cart";
 import { cn } from "@/lib/utils";
-import { whatsappLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
 import { IconBag, IconWhatsApp } from "@/components/ui/icons";
 import { QtyStepper } from "@/components/cart/QtyStepper";
 import { Price } from "./Price";
 import { ProductBadges } from "./ProductBadges";
+import { useWhatsappLink } from "@/components/layout/StoreInfoProvider";
 
 /** Bloc d'achat de la fiche : badges, prix, couleur, capacité, quantité, ajout. */
 export function ProductPurchase({ product: p }: { product: Product }) {
+  const waLink = useWhatsappLink();
+
   const [color, setColor] = useState(p.colors?.[0]?.name);
   const [storage, setStorage] = useState(p.storage?.[0]?.label);
   const [qty, setQty] = useState(1);
@@ -112,7 +114,7 @@ export function ProductPurchase({ product: p }: { product: Product }) {
       </p>
 
       <Button
-        href={whatsappLink(t.product.whatsappAbout([p.name, color, storage].filter(Boolean).join(" · ")))}
+        href={waLink(t.product.whatsappAbout([p.name, color, storage].filter(Boolean).join(" · ")))}
         variant="outline"
         size="md"
         className="mt-6 w-full"

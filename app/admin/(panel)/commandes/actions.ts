@@ -4,7 +4,7 @@ import { refresh, updateTag } from "next/cache";
 import { z } from "zod";
 import { orderStatuses } from "@/lib/admin/orders-shared";
 import type { ActionResult } from "@/lib/admin/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { CATALOG_TAG } from "@/lib/catalog";
 import { logSupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +17,7 @@ const statusSchema = z.object({ id: z.uuid(), status: z.enum(orderStatuses) });
  * Seule la colonne status est modifiable par l'admin (GRANT, migration 7).
  */
 export async function updateOrderStatus(input: { id: string; status: string }): Promise<ActionResult> {
-  await requireAdmin();
+  await requireStaff();
   const parsed = statusSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Statut invalide." };
 

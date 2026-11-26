@@ -3,7 +3,7 @@
 import { refresh, updateTag } from "next/cache";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/admin/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth";
 import { CATALOG_TAG } from "@/lib/catalog";
 import { logSupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +17,7 @@ const adjustSchema = z.object({
 });
 
 export async function adjustStock(input: z.input<typeof adjustSchema>): Promise<ActionResult<{ previous: number }>> {
-  await requireAdmin();
+  await requireStaff();
   const parsed = adjustSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Stock invalide." };
   const { id, stock, note } = parsed.data;

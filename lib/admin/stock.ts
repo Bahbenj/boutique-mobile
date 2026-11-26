@@ -1,5 +1,5 @@
 import "server-only";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_LOW_STOCK, type StockMovement } from "./stock-shared";
 
@@ -15,7 +15,7 @@ export type StockProduct = { id: string; name: string; stock: number; image: str
 
 /** Page Stock : produits (stock le plus bas d'abord), derniers mouvements, seuil. */
 export async function getStockPage() {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient();
   const [products, movements, threshold] = await Promise.all([
     supabase.from("products").select("id, name, stock, images, image_bg, is_active, category:categories(name)").order("stock").order("name").limit(500),

@@ -1,5 +1,5 @@
 import "server-only";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getLowStockThreshold } from "./stock";
 import type { DbRepair } from "./repairs-shared";
@@ -22,7 +22,7 @@ const toOrder = (row: Record<string, unknown>) =>
   }) as DbOrder;
 
 export async function listOrders(filters: OrderFilters) {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient(); // avant tout calcul de date (rendu à la requête)
   const page = Math.max(1, filters.page ?? 1);
   let query = supabase.from("orders").select("*", { count: "exact" });
@@ -45,7 +45,7 @@ export async function listOrders(filters: OrderFilters) {
 
 /** Nombre de commandes par statut (onglets de la liste). */
 export async function countByStatus() {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient();
   const results = await Promise.all(
     orderStatuses.map((s) => supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", s)),
@@ -54,7 +54,7 @@ export async function countByStatus() {
 }
 
 export async function getOrder(id: string) {
-  await requireAdmin();
+  await requireStaff();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const supabase = await createClient();
   const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
@@ -63,7 +63,7 @@ export async function getOrder(id: string) {
 
 /** Historique des statuts d'une commande, du plus ancien au plus récent. */
 export async function getOrderHistory(id: string): Promise<OrderHistoryEntry[]> {
-  await requireAdmin();
+  await requireStaff();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -78,7 +78,7 @@ export async function getOrderHistory(id: string): Promise<OrderHistoryEntry[]> 
 
 /** Toutes les commandes filtrées, pour l'export CSV (plafonné). */
 export async function exportOrders(filters: Omit<OrderFilters, "page">) {
-  await requireAdmin();
+  await requireStaff();
   const supabase = await createClient();
   let query = supabase.from("orders").select("*");
   if (filters.statut) query = query.eq("status", filters.statut);

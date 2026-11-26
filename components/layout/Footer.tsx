@@ -1,21 +1,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { siteConfig, storeAddress, telHref } from "@/config/site";
+import { siteConfig, telHref } from "@/config/site";
 import { t } from "@/i18n";
 import { reviewRequestMessage } from "@/data/home";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import { Container } from "@/components/ui/Container";
-import { IconFacebook, IconMail, IconTiktok } from "@/components/ui/icons";
+import { IconFacebook, IconInstagram, IconMail, IconTiktok } from "@/components/ui/icons";
 import { CurrentYear } from "./CurrentYear";
 import { Logo } from "./Logo";
 import { navLinks } from "./nav-links";
+import { getStoreInfo } from "@/lib/storefront";
+import { storeAddressOf, tiktokHandleOf } from "@/lib/store-info";
 
-const socials = [
-  { href: siteConfig.social.facebook, label: "Facebook", Icon: IconFacebook },
-  { href: siteConfig.social.tiktok, label: `TikTok ${siteConfig.social.tiktokHandle}`, Icon: IconTiktok },
-  { href: `mailto:${siteConfig.email}`, label: `E-mail : ${siteConfig.email}`, Icon: IconMail },
-];
 
 const infoLinks = [
   { href: "/a-propos", label: t.nav.about },
@@ -27,7 +24,14 @@ const infoLinks = [
 const linkClass = "text-[0.9375rem] text-fg/70 transition-colors hover:text-fg";
 
 /** Footer en colonnes + mention légale. */
-export function Footer() {
+export async function Footer() {
+  const store = await getStoreInfo();
+  const socials = [
+    store.social.facebook && { href: store.social.facebook, label: "Facebook", Icon: IconFacebook },
+    store.social.instagram && { href: store.social.instagram, label: "Instagram", Icon: IconInstagram },
+    store.social.tiktok && { href: store.social.tiktok, label: `TikTok ${tiktokHandleOf(store.social.tiktok)}`, Icon: IconTiktok },
+    store.email && { href: `mailto:${store.email}`, label: `E-mail : ${store.email}`, Icon: IconMail },
+  ].filter(Boolean) as { href: string; label: string; Icon: typeof IconMail }[];
   return (
     <footer className="mt-auto border-t border-line bg-canvas pt-16 pb-28 md:pb-10">
       <Container>
@@ -76,8 +80,8 @@ export function Footer() {
           </FooterCol>
 
           <FooterCol title={t.footer.contact}>
-            <li className="text-[0.9375rem] text-fg/70">{storeAddress}</li>
-            {siteConfig.phones.map((p) => (
+            <li className="text-[0.9375rem] text-fg/70">{storeAddressOf(store)}</li>
+            {store.phones.map((p) => (
               <li key={p}>
                 <a href={telHref(p)} className={cn(linkClass, "tabular-nums")}>
                   {p}
@@ -85,11 +89,11 @@ export function Footer() {
               </li>
             ))}
             <li>
-              <a href={whatsappLink(reviewRequestMessage)} target="_blank" rel="noopener noreferrer" className="text-[0.9375rem] font-semibold text-gold-text transition-colors hover:text-fg">
+              <a href={whatsappLink(reviewRequestMessage, store.whatsapp)} target="_blank" rel="noopener noreferrer" className="text-[0.9375rem] font-semibold text-gold-text transition-colors hover:text-fg">
                 {t.home.leaveReview}
               </a>
             </li>
-            {siteConfig.hours.map((h) => (
+            {store.hours.map((h) => (
               <li key={h.days} className="text-[0.9375rem] text-fg/70">
                 <span className="text-fg">{h.days}</span> · {h.time}
               </li>

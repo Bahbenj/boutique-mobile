@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { IconExternal, IconMenu } from "@/components/ui/icons";
-import { adminNav } from "./nav";
+import { navFor, type NavRole } from "./nav";
 
 const isActive = (pathname: string, href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
@@ -15,21 +15,22 @@ const isActive = (pathname: string, href: string) => (href === "/admin" ? pathna
  * Mobile : barre d'onglets en bas, pouces à portée : sections principales
  * (`primary` dans nav.ts) + « Plus » pour les autres, lisible dès 360 px.
  */
-export function AdminNav({ account }: { account: ReactNode }) {
+export function AdminNav({ account, role = null }: { account: ReactNode; role?: NavRole | null }) {
   // usePathname lit l'URL de la requête : sous <Suspense> (Cache Components) ;
   // le repli est le même menu, sans onglet surligné.
   return (
-    <Suspense fallback={<NavView pathname="" account={account} />}>
-      <CurrentNav account={account} />
+    <Suspense fallback={<NavView pathname="" account={account} role={role} />}>
+      <CurrentNav account={account} role={role} />
     </Suspense>
   );
 }
 
-function CurrentNav({ account }: { account: ReactNode }) {
-  return <NavView pathname={usePathname()} account={account} />;
+function CurrentNav({ account, role }: { account: ReactNode; role: NavRole | null }) {
+  return <NavView pathname={usePathname()} account={account} role={role} />;
 }
 
-function NavView({ pathname, account }: { pathname: string; account: ReactNode }) {
+function NavView({ pathname, account, role }: { pathname: string; account: ReactNode; role: NavRole | null }) {
+  const items = navFor(role);
   return (
     <>
       {/* Desktop */}
@@ -45,7 +46,7 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
         </Link>
         <nav aria-label="Administration" className="mt-8 flex-1">
           <ul className="space-y-1">
-            {adminNav.map(({ href, label, Icon }) => {
+            {items.map(({ href, label, Icon }) => {
               const active = isActive(pathname, href);
               return (
                 <li key={href}>
@@ -80,19 +81,19 @@ function NavView({ pathname, account }: { pathname: string; account: ReactNode }
       </aside>
 
       {/* Mobile : onglets principaux en bas + menu « Plus » pour le reste */}
-      <MobileTabs pathname={pathname} />
+      <MobileTabs pathname={pathname} items={items} />
     </>
   );
 }
 
 const tab = "flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold tracking-[-0.02em] transition-colors";
 
-function MobileTabs({ pathname }: { pathname: string }) {
+function MobileTabs({ pathname, items }: { pathname: string; items: ReturnType<typeof navFor> }) {
   const [open, setOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
   const panel = useRef<HTMLDivElement>(null);
-  const primary = adminNav.filter((i) => i.primary);
-  const more = adminNav.filter((i) => !i.primary);
+  const primary = items.filter((i) => i.primary);
+  const more = items.filter((i) => !i.primary);
   const moreActive = more.some((i) => isActive(pathname, i.href));
 
   // Fermeture à chaque navigation, sur Échap et au clic en dehors

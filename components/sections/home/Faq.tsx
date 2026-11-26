@@ -7,12 +7,14 @@ import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconPlus, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
 
 /**
  * FAQ en <details> natifs : accessibles, sans JS, contenu indexable.
  * Livraison et paiement suivent les réglages de l'admin (repli : config/site.ts).
  */
 export async function Faq({ index }: { index: number }) {
+  const store = await getStoreInfo();
   const faqs = buildFaqs(await getCheckoutSettings());
   return (
     <section aria-labelledby="faq-title" className="pb-20 sm:pb-28">
@@ -20,7 +22,7 @@ export async function Faq({ index }: { index: number }) {
         <Reveal className="lg:sticky lg:top-28 lg:self-start">
           <SectionHeading id="faq-title" index={index} kicker={t.home.faqKicker} title={t.home.faqTitle} />
           <p className="mt-6 text-muted">{t.home.faqMore}</p>
-          <Button href={whatsappLink(t.whatsapp.greeting)} variant="whatsapp" className="mt-3">
+          <Button href={whatsappLink(t.whatsapp.greeting, store.whatsapp)} variant="whatsapp" className="mt-3">
             <IconWhatsApp size={18} />
             WhatsApp
           </Button>

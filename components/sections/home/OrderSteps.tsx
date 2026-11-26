@@ -7,9 +7,11 @@ import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconArrowRight, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
 
 /** Bloc sombre « comment commander » : rassure sur le paiement à la livraison. */
 export async function OrderSteps({ index }: { index: number }) {
+  const store = await getStoreInfo();
   const orderSteps = buildOrderSteps((await getCheckoutSettings()).payments);
   return (
     <section aria-labelledby="commander-title" className="px-3 sm:px-4">
@@ -35,7 +37,7 @@ export async function OrderSteps({ index }: { index: number }) {
             <Button href="/boutique" size="lg" icon={<IconArrowRight size={18} className="rtl:rotate-180" />}>
               {t.hero.primary}
             </Button>
-            <Button href={whatsappLink(t.whatsapp.greeting)} size="lg" variant="outline" className="text-fg">
+            <Button href={whatsappLink(t.whatsapp.greeting, store.whatsapp)} size="lg" variant="outline" className="text-fg">
               <IconWhatsApp size={20} />
               {t.hero.secondary}
             </Button>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { directionsUrl, siteConfig, storeAddress, telHref } from "@/config/site";
+import { siteConfig, storeAddress, telHref } from "@/config/site";
 import { afterSalesPoints, repairImage, services } from "@/data/home";
 import { t } from "@/i18n";
 import { whatsappLink } from "@/lib/whatsapp";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { HexIcon } from "@/components/ui/Hex";
 import { IconCheck, IconClock, IconHeadset, IconPhone, IconPin, IconWhatsApp } from "@/components/ui/icons";
+import { getStoreInfo } from "@/lib/storefront";
+import { directionsOf, storeAddressOf } from "@/lib/store-info";
 
 export const metadata: Metadata = {
   title: "À propos",
@@ -22,8 +24,10 @@ export const metadata: Metadata = {
  * magasin dans /public/images) ; les textes ci-dessous ne reprennent que les
  * informations du questionnaire.
  */
-export default function AboutPage() {
-  const { name, since, slogan, hours, address } = siteConfig;
+export default async function AboutPage() {
+  const store = await getStoreInfo();
+  const { name, since, slogan } = siteConfig;
+  const { hours, address } = store;
 
   return (
     <Container className="pt-28 pb-20 sm:pt-36 sm:pb-28">
@@ -103,7 +107,7 @@ export default function AboutPage() {
           <ul className="mt-4 space-y-3">
             <li className="flex gap-3">
               <IconPin size={20} className="mt-0.5 shrink-0 text-accent" />
-              <span className="font-semibold">{storeAddress}, Mali</span>
+              <span className="font-semibold">{storeAddressOf(store)}, Mali</span>
             </li>
             {hours.map((h) => (
               <li key={h.days} className="flex gap-3">
@@ -116,15 +120,15 @@ export default function AboutPage() {
             ))}
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button href={whatsappLink(t.whatsapp.greeting)} variant="whatsapp">
+            <Button href={whatsappLink(t.whatsapp.greeting, store.whatsapp)} variant="whatsapp">
               <IconWhatsApp size={18} />
               WhatsApp
             </Button>
-            <Button href={telHref(siteConfig.phone)} variant="outline">
+            <Button href={telHref(store.phone)} variant="outline">
               <IconPhone size={18} />
               {t.home.call}
             </Button>
-            <Button href={directionsUrl} variant="light">
+            <Button href={directionsOf(store)} variant="light">
               <IconPin size={18} />
               {t.home.directions}
             </Button>

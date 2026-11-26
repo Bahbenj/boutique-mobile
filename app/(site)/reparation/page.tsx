@@ -12,6 +12,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { IconPhone, IconPin, IconPlay, IconTiktok, IconWhatsApp } from "@/components/ui/icons";
 import { RepairQuoteForm } from "@/components/sections/RepairQuoteForm";
 import { ServiceGrid } from "@/components/sections/ServiceGrid";
+import { getStoreInfo } from "@/lib/storefront";
+import { storeAddressOf, tiktokHandleOf } from "@/lib/store-info";
 
 export const metadata: Metadata = {
   title: "Réparation et services",
@@ -20,7 +22,8 @@ export const metadata: Metadata = {
 };
 
 /** Page Réparation et services : services, parcours en 3 étapes, devis WhatsApp, vidéos. */
-export default function RepairPage() {
+export default async function RepairPage() {
+  const store = await getStoreInfo();
 
   return (
     <>
@@ -41,7 +44,7 @@ export default function RepairPage() {
                 <IconWhatsApp size={20} />
                 {t.home.repairQuote}
               </Button>
-              <Button href={telHref(siteConfig.phone)} variant="outline" size="lg">
+              <Button href={telHref(store.phone)} variant="outline" size="lg">
                 <IconPhone size={18} />
                 {t.home.call}
               </Button>
@@ -129,10 +132,12 @@ export default function RepairPage() {
               ))}
               <div className="flex flex-wrap items-center gap-4 sm:col-span-3">
                 <p className="max-w-xl text-muted">{t.repair.videosEmpty}</p>
-                <Button href={siteConfig.social.tiktok} variant="light" size="sm">
-                  <IconTiktok size={16} />
-                  {siteConfig.social.tiktokHandle}
-                </Button>
+                {store.social.tiktok && (
+                  <Button href={store.social.tiktok} variant="light" size="sm">
+                    <IconTiktok size={16} />
+                    {tiktokHandleOf(store.social.tiktok)}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -151,7 +156,7 @@ export default function RepairPage() {
               <p className="mt-2 max-w-xl text-muted">{t.repair.ctaText}</p>
               <p className="mt-4 flex items-center gap-2 text-sm font-semibold">
                 <IconPin size={16} className="shrink-0 text-accent" />
-                {storeAddress}
+                {storeAddressOf(store)}
               </p>
             </div>
             <div className="relative">

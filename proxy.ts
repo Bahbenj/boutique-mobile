@@ -34,8 +34,10 @@ export async function proxy(request: NextRequest) {
       console.error("[supabase] proxy : session illisible", { name: error.name, status: error.status, code: error.code, message: error.message });
     }
     if (data?.claims?.sub) {
-      const { data: admin } = await supabase.rpc("is_admin");
-      isAdmin = admin === true;
+      // Toute l'équipe (is_staff, migration 20) ; repli sur is_admin pour une base plus ancienne
+      const staff = await supabase.rpc("is_staff");
+      const ok = staff.error ? (await supabase.rpc("is_admin")).data : staff.data;
+      isAdmin = ok === true;
     }
   }
 
