@@ -13,7 +13,7 @@ import {
   type OrderHistoryEntry,
 } from "@/lib/admin/orders-shared";
 import { formatMlPhoneIntl, telLink } from "@/lib/phone";
-import { siteConfig } from "@/config/site";
+import { siteUrl } from "@/lib/site-mode";
 import { reviewRequestWhatsapp } from "@/lib/admin/orders-shared";
 import { IconPin, IconStar } from "@/components/ui/icons";
 import { mapsLink } from "@/lib/customer-addresses";
@@ -66,7 +66,7 @@ export function OrderDetail({ order, history, account = null }: { order: DbOrder
         </a>
         {order.status === "livree" && (
           <a
-            href={reviewRequestWhatsapp(order, (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, ""))}
+            href={reviewRequestWhatsapp(order, siteUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className={buttonClasses("light", "md", "col-span-3 px-3 shadow-soft sm:col-span-1 sm:px-5")}

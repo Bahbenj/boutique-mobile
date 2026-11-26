@@ -3,7 +3,13 @@ import type { NextConfig } from "next";
 // Domaine du projet Supabase (photos de l'admin), y compris un domaine personnalisé
 const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : null;
 
+// Démo : en-tête « noindex » sur toutes les pages tant que le lancement n'est pas décidé
+const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "1";
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return allowIndexing ? [] : [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
   cacheComponents: true,
   partialPrefetching: true,
   allowedDevOrigins: ["boutique.test"],

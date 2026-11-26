@@ -177,6 +177,38 @@ Sans réglage, Supabase n'envoie les e-mails (confirmation, lien de connexion, m
 14. Dans `.env.local` (et chez l'hébergeur) : `NEXT_PUBLIC_SITE_URL=<DOMAINE>` (sans `/` final), puis redéployez. En local, laissez vide.
 15. Collez `supabase/all-in-one.sql` dans **SQL Editor** → **Run** (migration 23 : profils, commandes rattachées aux comptes).
 
+## 6 ter. Démo en ligne sur Vercel, puis lancement
+
+### Variables à créer (Vercel → projet → Settings → Environment Variables)
+
+| Nom | Valeur | Où la trouver |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<REF>.supabase.co` | Supabase → Project Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | clé `anon` / `publishable` | Supabase → Project Settings → API Keys |
+| `SUPABASE_SERVICE_ROLE_KEY` | clé `service_role` / `secret` (**secrète**, cochez « Sensitive ») | même page, bouton « Reveal » puis « Copier » |
+| `NEXT_PUBLIC_SITE_URL` | l'adresse de la démo, ex. `https://mobile-empire-demo.vercel.app` (sans `/` final) | Vercel → projet → Settings → Domains |
+| `NEXT_PUBLIC_DEMO_BANNER` | `1` pendant la démo | (choix) |
+| `NEXT_PUBLIC_ALLOW_INDEXING` | **ne pas créer** pendant la démo | `1` au lancement seulement |
+| `NEXT_PUBLIC_META_PIXEL_ID` | facultatif, à laisser vide pendant la démo | Meta Events Manager |
+
+Les variables `NEXT_PUBLIC_*` sont intégrées à la compilation : après tout changement, **Deployments → Redeploy**.
+
+### Connexion des clients sur la démo
+
+Supabase → **Authentication → URL Configuration** : **Site URL** = l'adresse de la démo, et ajoutez dans **Redirect URLs** `https://<adresse-de-la-démo>/compte/confirmer**` (gardez celle de `localhost`). Sans cette ligne, les liens des e-mails et le retour de Google renvoient vers la Site URL et échouent. Pour Google, ajoutez aussi l'adresse de la démo dans **Authorized JavaScript origins** (section 6 bis, étape 8). Les adresses de prévisualisation de Vercel (`…-git-…vercel.app`) changent à chaque déploiement : la connexion n'y fonctionne pas, montrez toujours l'adresse principale.
+
+### Ce que la démo empêche
+
+Tant que `NEXT_PUBLIC_ALLOW_INDEXING` n'est pas `1` : `robots.txt` interdit tout, chaque page porte `<meta name="robots" content="noindex, nofollow">` et l'en-tête `X-Robots-Tag: noindex, nofollow`. Oublier la variable ne peut donc jamais exposer la démo.
+
+### Le jour du lancement
+
+1. Domaine définitif dans Vercel ; `NEXT_PUBLIC_SITE_URL` = ce domaine.
+2. `NEXT_PUBLIC_ALLOW_INDEXING=1`, supprimez `NEXT_PUBLIC_DEMO_BANNER`, puis **Redeploy**.
+3. Supabase URL Configuration et Google Cloud : le nouveau domaine (section 6 bis).
+4. Vérifiez `<DOMAINE>/robots.txt` : `Allow: /` et `Disallow: /admin`, `/compte`, `/commande`.
+5. Remplacez `url` dans `config/site.ts` (encore `https://www.example.com`), il sert de repli.
+
 ## 7. Recette de bout en bout (à faire après chaque grande mise à jour)
 
 Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une capture d'écran.

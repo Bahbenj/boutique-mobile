@@ -9,6 +9,7 @@ import { isOnlyCod } from "@/data/home";
 import { META_PIXEL_ID, pixelEnabled } from "@/lib/meta-pixel";
 import { getCheckoutSettings, getStoreSettings } from "@/lib/storefront";
 import { StoreInfoProvider } from "@/components/layout/StoreInfoProvider";
+import { demoBanner } from "@/lib/site-mode";
 
 /** Habillage du site public (l'admin a le sien, voir app/admin). */
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
@@ -22,7 +23,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       >
         Aller au contenu
       </a>
-      <Navbar announcement={announcement} />
+      <Navbar announcement={announcement} demo={demoBanner} />
       <main id="contenu" className="flex-1">
         {children}
       </main>

@@ -11,6 +11,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
 import { TrackViewContent } from "@/components/layout/MetaPixel";
 import { ProductReviews } from "@/components/product/ProductReviews";
+import { siteUrl } from "@/lib/site-mode";
 import { RatingInline } from "@/components/product/Stars";
 
 /** Produits connus au build ; ceux créés ensuite dans l'admin sont rendus à la demande. */
@@ -42,7 +43,7 @@ export default async function ProductPage({ params }: PageProps<"/produit/[slug]
   ];
 
   // Données structurées (schema.org) : prix, disponibilité et note moyenne des avis publiés
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, "");
+  const origin = siteUrl;
   const abs = (src: string) => (src.startsWith("http") ? src : `${origin}${src}`);
   const jsonLd = {
     "@context": "https://schema.org",

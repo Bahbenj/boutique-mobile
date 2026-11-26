@@ -18,7 +18,7 @@ import type { Announcement } from "@/lib/store-info";
  * Navbar pilule flottante, fixe, fond clair translucide flouté. Au-dessus, le
  * bandeau d'annonce réglé dans l'admin (Paramètres → Bandeau), sur une ligne.
  */
-export function Navbar({ announcement = null }: { announcement?: Announcement | null }) {
+export function Navbar({ announcement = null, demo = false }: { announcement?: Announcement | null; demo?: boolean }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
@@ -46,10 +46,16 @@ export function Navbar({ announcement = null }: { announcement?: Announcement | 
       <nav
         aria-label="Navigation principale"
         className={cn(
-          "pointer-events-auto mx-auto max-w-5xl rounded-[1.75rem] bg-surface/75 shadow-pill ring-1 ring-fg/5",
+          "pointer-events-auto relative mx-auto max-w-5xl rounded-[1.75rem] bg-surface/75 shadow-pill ring-1 ring-fg/5",
           "backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(0))]:bg-surface",
         )}
       >
+        {/* Démo (NEXT_PUBLIC_DEMO_BANNER=1) : pastille discrète posée sur la barre, sans décaler la page */}
+        {demo && (
+          <p className="pointer-events-none absolute -bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-raised px-2.5 py-0.5 text-[0.625rem] leading-4 font-semibold whitespace-nowrap text-muted ring-1 ring-line">
+            Version de démonstration · contenus provisoires
+          </p>
+        )}
         <div className="flex h-14 items-center gap-2 ps-4 pe-2 sm:h-16 sm:ps-5">
           <Logo className="me-auto" priority />
 

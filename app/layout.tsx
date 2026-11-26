@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import type { CSSProperties } from "react";
 import { siteConfig } from "@/config/site";
 import { dir, htmlLang } from "@/i18n";
+import { allowIndexing, siteUrl } from "@/lib/site-mode";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -12,7 +13,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
+  metadataBase: new URL(siteUrl),
+  // Démo : jamais indexée (voir lib/site-mode.ts, NEXT_PUBLIC_ALLOW_INDEXING au lancement)
+  ...(allowIndexing ? {} : { robots: { index: false, follow: false, googleBot: { index: false, follow: false } } }),
   title: {
     default: `${siteConfig.name} · ${siteConfig.tagline} à ${siteConfig.address.city}`,
     template: `%s · ${siteConfig.name}`,
