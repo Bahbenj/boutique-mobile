@@ -130,6 +130,51 @@ NEXT_PUBLIC_META_PIXEL_ID=123456789012345
 
 Redéployez (l'identifiant est intégré au moment de la compilation). Laissé vide, le pixel est désactivé et aucun script Facebook n'est chargé. Pour vérifier : extension **Meta Pixel Helper** de Chrome, ou **Events Manager** → **Tester les événements**. Événements envoyés : PageView, ViewContent (fiche produit), AddToCart, InitiateCheckout (page Commande) et Purchase + Lead (commande validée).
 
+## 6 bis. Comptes clients : réglages Google Cloud et Supabase
+
+Les clients doivent avoir un compte pour **valider** une commande (le panier reste libre). À faire **une fois**, dans cet ordre. `<DOMAINE>` = l'adresse du site en ligne (ex. `https://www.mobile-empire.ml`), `<REF>` = l'identifiant du projet Supabase (dans son URL : `https://<REF>.supabase.co`).
+
+### a. E-mails : un vrai serveur d'envoi (indispensable)
+
+Sans réglage, Supabase n'envoie les e-mails (confirmation, lien de connexion, mot de passe oublié) **qu'aux membres de votre équipe Supabase**, et seulement quelques-uns par heure : vos clients ne les recevraient pas.
+
+1. Créez un compte chez un service d'envoi d'e-mails (ex. Brevo ou Resend, offres gratuites suffisantes au début) et validez votre nom de domaine chez lui (il vous donne des lignes DNS à ajouter).
+2. Supabase → **Authentication → Emails → SMTP Settings** → **Enable custom SMTP** : hôte, port, identifiant et mot de passe fournis par ce service ; expéditeur `Mobile Empire <ne-pas-repondre@votre-domaine>`.
+3. **Authentication → Rate Limits** : « Rate limit for sending emails » à 30 par heure (augmentez si besoin).
+
+### b. Google Cloud (bouton « Continuer avec Google »)
+
+4. https://console.cloud.google.com → créez un projet « Mobile Empire ».
+5. **Google Auth Platform → Branding** (écran de consentement) : nom de l'application « Mobile Empire », e-mail d'assistance, logo (facultatif), liens vers `<DOMAINE>`, `<DOMAINE>/confidentialite` et `<DOMAINE>/cgv` ; **Authorized domains** : votre domaine (ex. `mobile-empire.ml`) et `supabase.co`.
+6. **Audience** : type **External**, puis **Publish app** (sinon seuls les « test users » peuvent se connecter).
+7. **Data access** : gardez uniquement `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile` (pas de validation Google nécessaire pour ces trois-là).
+8. **Clients → Create client** → **Web application**, nom « Site Mobile Empire » :
+   - **Authorized JavaScript origins** : `<DOMAINE>` et `http://localhost:3000` ;
+   - **Authorized redirect URIs** : `https://<REF>.supabase.co/auth/v1/callback`.
+   Copiez le **Client ID** et le **Client secret**.
+
+### c. Supabase → Authentication
+
+9. **Sign In / Providers → Email** : activé ; **Confirm email** : activé ; **Secure email change** : activé ; **Minimum password length** : 8 ; **Password requirements** : lettres et chiffres. **Prevent use of leaked passwords** : activé si votre offre le permet.
+10. **Sign In / Providers → Google** : activé ; collez le Client ID et le Client secret de l'étape 8. Laissez « Skip nonce checks » désactivé.
+11. **URL Configuration** :
+    - **Site URL** : `<DOMAINE>` ;
+    - **Redirect URLs** (ajoutez les deux) : `<DOMAINE>/compte/confirmer**` et `http://localhost:3000/compte/confirmer**`.
+12. **Emails → Templates** (remplacez le lien de chaque modèle ; le reste du texte est libre, en français) :
+    - **Confirm signup** — sujet « Confirmez votre adresse e-mail » ; lien :
+      `<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Confirmer mon adresse</a>`
+    - **Magic Link** — sujet « Votre lien de connexion » ; lien :
+      `<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Me connecter</a>`
+    - **Reset Password** — sujet « Nouveau mot de passe » ; lien :
+      `<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery">Choisir un nouveau mot de passe</a>`
+    Ces liens fonctionnent même si le client ouvre l'e-mail sur un autre appareil que celui de l'inscription.
+13. **Attack Protection** (facultatif) : CAPTCHA (Cloudflare Turnstile) si des robots créent des comptes malgré les limites du site (5 inscriptions et 10 connexions ratées par heure et par appareil).
+
+### d. Le site
+
+14. Dans `.env.local` (et chez l'hébergeur) : `NEXT_PUBLIC_SITE_URL=<DOMAINE>` (sans `/` final), puis redéployez. En local, laissez vide.
+15. Collez `supabase/all-in-one.sql` dans **SQL Editor** → **Run** (migration 23 : profils, commandes rattachées aux comptes).
+
 ## 7. Recette de bout en bout (à faire après chaque grande mise à jour)
 
 Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une capture d'écran.
@@ -162,10 +207,24 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 
 ### B. Application
 
-4. Dans `.env.local`, les trois clés Supabase sont remplies (dont `SUPABASE_SERVICE_ROLE_KEY` : sans elle, commandes et demandes ne sont pas enregistrées). Arrêtez puis relancez `npm run dev` : le site relit alors la base au lieu du catalogue de secours.
+4. Dans `.env.local`, les trois clés Supabase sont remplies (dont `SUPABASE_SERVICE_ROLE_KEY` : sans elle, demandes de réparation, codes promo, limites anti-robots et suppression de compte ne fonctionnent pas). Arrêtez puis relancez `npm run dev` : le site relit alors la base au lieu du catalogue de secours.
 5. Ouvrez `/boutique` : 11 produits. Dans **Admin → Produits**, changez le prix de la loupe d'écran (7 000 → 7 500), enregistrez, rechargez la fiche produit sur le site : le nouveau prix s'affiche. Remettez 7 000.
 
+### B bis. Comptes clients (sur un téléphone, en navigation privée)
+
+5 a. Ajoutez un produit au panier, touchez **Commander** sans être connecté : vous arrivez sur **Connexion** (« Connectez-vous pour valider votre commande : votre panier est gardé »).
+5 b. **Créer un compte** avec une adresse e-mail à vous (nom, téléphone, mot de passe de 8 caractères, case CGV) : message « Presque fini ! Ouvrez le lien… ». Dans l'e-mail reçu (sujet « Confirmez votre adresse e-mail »), touchez le lien : vous revenez **directement à la commande, panier intact**, formulaire pré-rempli (nom, téléphone).
+5 c. Sans confirmer l'e-mail, essayez de vous connecter avec un autre compte créé à l'instant : « Confirmez d'abord votre adresse e-mail », avec **Renvoyer l'e-mail de confirmation**.
+5 d. Déconnexion (**Compte → Se déconnecter**), puis **Continuer avec Google** : choix du compte Google, puis page **Bienvenue** qui demande le téléphone et les CGV ; ensuite **Mon compte**.
+5 e. Déconnexion, onglet **Lien par e-mail** : un lien de connexion arrive ; il connecte sans mot de passe.
+5 f. **Mot de passe oublié** : le lien reçu ouvre **Nouveau mot de passe** ; connectez-vous ensuite avec le nouveau.
+5 g. Sécurité de l'admin : connecté avec ce **compte client**, ouvrez `/admin` : retour à la page de connexion de l'admin ; saisissez les identifiants du compte client sur `/admin/login` : « Ce compte n'est pas autorisé à accéder à l'administration ».
+5 h. Redirection : ouvrez `/compte/connexion?next=https://exemple.com` puis connectez-vous : vous arrivez sur **Mon compte**, jamais sur un autre site.
+5 i. Onze mots de passe faux de suite sur la même adresse : « Trop d'essais depuis cet appareil. Réessayez dans une heure. »
+
 ### C. Commande
+
+Connecté avec le compte client de l'étape 5 b (une commande exige désormais un compte).
 
 6. Sur le site (de préférence sur un téléphone) : ajoutez le **Casque Bluetooth Super Bass** et la **Montre connectée Yesido IO22** au panier → **Commander** → zone **Région de Kayes**, votre propre numéro → **Valider la commande**. Attendu : écran « Commande CMD-… enregistrée », livraison **offerte** (grâce au casque), total 35 000 FCFA, message WhatsApp contenant le numéro CMD-….
 7. Dans **Admin → Commandes** : la commande est en tête, statut « Nouvelle ». Ouvrez-la et vérifiez articles, totaux, zone, adresse.
@@ -225,6 +284,13 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
 20 p. **Équipe** : e-mail d'un second compte (le vôtre en `+vendeur`, ex. `vous+vendeur@gmail.com`), rôle **Vendeur**, **Créer son accès** : un mot de passe provisoire s'affiche avec **Envoyer par WhatsApp**. Dans une fenêtre de navigation privée, connectez-vous avec ce compte : seuls **Commandes**, **Réparations** et **Stock** apparaissent ; `/admin/produits` ou `/admin/parametres` renvoient vers les commandes. **Mon compte** permet de changer le mot de passe.
 20 q. Avec le vendeur, faites avancer une commande (ex. Confirmée) : l'historique de la commande affiche l'e-mail du vendeur. Revenez au compte propriétaire, passez-le en **Gérant** puis **Retirer** : il ne peut plus ouvrir l'admin.
 
+### F octies. Comptes clients dans l'admin
+
+20 u. **Admin → Plus → Clients**, onglet **Comptes** : le compte de l'étape 5 b apparaît (nom, e-mail, téléphone, « E-mail » ou « Google », nombre de commandes et total). Vos comptes d'équipe n'y figurent jamais. L'onglet **Tous les numéros** garde la recherche par téléphone.
+20 v. Ouvrez une commande passée avec ce compte : la fiche affiche **Compte client** avec son e-mail.
+20 w. Côté client, **Mon compte** : la commande est listée ; touchez-la : articles, total et **Suivi** (Reçue → Confirmée…) sans aucun e-mail de l'équipe. Une demande de réparation envoyée connecté apparaît dans **Mes réparations**, sans les notes internes.
+20 x. **Mon compte → Supprimer mon compte** avec une commande en cours : refusé. Après livraison (ou annulation) : tapez SUPPRIMER → retour à l'accueil, connexion impossible avec ce compte ; dans l'admin, la commande existe toujours, sans compte rattaché.
+
 ### F septies. Aide et journal
 
 20 r. Sur le téléphone, la barre du bas affiche **Accueil, Commandes, Produits, Réparations, Plus** ; **Plus** commence par **+ Ajouter un produit** et se termine par **Guide rapide** (6 étapes illustrées). Sur la fiche d'un produit, touchez les **?** : une explication s'affiche.
@@ -241,9 +307,11 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
     curl.exe -s "<URL>/rest/v1/stock_movements?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/activity_log?select=*" -H "apikey: <CLE_PUBLIQUE>"
     curl.exe -s "<URL>/rest/v1/promo_code_attempts?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s "<URL>/rest/v1/profiles?select=*" -H "apikey: <CLE_PUBLIQUE>"
+    curl.exe -s -X POST "<URL>/rest/v1/rpc/place_order" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_customer\":{},\"p_items\":[],\"p_delivery\":\"pickup\",\"p_payment\":\"cod\"}"
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
-    Attendu pour les sept : une erreur « permission denied » (code 42501), **jamais** de données.
+    Attendu pour les neuf : une erreur « permission denied » (code 42501), **jamais** de données.
 
 ### H. Nettoyage des essais
 

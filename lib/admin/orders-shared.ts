@@ -48,6 +48,8 @@ export type DbOrder = {
   /** Remise du code promo (migration 17 ; 0 sans code). */
   discount: number;
   promo_code: string | null;
+  /** Compte client qui a passé la commande (migration 23). */
+  user_id?: string | null;
   delivery_fee: number;
   total: number;
   status: OrderStatus;

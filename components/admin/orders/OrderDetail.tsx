@@ -26,7 +26,7 @@ import { IconImage, IconPhone, IconReceipt, IconWhatsApp } from "@/components/ui
  * de livraison), articles et totaux, client, statut et historique des
  * changements (qui et quand). Composant d'affichage : la page lit les données.
  */
-export function OrderDetail({ order, history }: { order: DbOrder; history: OrderHistoryEntry[] }) {
+export function OrderDetail({ order, history, account = null }: { order: DbOrder; history: OrderHistoryEntry[]; account?: { email: string; userId: string } | null }) {
   const pickup = order.delivery_method === "pickup";
 
   return (
@@ -125,6 +125,16 @@ export function OrderDetail({ order, history }: { order: DbOrder; history: Order
                   </a>
                 </dd>
               </div>
+              {account && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-semibold text-muted">Compte client</dt>
+                  <dd>
+                    <a href={`/admin/clients?q=${encodeURIComponent(account.email)}`} className="font-semibold break-all text-accent hover:underline">
+                      {account.email}
+                    </a>
+                  </dd>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold text-muted">{pickup ? "Retrait" : "Adresse de livraison"}</dt>
                 <dd className="font-semibold">

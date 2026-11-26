@@ -177,6 +177,7 @@ export const fr = {
     contact: "Nous trouver",
     returns: "Retours & garantie",
     terms: "CGV",
+    privacy: "Confidentialité",
     rights: "Tous droits réservés.",
     tagline: "Paiement à la livraison · Livraison dans tout le Mali",
     hours: "Horaires",

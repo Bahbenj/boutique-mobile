@@ -19,6 +19,7 @@ const infoLinks = [
   { href: "/contact", label: t.nav.contact },
   { href: "/retours-garantie", label: t.footer.returns },
   { href: "/cgv", label: t.footer.terms },
+  { href: "/confidentialite", label: t.footer.privacy },
 ];
 
 const linkClass = "text-[0.9375rem] text-fg/70 transition-colors hover:text-fg";

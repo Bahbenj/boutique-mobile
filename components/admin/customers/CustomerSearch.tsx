@@ -34,7 +34,7 @@ export function CustomerSearch({ sorts }: { sorts: Record<string, string> }) {
           type="search"
           inputMode="search"
           value={q}
-          placeholder="Téléphone ou nom, ex. 76 12 34 56"
+          placeholder="Téléphone, nom ou e-mail"
           onChange={(e) => {
             setQ(e.target.value);
             clearTimeout(timer.current);
@@ -44,22 +44,24 @@ export function CustomerSearch({ sorts }: { sorts: Record<string, string> }) {
           className="h-12 w-full rounded-full border border-line bg-surface ps-11 pe-4 text-[1rem] outline-none focus:border-accent focus:ring-4 focus:ring-accent/25"
         />
       </label>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Trier">
-        {Object.entries(sorts).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            aria-pressed={sort === k}
-            onClick={() => update("tri", k === "recent" ? "" : k)}
-            className={cn(
-              "min-h-10 rounded-full px-4 text-sm font-semibold ring-1",
-              sort === k ? "bg-accent-soft ring-accent" : "bg-surface ring-line hover:ring-fg/40",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {Object.keys(sorts).length > 0 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Trier">
+          {Object.entries(sorts).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={sort === k}
+              onClick={() => update("tri", k === "recent" ? "" : k)}
+              className={cn(
+                "min-h-10 rounded-full px-4 text-sm font-semibold ring-1",
+                sort === k ? "bg-accent-soft ring-accent" : "bg-surface ring-line hover:ring-fg/40",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
