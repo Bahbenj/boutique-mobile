@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getCategories, getCategory, getCategoryChips, getProducts } from "@/lib/catalog";
+import { findCategory, getCategories, getCategoryChips, getProducts } from "@/lib/catalog";
 import { ShopView } from "@/components/shop/ShopView";
 
 /** Rayons connus au build ; ceux créés ensuite dans l'admin sont rendus à la demande. */
@@ -9,7 +9,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/boutique/[categorie]">): Promise<Metadata> {
-  const category = await getCategory((await params).categorie);
+  const category = await findCategory((await params).categorie);
   if (!category) return {};
   return {
     title: category.title,
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/boutique/[categor
 }
 
 export default async function CategoryPage({ params }: PageProps<"/boutique/[categorie]">) {
-  const category = await getCategory((await params).categorie);
+  const category = await findCategory((await params).categorie);
   if (!category) notFound();
   const [products, chips] = await Promise.all([getProducts(category.slug), getCategoryChips()]);
 

@@ -73,4 +73,4 @@ Migrations dans `supabase/migrations/` (rejouables, ne jamais écraser une saisi
 
 ## Vérifications
 
-Pas de suite de tests automatisés : `npx tsc --noEmit`, `npm run lint` et `npm run build` doivent passer. Vérifier aussi l'affichage à 360 px et 1280 px (aucun débordement horizontal, boutons longs en `max-sm:w-full max-sm:whitespace-normal`).
+`npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test:sql` (harnais PGlite `supabase/tests/sql.test.mjs` : ajouter une série par migration ; la série historique coupe `orders_rate_guard`) et `npm run test:e2e` (Playwright, `e2e/parcours.spec.ts`, sur le Supabase de `.env.local`, données `e2e-…` effacées par `e2e/fixtures.ts → cleanup`) doivent passer. Sélecteurs e2e : libellés visibles (`getByLabel`, `getByRole`) ; changer un libellé d'interface = mettre à jour le parcours. Vérifier aussi l'affichage à 360 px et 1280 px (aucun débordement horizontal, boutons longs en `max-sm:w-full max-sm:whitespace-normal`).

@@ -210,6 +210,16 @@ Tant que `NEXT_PUBLIC_ALLOW_INDEXING` n'est pas `1` : `robots.txt` interdit tout
 4. Vérifiez `<DOMAINE>/robots.txt` : `Allow: /` et `Disallow: /admin`, `/compte`, `/commande`.
 5. Remplacez `url` dans `config/site.ts` (encore `https://www.example.com`), il sert de repli.
 
+## 6 quater. Tests automatiques
+
+| Commande | Ce qu'elle vérifie | Base utilisée |
+| --- | --- | --- |
+| `npm run test:sql` | toutes les règles SQL (prix, stock, droits, limites, avis, adresses…), `all-in-one.sql` rejoué deux fois | Postgres en mémoire (rien n'est écrit chez Supabase) |
+| `npm run audit:db` | liste des droits : RLS de chaque table, GRANT, politiques, fonctions exécutables par rôle | Postgres en mémoire |
+| `npm run build && npm run test:e2e` | 17 parcours dans Chrome : admin (catégorie, produit avec photo, commande jusqu'à « Livrée », avis, réparation, stock, code promo, toutes les pages, rôle vendeur), client sur téléphone (inscription, connexion exigée, commande avec adresse enregistrée, Mon compte, avis vérifié, demande de réparation, suppression du compte) | **votre projet Supabase** (`.env.local`) |
+
+`test:e2e` crée des comptes `e2e-…@example.com` confirmés par la clé de service (aucun e-mail envoyé), un produit et une catégorie `e2e-…`, une commande et une réparation aux numéros 70 00 00 01 / 70 00 00 02, puis **efface tout à la fin**, même en cas d'échec. Après un arrêt brutal : `npm run test:e2e:clean`. Les numéros CMD-… et REP-… avancent d'un cran à chaque passage : à lancer sur une base de recette, ou avant l'ouverture. Rapport détaillé (captures, traces) : `npx playwright show-report`. Il faut Google Chrome installé ; ailleurs, `E2E_CHANNEL=chromium` après `npx playwright install chromium`.
+
 ## 7. Recette de bout en bout (à faire après chaque grande mise à jour)
 
 Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une capture d'écran.

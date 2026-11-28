@@ -27,7 +27,9 @@ export default async function CheckoutPage() {
         <span className="text-gold">.</span>
       </h1>
       <p className="mt-4 mb-10 max-w-xl text-muted sm:text-lg">{t.checkout.lead}</p>
-      <Suspense fallback={<CheckoutForm settings={settings} />}>
+      {/* Squelette, pas un formulaire : un formulaire de repli serait remplacé à l'arrivée du profil,
+          en effaçant ce que le client a déjà tapé (connexion lente). */}
+      <Suspense fallback={<div className="skeleton h-96 rounded-card" aria-hidden="true" />}>
         <CheckoutWithProfile settings={settings} />
       </Suspense>
     </Container>

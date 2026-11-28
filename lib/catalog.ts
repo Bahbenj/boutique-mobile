@@ -119,13 +119,22 @@ function toProduct(r: DbRow, now: number, campaigns: Campaign[]): Product {
 
 const staticCatalog = (): Catalog => ({ categories: staticCategories, products: staticProducts, source: "static" });
 
+type Life = "max" | "minutes" | { stale: number; revalidate: number; expire: number };
+
 export async function getCatalog(): Promise<Catalog> {
   "use cache";
   cacheTag(CATALOG_TAG);
+  const { catalog, life } = await loadCatalog();
+  if (life === "max") cacheLife("max");
+  else if (life === "minutes") cacheLife("minutes");
+  else cacheLife(life);
+  return catalog;
+}
 
+/** Lecture de la base, sans cache ; `life` = durée de cache conseillée pour ce résultat. */
+async function loadCatalog(): Promise<{ catalog: Catalog; life: Life }> {
   if (!isSupabaseConfigured) {
-    cacheLife("max"); // aucune base : les données statiques ne changent qu'au déploiement
-    return staticCatalog();
+    return { catalog: staticCatalog(), life: "max" }; // aucune base : les données statiques ne changent qu'au déploiement
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -149,8 +158,7 @@ export async function getCatalog(): Promise<Catalog> {
   if (error) {
     // Base injoignable ou migration manquante : le site reste en ligne avec le catalogue statique
     console.error("[catalogue] Supabase illisible, repli sur data/products.ts :", error.message);
-    cacheLife("minutes");
-    return staticCatalog();
+    return { catalog: staticCatalog(), life: "minutes" };
   }
 
   const rows = prods.data as unknown as DbRow[];
@@ -162,7 +170,7 @@ export async function getCatalog(): Promise<Catalog> {
     .map((d) => (d ? Date.parse(d) : NaN))
     .filter((t) => t > now);
   const nextChange = boundaries.length ? Math.ceil((Math.min(...boundaries) - now) / 1000) : 3600;
-  cacheLife({ stale: 60, revalidate: Math.max(60, Math.min(3600, nextChange)), expire: 86_400 });
+  const life: Life = { stale: 60, revalidate: Math.max(60, Math.min(3600, nextChange)), expire: 86_400 };
   const ratingOf = new Map(
     ((ratings.error ? [] : ratings.data) as { product_id: string; reviews: number; average: number; recommend_pct: number }[] | null ?? []).map((s) => [
       s.product_id,
@@ -183,7 +191,7 @@ export async function getCatalog(): Promise<Catalog> {
     image: c.image || firstImage(c.slug) || placeholderFor(c.slug),
     alt: c.name,
   }));
-  return { categories, products, source: "db" };
+  return { catalog: { categories, products, source: "db" }, life };
 }
 
 const active = async () => (await getCatalog()).products.filter((p) => p.isActive);
@@ -199,6 +207,34 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
   return (await active()).find((p) => p.slug === slug);
+}
+
+const SLUG = /^[a-z0-9-]{1,120}$/;
+
+/**
+ * Comme getProductBySlug, mais un produit absent du cache est cherché dans la base
+ * avant de conclure « introuvable ». Juste après sa création dans l'admin, le cache
+ * des fiches peut garder l'ancien catalogue quelques secondes : sans ce contrôle, le
+ * gérant qui clique « Voir sur le site » tombait sur une page 404. Coût : une petite
+ * requête pour une adresse inconnue, le catalogue complet seulement si le produit existe.
+ */
+export async function findProductBySlug(slug: string): Promise<Product | undefined> {
+  const cached = await getProductBySlug(slug);
+  if (cached || !isSupabaseConfigured || !SLUG.test(slug)) return cached;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data } = await supabase.from("products").select("id").eq("slug", slug).eq("is_active", true).gt("price", 0).limit(1);
+  if (!data?.length) return undefined;
+  return (await loadCatalog()).catalog.products.find((p) => p.slug === slug && p.isActive);
+}
+
+/** Même principe pour une catégorie créée à l'instant. */
+export async function findCategory(slug: string) {
+  const cached = await getCategory(slug);
+  if (cached || !isSupabaseConfigured || !SLUG.test(slug)) return cached;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data } = await supabase.from("categories").select("id").eq("slug", slug).limit(1);
+  if (!data?.length) return undefined;
+  return (await loadCatalog()).catalog.categories.find((c) => c.slug === slug);
 }
 
 export async function getCategories() {

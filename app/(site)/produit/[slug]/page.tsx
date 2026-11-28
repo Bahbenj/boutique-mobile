@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { money } from "@/lib/meta-pixel";
 import { t } from "@/i18n";
-import { getCategory, getProductBySlug, getProducts } from "@/lib/catalog";
+import { findProductBySlug, getCategory, getProducts } from "@/lib/catalog";
 import { Container } from "@/components/ui/Container";
 import { IconCash, IconShield, IconTruck } from "@/components/ui/icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -20,7 +20,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/produit/[slug]">): Promise<Metadata> {
-  const product = await getProductBySlug((await params).slug);
+  const product = await findProductBySlug((await params).slug);
   if (!product) return {};
   return {
     title: `${product.name}${product.condition !== "neuf" ? " (occasion)" : ""}`,
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/produit/[slug]">)
 }
 
 export default async function ProductPage({ params }: PageProps<"/produit/[slug]">) {
-  const product = await getProductBySlug((await params).slug);
+  const product = await findProductBySlug((await params).slug);
   if (!product) notFound();
   const category = await getCategory(product.category);
   const warranty = product.condition === "neuf" ? siteConfig.warrantyMonths.new : siteConfig.warrantyMonths.used;

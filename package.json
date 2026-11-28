@@ -11,7 +11,11 @@
     "db:all-in-one": "node scripts/build-all-in-one.mjs",
     "photos:optimize": "node scripts/optimize-photos.mjs",
     "photos:placeholders": "node scripts/placeholders.mjs",
-    "brand:colors": "node scripts/brand-colors.mjs"
+    "brand:colors": "node scripts/brand-colors.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:clean": "tsx e2e/clean.ts",
+    "test:sql": "node supabase/tests/sql.test.mjs supabase/all-in-one.sql",
+    "audit:db": "node supabase/tests/audit-droits.mjs supabase/all-in-one.sql"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -27,6 +31,8 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
