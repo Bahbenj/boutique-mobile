@@ -1,0 +1,29 @@
+# Caddy : HTTPS automatique (certificat Let's Encrypt obtenu et renouvelé tout seul).
+# Remplacez les deux domaines, puis : sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+# Prérequis : les enregistrements DNS A (et AAAA) des deux noms pointent vers ce serveur.
+
+www.mobile-empire.ml {
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:3000 {
+		# Adresse réelle du visiteur : utilisée par les limites anti-robots (lib/request-key.ts).
+		# Écrasée ici à partir de la vraie connexion : un visiteur ne peut pas la falsifier.
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		# Pages envoyées en continu (rendu partiel) : transmises sans attendre la fin
+		flush_interval -1
+	}
+
+	# Journal d'accès, avec rotation
+	log {
+		output file /var/log/caddy/mobile-empire.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+	}
+}
+
+# Adresse sans « www » : redirigée vers l'adresse principale
+mobile-empire.ml {
+	redir https://www.mobile-empire.ml{uri} permanent
+}

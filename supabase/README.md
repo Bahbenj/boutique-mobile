@@ -180,6 +180,8 @@ Sans réglage, Supabase n'envoie les e-mails (confirmation, lien de connexion, m
 
 ## 6 ter. Démo en ligne sur Vercel, puis lancement
 
+Guide complet de mise en ligne (Vercel ou serveur privé Linux, HTTPS, mises à jour, retour arrière) : `DEPLOIEMENT.md` à la racine du dépôt.
+
 ### Variables à créer (Vercel → projet → Settings → Environment Variables)
 
 | Nom | Valeur | Où la trouver |

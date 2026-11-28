@@ -75,6 +75,9 @@ Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, 
 
 ## Mise en ligne (démo / lancement)
 
+Guide : `DEPLOIEMENT.md` (Vercel, ou serveur Linux avec `deploy/` : PM2 en une seule instance, Caddy / Nginx qui écrasent `X-Real-IP`, `mise-a-jour.sh` par dossiers de versions avec retour automatique, `retour-arriere.sh`). `deploymentId` = `DEPLOYMENT_VERSION` (commit) sur serveur privé.
+
+
 `lib/site-mode.ts` : `allowIndexing` (`NEXT_PUBLIC_ALLOW_INDEXING=1`, sinon noindex partout : `app/robots.ts`, `robots` de `app/layout.tsx`, en-tête `X-Robots-Tag` de `next.config.ts`), `demoBanner` (`NEXT_PUBLIC_DEMO_BANNER=1`, pastille dans `Navbar`), `siteUrl` (`NEXT_PUBLIC_SITE_URL`, repli `siteConfig.url`) pour `metadataBase`, JSON-LD et liens partagés ; ne pas relire `siteConfig.url` ailleurs. Variables Vercel et procédure de lancement : `supabase/README.md`, section 6 ter.
 
 ## Base de données

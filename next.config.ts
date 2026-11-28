@@ -46,6 +46,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Serveur privé : identifiant de version (commit git, posé par deploy/mise-a-jour.sh). Un
+  // visiteur resté sur l'ancienne version recharge proprement la page au lieu d'une erreur.
+  // Vercel gère cela tout seul (variable absente = réglage de Vercel).
+  ...(process.env.DEPLOYMENT_VERSION ? { deploymentId: process.env.DEPLOYMENT_VERSION } : {}),
   async headers() {
     return [
       { source: "/:path*", headers: [...securityHeaders, ...(allowIndexing ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }])] },
