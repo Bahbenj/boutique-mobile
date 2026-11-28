@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Affiches et visuels de référence du client : jamais publiés (hors de public/)
 /reference-client/
+
+# Généré à la demande (npm run db:restauration), jamais versionné
+supabase/restauration.sql

@@ -80,6 +80,10 @@ Guide : `DEPLOIEMENT.md` (Vercel, ou serveur Linux avec `deploy/` : PM2 en une s
 
 `lib/site-mode.ts` : `allowIndexing` (`NEXT_PUBLIC_ALLOW_INDEXING=1`, sinon noindex partout : `app/robots.ts`, `robots` de `app/layout.tsx`, en-tête `X-Robots-Tag` de `next.config.ts`), `demoBanner` (`NEXT_PUBLIC_DEMO_BANNER=1`, pastille dans `Navbar`), `siteUrl` (`NEXT_PUBLIC_SITE_URL`, repli `siteConfig.url`) pour `metadataBase`, JSON-LD et liens partagés ; ne pas relire `siteConfig.url` ailleurs. Variables Vercel et procédure de lancement : `supabase/README.md`, section 6 ter.
 
+## Sauvegardes
+
+`deploy/sauvegarde/` : `sauvegarde.sh` (hebdomadaire par cron : `pg_dump` du schéma public avec ses GRANT, comptes `auth.users` / `auth.identities`, photos via `photos.mjs` en copie incrémentale ; chiffrement gpg, empreintes, rotation 8 hebdo + 12 mensuelles, rclone seulement si chiffré), `LISEZMOI.md` (installation, restauration). Après restauration : `npm run db:restauration` (migrations sans `seed.sql`, fichier non versionné) au lieu de `all-in-one.sql`, qui ferait réapparaître les produits d'exemple supprimés.
+
 ## Base de données
 
 Migrations dans `supabase/migrations/` (rejouables, ne jamais écraser une saisie du commerçant : mise à jour seulement si la valeur est encore celle d'exemple). Après toute modification SQL ou de `data/products.ts` : `npm run seed:generate && npm run db:all-in-one`. Mode d'emploi : `supabase/README.md`.

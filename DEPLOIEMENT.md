@@ -198,4 +198,4 @@ curl -s https://www.<domaine>/robots.txt
 2. Reconstruisez (Vercel : *Redeploy* ; serveur : `deploy/mise-a-jour.sh`).
 3. Supabase *URL Configuration* et Google Cloud sur le domaine définitif.
 4. Section C, puis Google Search Console : ajoutez le domaine et demandez l'indexation de l'accueil.
-5. Mettez en place les sauvegardes hebdomadaires (`deploy/sauvegarde/LISEZMOI.md`).
+5. Mettez en place les sauvegardes hebdomadaires et faites un premier essai de restauration (`deploy/sauvegarde/LISEZMOI.md`).
