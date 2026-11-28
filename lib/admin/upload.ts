@@ -54,7 +54,9 @@ export async function uploadImage(file: File, folder: "products" | "categories" 
     upsert: false,
   });
   if (error) {
-    if (/row-level security|unauthorized|403/i.test(error.message)) throw new Error("Accès refusé : reconnectez-vous.");
+    if (/row-level security|unauthorized|403/i.test(error.message)) {
+      throw new Error(folder.startsWith("reviews/") ? "Envoi refusé : 20 photos par jour au plus. Réessayez demain, ou reconnectez-vous." : "Accès refusé : reconnectez-vous.");
+    }
     if (/fetch|network/i.test(error.message)) throw new Error("Connexion impossible. Vérifiez le réseau et réessayez.");
     throw new Error(error.message);
   }

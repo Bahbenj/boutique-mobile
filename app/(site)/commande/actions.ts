@@ -79,6 +79,7 @@ const messages: Record<string, string> = {
   promo_code_expired: "Ce code promo a expiré. Retirez-le pour commander.",
   promo_code_used_up: "Ce code promo a déjà été utilisé le nombre de fois prévu. Retirez-le pour commander.",
   promo_code_min_order: "Le montant minimum pour ce code promo n'est pas atteint.",
+  too_many_orders: "Vous avez passé plusieurs commandes en peu de temps. Pour une commande de plus, réessayez dans une heure ou écrivez-nous sur WhatsApp.",
   email_not_confirmed: "Confirmez d'abord votre adresse e-mail : ouvrez le lien reçu par e-mail, puis validez à nouveau.",
 };
 

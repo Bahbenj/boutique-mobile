@@ -2,7 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
-import { supabaseAnonKey, supabaseUrl } from "./env";
+import { supabaseAnonKey, supabaseCookieOptions, supabaseUrl } from "./env";
 
 /**
  * Client Supabase côté serveur, lié à la session de l'utilisateur (cookies).
@@ -15,6 +15,7 @@ export async function createClient() {
   await connection();
   const cookieStore = await cookies();
   return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: supabaseCookieOptions,
     cookies: {
       getAll: () => cookieStore.getAll(),
       setAll: (toSet) => {

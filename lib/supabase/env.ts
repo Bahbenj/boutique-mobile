@@ -5,6 +5,13 @@
 export const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/\/+$/, "");
 export const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
 
+/**
+ * Cookies de session : Secure en production (jamais envoyés hors HTTPS), SameSite=Lax
+ * (pas envoyés par les formulaires d'autres sites). Non HttpOnly par conception :
+ * le client Supabase du navigateur doit pouvoir lire la session.
+ */
+export const supabaseCookieOptions = { path: "/", sameSite: "lax", secure: process.env.NODE_ENV === "production" } as const;
+
 /** false tant que .env.local n'est pas rempli : l'admin affiche alors la marche à suivre. */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 

@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { normalizeMlPhone, phoneError } from "@/lib/phone";
+import { requestKey } from "@/lib/request-key";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -11,7 +12,8 @@ import { createServiceClient } from "@/lib/supabase/service";
  * avant l'ouverture du message WhatsApp. Anti-spam en trois couches :
  *   1. champ piège invisible (rempli seulement par les robots) ;
  *   2. délai minimal entre l'affichage du formulaire et l'envoi ;
- *   3. en base : 3 demandes par heure au plus pour un même numéro.
+ *   3. en base : 3 demandes par heure au plus pour un même numéro,
+ *      et 10 par heure au plus depuis une même connexion (numéros variés).
  * Appel à create_repair_request() avec la clé de service, côté serveur seulement.
  */
 
@@ -62,10 +64,16 @@ export async function submitRepairRequest(input: RepairRequestInput): Promise<Re
   }
 
   try {
+    const service = createServiceClient();
+    const key = await requestKey("repair");
+    if (key) {
+      const { data: allowed } = await service.rpc("rate_limit_allowed", { p_bucket: "repair", p_client: key, p_max: 10 });
+      if (allowed === false) return { ok: false, error: messages.too_many_requests };
+    }
     // Visiteur connecté : demande rattachée à son compte (session vérifiée ici, jamais un identifiant du navigateur)
     const { data: auth } = await (await createClient()).auth.getClaims();
     const user_id = typeof auth?.claims?.sub === "string" ? auth.claims.sub : undefined;
-    const { data, error } = await createServiceClient().rpc("create_repair_request", { p_request: { name, phone, device, issue, user_id } });
+    const { data, error } = await service.rpc("create_repair_request", { p_request: { name, phone, device, issue, user_id } });
     if (error) {
       const code = Object.keys(messages).find((k) => error.message.includes(k));
       if (code) return { ok: false, error: messages[code], ...(code.startsWith("invalid_") ? { fields: { [code.slice(8)]: messages[code] } } : {}) };
@@ -74,6 +82,7 @@ export async function submitRepairRequest(input: RepairRequestInput): Promise<Re
     }
     const row = (Array.isArray(data) ? data[0] : data) as { request_number: string } | undefined;
     if (!row) return { ok: false, fallback: true, error: "Enregistrement impossible pour le moment." };
+    if (key) await service.rpc("rate_limit_hit", { p_bucket: "repair", p_client: key });
     return { ok: true, number: row.request_number, phone };
   } catch (err) {
     console.error("[réparation] Supabase injoignable", err);

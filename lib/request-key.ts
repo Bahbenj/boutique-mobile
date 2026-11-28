@@ -9,7 +9,10 @@ import { headers } from "next/headers";
  */
 export async function requestKey(scope: string) {
   const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim();
+  // x-real-ip d'abord : Vercel le pose lui-même, et les modèles Caddy / Nginx du guide
+  // (deploy/) l'écrasent avec l'adresse réelle de la connexion ; x-forwarded-for peut
+  // contenir des valeurs envoyées par le navigateur, on ne s'en sert qu'en repli.
+  const ip = h.get("x-real-ip")?.trim() || h.get("x-forwarded-for")?.split(",")[0]?.trim();
   return ip ? createHash("sha256").update(`${scope}:${ip}`).digest("hex") : null;
 }
 

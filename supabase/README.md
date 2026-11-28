@@ -41,6 +41,7 @@ Dans Supabase : **SQL Editor** → **New query**. Pour chaque fichier de `supaba
 23. `20261126002300_customer_accounts.sql` (comptes clients : profils créés à l'inscription, commandes et réparations rattachées au compte, `place_order` réservé aux clients connectés à l'e-mail confirmé, chaque client ne voit que ses commandes, limites anti-robots)
 24. `20261126002400_product_reviews.sql` (avis produits des clients connectés : note, recommandation, photos, « Achat vérifié », modération avant publication, réponse de la boutique, signalement d'abus ; témoignages existants inchangés)
 25. `20261126002500_customer_addresses.sql` (carnet d'adresses des clients, 10 au plus ; consignes pour le livreur et position copiées dans la commande ; `place_order` inchangée)
+26. `20261128002600_security_hardening.sql` (5 commandes par heure et par compte, 20 photos d'avis par jour et par client)
 
 Ouvrez le fichier, copiez tout son contenu, collez-le dans l'éditeur, cliquez sur **Run**. Vous devez obtenir « Success. No rows returned ».
 
@@ -233,6 +234,7 @@ Comptez 30 minutes. Notez ce qui ne se passe pas comme indiqué, avec une captur
    union all select 'comptes clients', to_regclass('public.profiles') is not null
    union all select 'avis produits', to_regclass('public.product_reviews') is not null
    union all select 'carnet d''adresses', to_regclass('public.customer_addresses') is not null
+   union all select 'limite de commandes', exists (select 1 from pg_trigger where tgname = 'orders_rate_guard')
    union all select '11 produits ou plus', (select count(*) from public.products) >= 11;
    ```
 3. Vérifiez votre compte admin (votre e-mail doit apparaître) :
@@ -371,6 +373,12 @@ Connecté avec le compte client de l'étape 5 b (une commande exige désormais u
     curl.exe -s -X POST "<URL>/rest/v1/rpc/create_repair_request" -H "apikey: <CLE_PUBLIQUE>" -H "Content-Type: application/json" -d "{\"p_request\":{\"name\":\"Test\",\"phone\":\"76000000\",\"device\":\"X1\",\"issue\":\"test\"}}"
     ```
     Attendu pour les douze : une erreur « permission denied » (code 42501), **jamais** de données.
+    En-têtes de sécurité du site (une fois en ligne) :
+    ```powershell
+    curl.exe -sI "<DOMAINE>/" | findstr /i "content-security strict-transport x-frame referrer permissions"
+    ```
+    Attendu : les cinq lignes. Vérifiez aussi sur https://securityheaders.com (note A attendue ; « unsafe-inline » est un choix assumé, voir `next.config.ts`).
+    Limite de commandes : avec un compte de test, passez **6 commandes en moins d'une heure** (retrait en magasin, un petit article) : la 6ᵉ affiche « Vous avez passé plusieurs commandes en peu de temps… » et le stock ne bouge pas. Annulez ensuite ces commandes dans l'admin (le stock revient).
     Et sans erreur, mais sans aucun avis en attente ni refusé (seulement les avis publiés, sans identifiant de client) :
     ```powershell
     curl.exe -s "<URL>/rest/v1/product_reviews?select=rating,title,status" -H "apikey: <CLE_PUBLIQUE>"

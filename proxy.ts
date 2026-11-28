@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeNextPath } from "@/lib/safe-path";
+import { supabaseCookieOptions } from "@/lib/supabase/env";
 
 /**
  * Première barrière, avant chaque page concernée (Next.js 16 : remplace middleware.ts).
@@ -25,6 +26,7 @@ export async function proxy(request: NextRequest) {
   if (!url || !key) return isAdmin ? noindex(response) : response; // site sans base : rien à protéger côté client
 
   const supabase = createServerClient(url, key, {
+    cookieOptions: supabaseCookieOptions,
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (toSet, headers) => {

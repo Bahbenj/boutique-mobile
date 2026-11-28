@@ -57,6 +57,12 @@ Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, 
 
 `NEXT_PUBLIC_META_PIXEL_ID` (vide = désactivé). `lib/meta-pixel.ts` (file d'attente + `track()`), `components/layout/MetaPixel.tsx` (script `lazyOnload`, PageView à chaque navigation). Événements : ViewContent (page produit), AddToCart (`lib/use-add-to-cart.ts`), InitiateCheckout et Purchase + Lead (`CheckoutForm`). Identifiants de contenu = `slug` du produit, montants en `XOF`.
 
+## Sécurité (audit de mise en production, migration 26)
+
+- Limites : commande 5 / heure / compte (déclencheur `orders_rate_guard`, `too_many_orders`), photos d'avis 20 / jour / client (politique storage `catalog_insert_review` + `review_photo_quota_ok()`), avis 5 / heure, codes promo 10 essais ratés / heure / IP, inscription 5, connexion ratée 10, e-mails 5 / heure / IP (`rate_limit_*`), réparation 3 / heure / numéro + 10 / heure / IP, signalement d'avis 10 / heure / IP.
+- IP du visiteur : `requestKey()` (`lib/request-key.ts`) lit `x-real-ip` en premier ; tout proxy devant Node doit l'écraser avec l'adresse réelle (`deploy/`).
+- En-têtes (`next.config.ts`) : CSP sans nonce (choix : garder le prérendu partiel), liste fermée de domaines ; ajouter tout nouveau service externe dans `csp`. HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`. Cookies Supabase : `supabaseCookieOptions` (`lib/supabase/env.ts`, Secure en production).
+
 ## Mise en ligne (démo / lancement)
 
 `lib/site-mode.ts` : `allowIndexing` (`NEXT_PUBLIC_ALLOW_INDEXING=1`, sinon noindex partout : `app/robots.ts`, `robots` de `app/layout.tsx`, en-tête `X-Robots-Tag` de `next.config.ts`), `demoBanner` (`NEXT_PUBLIC_DEMO_BANNER=1`, pastille dans `Navbar`), `siteUrl` (`NEXT_PUBLIC_SITE_URL`, repli `siteConfig.url`) pour `metadataBase`, JSON-LD et liens partagés ; ne pas relire `siteConfig.url` ailleurs. Variables Vercel et procédure de lancement : `supabase/README.md`, section 6 ter.
