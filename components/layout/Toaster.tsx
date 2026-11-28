@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useUI } from "@/lib/ui-store";
@@ -37,7 +37,7 @@ export function Toaster() {
     >
       <AnimatePresence>
         {toast && (
-          <motion.div
+          <m.div
             key={toast.id}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -82,7 +82,7 @@ export function Toaster() {
                 {toast.action.label}
               </button>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>,

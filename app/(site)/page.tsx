@@ -28,13 +28,28 @@ export default async function HomePage() {
     <>
       <HeroScroll />
       <Promises />
-      <CategoryBento index={n("rayons")} />
-      <FeaturedProducts index={n("selection")} />
-      <OrderSteps index={n("commander")} />
-      <Services index={n("services")} />
-      <Reviews index={n("avis")} reviews={reviews} />
-      <Faq index={n("faq")} />
-      <StoreVisit index={n("magasin")} />
+      {/* Sous le haut de page : calcul différé tant que la section est loin (globals.css → cv-auto) */}
+      <div className="cv-auto">
+        <CategoryBento index={n("rayons")} />
+      </div>
+      <div className="cv-auto">
+        <FeaturedProducts index={n("selection")} />
+      </div>
+      <div className="cv-auto">
+        <OrderSteps index={n("commander")} />
+      </div>
+      <div className="cv-auto">
+        <Services index={n("services")} />
+      </div>
+      <div className="cv-auto">
+        <Reviews index={n("avis")} reviews={reviews} />
+      </div>
+      <div className="cv-auto">
+        <Faq index={n("faq")} />
+      </div>
+      <div className="cv-auto">
+        <StoreVisit index={n("magasin")} />
+      </div>
     </>
   );
 }

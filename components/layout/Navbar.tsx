@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useState } from "react";
 import { t } from "@/i18n";
 import { useUI } from "@/lib/ui-store";
@@ -118,7 +118,7 @@ export function Navbar({ announcement = null, demo = false }: { announcement?: A
         {/* Menu mobile : la pilule s'agrandit vers le bas */}
         <AnimatePresence initial={false}>
           {menuOpen && (
-            <motion.div
+            <m.div
               id="mobile-menu"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -148,7 +148,7 @@ export function Navbar({ announcement = null, demo = false }: { announcement?: A
                   {t.nav.cta}
                 </Link>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </nav>

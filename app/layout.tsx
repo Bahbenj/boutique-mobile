@@ -4,11 +4,14 @@ import type { CSSProperties } from "react";
 import { siteConfig } from "@/config/site";
 import { dir, htmlLang } from "@/i18n";
 import { allowIndexing, siteUrl } from "@/lib/site-mode";
+import { MotionProvider } from "@/components/layout/MotionProvider";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
-  subsets: ["latin", "latin-ext"],
+  // « latin » couvre tout le français (é, è, ç, œ, espace fine insécable…) ; « latin-ext »
+  // ajoutait 28 Ko et une requête sur chaque page sans servir au site.
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -59,7 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={htmlLang} dir={dir} className={`${jakarta.variable} h-full antialiased`} style={brandVars}>
       <body className="flex min-h-full flex-col font-sans">
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

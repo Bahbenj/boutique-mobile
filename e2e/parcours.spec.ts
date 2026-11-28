@@ -298,6 +298,15 @@ test("client : suppression du compte refusée tant qu'une réparation est en cou
   expect(order?.user_id).toBeNull();
 });
 
+test("pages introuvables en français (adresse inconnue, produit retiré)", async () => {
+  const res = await c.goto("/adresse-qui-n-existe-pas");
+  expect(res?.status()).toBe(404);
+  await expect(c.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+  await c.goto("/produit/produit-qui-n-existe-pas");
+  await expect(c.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+  await expect(c.getByRole("link", { name: /Voir la boutique/ }).first()).toBeVisible();
+});
+
 test("aucune erreur JavaScript pendant les parcours", async () => {
   expect(errors).toEqual([]);
 });

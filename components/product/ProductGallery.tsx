@@ -20,7 +20,9 @@ export function ProductGallery({ images, soldOut, imageBg: bg }: { images: Produ
           src={current.src}
           alt={current.alt}
           fill
-          preload={index === 0}
+          // 1re photo = image principale de la page : chargée tout de suite, en priorité
+          loading={index === 0 ? "eager" : "lazy"}
+          fetchPriority={index === 0 ? "high" : undefined}
           sizes="(min-width: 1024px) 50vw, 100vw"
           quality={75}
           style={imageBg(look)}

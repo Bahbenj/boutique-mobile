@@ -72,6 +72,7 @@ export function ShopView({
     <Container className="pt-28 pb-20 sm:pt-36 sm:pb-28">
       <ShopHeader title={title} lead={lead} chips={<CategoryChips chips={chips} active={active} />} />
       <p className="mt-8 mb-5 text-sm font-medium text-muted">{t.shop.count(products.length)}</p>
+      <h2 className="sr-only">Produits</h2>
       {products.length ? <ProductGrid products={products} /> : <p className="py-16 text-center text-muted">{t.shop.empty}</p>}
     </Container>
   );

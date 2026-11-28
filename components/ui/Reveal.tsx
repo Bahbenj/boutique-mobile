@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
+import { m, useReducedMotion, type HTMLMotionProps } from "motion/react";
 
 /**
  * Apparition au scroll (fade + translateY). `delay` permet le stagger
@@ -9,7 +9,7 @@ import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
 export function Reveal({ delay = 0, y = 28, ...props }: HTMLMotionProps<"div"> & { delay?: number; y?: number }) {
   const reduce = useReducedMotion();
   return (
-    <motion.div
+    <m.div
       initial={reduce ? false : { opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -10% 0px" }}

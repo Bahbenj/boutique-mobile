@@ -9,9 +9,10 @@ const sizes = "(min-width: 1024px) 24vw, (min-width: 768px) 31vw, 48vw";
 export function ProductGrid({ products, className }: { products: Product[]; className?: string }) {
   return (
     <ul className={cn(gridClass, className)}>
-      {products.map((p) => (
+      {products.map((p, i) => (
         <li key={p.id}>
-          <ProductCard product={p} sizes={sizes} />
+          {/* 1re rangée : 2 cartes visibles sur téléphone (priorité haute), 4 sur ordinateur */}
+          <ProductCard product={p} sizes={sizes} priority={i < 2 ? "high" : i < 4 ? "eager" : undefined} />
         </li>
       ))}
     </ul>

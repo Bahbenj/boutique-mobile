@@ -57,6 +57,16 @@ Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, 
 
 `NEXT_PUBLIC_META_PIXEL_ID` (vide = désactivé). `lib/meta-pixel.ts` (file d'attente + `track()`), `components/layout/MetaPixel.tsx` (script `lazyOnload`, PageView à chaque navigation). Événements : ViewContent (page produit), AddToCart (`lib/use-add-to-cart.ts`), InitiateCheckout et Purchase + Lead (`CheckoutForm`). Identifiants de contenu = `slug` du produit, montants en `XOF`.
 
+## Vitesse (Lighthouse mobile ≥ 90)
+
+- Animations : `motion` en mode allégé (`MotionProvider` dans `app/layout.tsx`, `LazyMotion strict`) : écrire `m.div`, jamais `motion.div`. Moteur chargé à part (`lib/motion-features.ts`, `domAnimation` : pas de `layout` ni de glisser).
+- Hero de l'accueil (`HeroScroll`) : GSAP importé quand le navigateur est libre, animation installée au premier geste ; ne jamais retoucher la scène 1 (titre = LCP) à l'installation.
+- Accueil : sections sous le hero dans `<div className="cv-auto">` (`content-visibility`, `globals.css`) ; pas d'élément `fixed` dedans.
+- Images : 1re rangée de la grille boutique et 1re photo de la fiche en `loading="eager"` + `fetchPriority="high"` (pas `preload`, déprécié en `priority`) ; le reste en lazy.
+- Police : sous-ensemble `latin` seul (couvre le français).
+- Pages d'erreur : `app/not-found.tsx` (adresse inconnue, 404), `app/(site)/not-found.tsx` (produit retiré : 200 + noindex, comportement normal du rendu en continu), `app/(site)/error.tsx` et `app/admin/(panel)/error.tsx` (500, « Réessayer » = `retry`), `app/global-error.tsx` (couleurs recopiées du thème). Squelettes : `loading.tsx` de la boutique, de la fiche et de l'admin ; la page Commande n'affiche jamais un formulaire de repli (il serait remplacé à l'arrivée du profil).
+- Fiches créées à l'instant : `findProductBySlug` / `findCategory` (`lib/catalog.ts`) relisent la base si le cache ne les connaît pas encore.
+
 ## Sécurité (audit de mise en production, migration 26)
 
 - Limites : commande 5 / heure / compte (déclencheur `orders_rate_guard`, `too_many_orders`), photos d'avis 20 / jour / client (politique storage `catalog_insert_review` + `review_photo_quota_ok()`), avis 5 / heure, codes promo 10 essais ratés / heure / IP, inscription 5, connexion ratée 10, e-mails 5 / heure / IP (`rate_limit_*`), réparation 3 / heure / numéro + 10 / heure / IP, signalement d'avis 10 / heure / IP.

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId } from "react";
 import { createPortal } from "react-dom";
 import { t } from "@/i18n";
@@ -45,7 +45,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[70] flex justify-end">
-          <motion.div
+          <m.div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -54,7 +54,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
             onClick={close}
             aria-hidden="true"
           />
-          <motion.div
+          <m.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
@@ -85,7 +85,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
             <div role="status" aria-live="polite" className="sm:hidden">
               <AnimatePresence initial={false}>
                 {toast && (
-                  <motion.p
+                  <m.p
                     key={toast.id}
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -102,7 +102,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
                         {toast.text && <span className="text-muted"> · {toast.text}</span>}
                       </span>
                     </span>
-                  </motion.p>
+                  </m.p>
                 )}
               </AnimatePresence>
             </div>
@@ -201,7 +201,7 @@ export function CartDrawer({ freeFrom, onlyCod }: { freeFrom: number | null; onl
                 </footer>
               </>
             )}
-          </motion.div>
+          </m.div>
         </div>
       )}
     </AnimatePresence>,

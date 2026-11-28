@@ -10,7 +10,8 @@ import { QuickAdd } from "./QuickAdd";
 import { RatingInline } from "./Stars";
 
 /** Carte produit des grilles (accueil, boutique) : visuel, badges, prix, ajout rapide. */
-export function ProductCard({ product: p, sizes, className }: { product: Product; sizes?: string; className?: string }) {
+/** priority : carte en haut de l'écran (image principale de la page) → chargée tout de suite, en priorité. */
+export function ProductCard({ product: p, sizes, className, priority }: { product: Product; sizes?: string; className?: string; priority?: "high" | "eager" }) {
   const soldOut = p.stock <= 0;
   const href = `/produit/${p.slug}`;
   const meta = [
@@ -28,6 +29,8 @@ export function ProductCard({ product: p, sizes, className }: { product: Product
           fill
           sizes={sizes ?? "(min-width: 1024px) 24vw, (min-width: 640px) 45vw, 80vw"}
           quality={75}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority === "high" ? "high" : undefined}
           style={imageBg(p)}
           className={cn(
             imageFit(p),

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useDialog } from "@/lib/use-dialog";
@@ -32,7 +32,7 @@ export function Modal({ open, onClose, title, description, children, className, 
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center p-3 sm:items-center sm:p-6">
-          <motion.div
+          <m.div
             className="absolute inset-0 bg-black/70 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, description, children, className, 
             onClick={onClose}
             aria-hidden="true"
           />
-          <motion.div
+          <m.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
@@ -74,7 +74,7 @@ export function Modal({ open, onClose, title, description, children, className, 
               </p>
             )}
             <div className="mt-6">{children}</div>
-          </motion.div>
+          </m.div>
         </div>
       )}
     </AnimatePresence>,
