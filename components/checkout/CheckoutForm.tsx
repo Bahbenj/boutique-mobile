@@ -31,8 +31,8 @@ type Errors = Partial<Record<"name" | "phone" | "region" | "city" | "address", s
  * Formulaire de commande. Envoie le récapitulatif sur WhatsApp.
  * Zones, frais, retrait et modes de paiement viennent des réglages de
  * l'admin (lib/storefront.ts), avec repli sur config/site.ts.
- * TODO étape admin 4 : enregistrer d'abord la commande côté serveur
- * (place_order recalcule prix, frais de zone et valide le paiement).
+ * La commande est d'abord enregistrée côté serveur (placeOrder → place_order :
+ * prix, frais de zone et paiement recalculés en base), puis envoyée sur WhatsApp.
  */
 /** Coordonnées du client connecté (profil), pour pré-remplir le formulaire. */
 export type CheckoutProfile = { fullName: string; phone: string; email: string; zoneId: string | null; city: string; address: string };

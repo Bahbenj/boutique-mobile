@@ -10,6 +10,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Mobile Empire · notes du projet
 
+Liste à jour de ce qui reste à fournir ou valider par le client : `A-FAIRE-AVANT-LANCEMENT.md`.
+
 Boutique en ligne de **Mobile Empire** (smartphones et accessoires, N'Tabacoro, Bamako, Mali, depuis 2018). Slogan : « Vendre avec passion, servir avec excellence. » Site en français, FCFA (XOF, sans décimales), numéros maliens +223 à 8 chiffres (`lib/phone.ts`).
 
 ## Où modifier quoi
